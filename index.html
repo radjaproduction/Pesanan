@@ -66,6 +66,10 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 .hero-stats{display:flex;gap:28px;margin-top:38px;flex-wrap:wrap}
 .hero-stats div b{display:block;color:#fff;font-size:20px;font-weight:800}
 .hero-stats div span{color:#8FA1CC;font-size:11.5px;font-weight:600}
+.hero-contact{display:flex;flex-direction:column;gap:10px;margin-top:36px}
+.hero-contact div{display:flex;align-items:center;gap:10px}
+.hero-contact .ic{font-size:15px;flex-shrink:0;width:20px;text-align:center}
+.hero-contact span:last-child{color:#C7D1EC;font-size:13.5px;font-weight:600;line-height:1.4}
 
 /* ============ BUTTONS ============ */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13.5px;border-radius:10px;padding:12px 22px;transition:.2s}
@@ -121,6 +125,18 @@ section.block{padding:44px 0}
 .p-min{position:absolute;bottom:12px;right:12px;background:var(--navy-100);color:var(--navy-700);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px}
 
 /* ============ CATALOG ============ */
+#view-catalog{position:relative;overflow:hidden}
+#view-catalog::before{
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MjAiIGhlaWdodD0iNDIwIiB2aWV3Qm94PSIwIDAgNDIwIDQyMCI+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTYyOTVDIiBzdHJva2Utd2lkdGg9IjIuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIxIj4KICAgIDwhLS0ga2FvcyAvIHQtc2hpcnQgMSAtLT4KICAgIDxwYXRoIGQ9Ik02MCA0MCBMODUgMjUgTDEwNSA0MCBMMTIwIDMwIEwxNDAgNTUgTDEyNSA3MiBMMTEyIDY0IEwxMTIgMTE4IEw1OCAxMTggTDU4IDY0IEw0NSA3MiBMMzAgNTUgWiIvPgogICAgPHBhdGggZD0iTTc4IDQwIFE5MiA1NSAxMDYgNDAiIC8+CgogICAgPCEtLSBiaW50YW5nIC0tPgogICAgPHBhdGggZD0iTTIzMCAzMCBMMjM3IDQ4IEwyNTYgNDggTDI0MSA2MCBMMjQ3IDc5IEwyMzAgNjggTDIxMyA3OSBMMjE5IDYwIEwyMDQgNDggTDIyMyA0OCBaIi8+CgogICAgPCEtLSBhd2FuIC0tPgogICAgPHBhdGggZD0iTTMyMCA5MCBhMTYgMTYgMCAwIDEgMzAgLTQgYTE0IDE0IDAgMCAxIDIwIDE0IGExNCAxNCAwIDAgMSAtMiAyNiBoLTUyIGExNSAxNSAwIDAgMSA0IC0zNiB6Ii8+CgogICAgPCEtLSBjZWxhbmEgLS0+CiAgICA8cGF0aCBkPSJNNDAgMTkwIEwzOCAyNjAgTDU4IDI2MCBMNjQgMjIwIEw3MCAyNjAgTDkwIDI2MCBMODggMTkwIFoiLz4KICAgIDxsaW5lIHgxPSI0MiIgeTE9IjIwNSIgeDI9Ijg2IiB5Mj0iMjA1Ii8+CgogICAgPCEtLSBndW50aW5nIC0tPgogICAgPGNpcmNsZSBjeD0iMjAwIiBjeT0iMjAwIiByPSI5Ii8+CiAgICA8Y2lyY2xlIGN4PSIyMDAiIGN5PSIyMjgiIHI9IjkiLz4KICAgIDxsaW5lIHgxPSIyMDciIHkxPSIyMDciIHgyPSIyNTIiIHkyPSIxNzAiLz4KICAgIDxsaW5lIHgxPSIyMDciIHkxPSIyMjEiIHgyPSIyNTIiIHkyPSIyNTgiLz4KCiAgICA8IS0tIGJlbmFuZyAvIGphcnVtIC0tPgogICAgPHBhdGggZD0iTTMwMCAxOTAgcTQwIDEwIDMwIDUwIHEtMTAgNDAgLTUwIDMwIiBzdHJva2UtZGFzaGFycmF5PSI0IDciLz4KICAgIDxjaXJjbGUgY3g9IjM0MCIgY3k9IjIzMCIgcj0iMyIgZmlsbD0iIzE2Mjk1QyIvPgoKICAgIDwhLS0ga2FvcyAyIGtlY2lsIC0tPgogICAgPHBhdGggZD0iTTI5MCAzMDAgTDMwNSAyOTAgTDMxOCAzMDAgTDMzMCAyOTMgTDM0NCAzMTAgTDMzMyAzMjIgTDMyNCAzMTYgTDMyNCAzNTUgTDI4NiAzNTUgTDI4NiAzMTYgTDI3NyAzMjIgTDI2NiAzMTAgTDI4MCAyOTMgWiIvPgoKICAgIDwhLS0gaGF0aSAtLT4KICAgIDxwYXRoIGQ9Ik0xMjAgMzIwIGMwIC0xNCAyMCAtMTQgMjAgMCBjMCAtMTQgMjAgLTE0IDIwIDAgYzAgMTYgLTIwIDI2IC0yMCAzNCBjMCAtOCAtMjAgLTE4IC0yMCAtMzQgeiIvPgoKICAgIDwhLS0gYmludGFuZyBrZWNpbCAtLT4KICAgIDxwYXRoIGQ9Ik0zODAgMzAgTDM4NCA0MCBMMzk0IDQwIEwzODYgNDYgTDM4OSA1NiBMMzgwIDUwIEwzNzEgNTYgTDM3NCA0NiBMMzY2IDQwIEwzNzYgNDAgWiIvPgoKICAgIDwhLS0gdGl0aWstdGl0aWsgLS0+CiAgICA8Y2lyY2xlIGN4PSIxODAiIGN5PSIxMjAiIHI9IjMiIGZpbGw9IiMxNjI5NUMiLz4KICAgIDxjaXJjbGUgY3g9IjM2NSIgY3k9IjE1MCIgcj0iMyIgZmlsbD0iIzE2Mjk1QyIvPgogICAgPGNpcmNsZSBjeD0iMzAiIGN5PSIxNTAiIHI9IjMiIGZpbGw9IiMxNjI5NUMiLz4KICA8L2c+Cjwvc3ZnPgo=");
+  background-repeat:repeat;background-size:280px 280px;opacity:.055;
+}
+#view-catalog::after{
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 45% at 15% 8%,rgba(255,159,28,.10),transparent 60%),
+             radial-gradient(ellipse 55% 40% at 90% 90%,rgba(16,31,69,.07),transparent 60%);
+}
+#view-catalog>.container{position:relative;z-index:1}
 .cat-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 18px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{padding:8px 15px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s}
@@ -277,7 +293,7 @@ section.block{padding:44px 0}
 .switch.on::after{left:21px}
 
 /* ============ FOOTER ============ */
-footer{background:var(--navy-950);color:#8FA1CC;margin-top:20px}
+footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px solid rgba(255,255,255,.12)}
 .f-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;gap:30px;padding:46px 0 34px}
 .f-grid h4{color:#fff;font-size:13px;margin-bottom:14px;letter-spacing:.5px}
 .f-grid p,.f-grid a{font-size:12.5px;line-height:2;color:#8FA1CC;text-decoration:none;display:block}
@@ -354,51 +370,13 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:20px}
         <button class="btn btn-accent" onclick="go('catalog')">🛍️ Pesan Sekarang</button>
         <button class="btn btn-ghost" onclick="go('track')">📍 Lacak Pesanan</button>
       </div>
-      <div class="hero-stats">
-        <div><b>12.400+</b><span>PCS / BULAN</span></div>
-        <div><b>480+</b><span>KLIEN SE-INDONESIA</span></div>
-        <div><b>4.9 ★</b><span>RATING KEPUASAN</span></div>
+      <div class="hero-contact">
+        <div><span class="ic">📍</span><span>Jl. Burujul, RT.02 RW.17, Bandung, 40218</span></div>
+        <div><span class="ic">📞</span><span>+62 815-7227-7118</span></div>
+        <div><span class="ic">✉️</span><span>admin@radjaproduction.com</span></div>
       </div>
     </div>
   </div>
-
-  <div class="usp"><div class="container">
-    <div><div class="ic">🎨</div><div><b>Gratis Desain</b><span>Mockup tanpa batas revisi</span></div></div>
-    <div><div class="ic">🧵</div><div><b>QC 2 Lapis</b><span>Jahitan & hasil sablon</span></div></div>
-    <div><div class="ic">⚡</div><div><b>Produksi Cepat</b><span>7–21 hari kerja</span></div></div>
-    <div><div class="ic">🔄</div><div><b>Garansi Remake</b><span>Cacat produksi kami ganti</span></div></div>
-  </div></div>
-
-  <section class="block container" style="padding-top:0">
-    <div class="promo">
-      <div>
-        <h3>⚡ PROMO BULK ORDER — <em>HEMAT s.d. 20%</em></h3>
-        <p>Berlaku untuk pemesanan ≥ 100 pcs. Harga final dikonfirmasi admin setelah checkout.</p>
-      </div>
-      <button class="btn btn-accent" onclick="go('catalog')">Ambil Promo →</button>
-    </div>
-  </section>
-
-  <section class="block container" style="padding-top:6px">
-    <div class="sec-head"><h2>Produk Unggulan</h2><a onclick="go('catalog')">Lihat Semua →</a></div>
-    <div class="grid" id="homeGrid"></div>
-  </section>
-
-  <section class="block container" style="padding-top:6px">
-    <div class="how">
-      <img src="custom.jpg" alt="">
-      <div class="txt">
-        <h2>Flow Baru, <em>Lebih Simpel.</em></h2>
-        <p class="sub">Tidak lagi sekadar form order — kini pengalaman penuh ala marketplace.</p>
-        <ol>
-          <li><div class="n">1</div><div><b>Pilih & Kustomisasi</b><span>Telusuri katalog, pilih warna, ukuran, dan jumlah langsung di halaman produk.</span></div></li>
-          <li><div class="n">2</div><div><b>Checkout Tanpa Harga</b><span>Keranjang & checkout seperti e-commerce; total & DP dikonfirmasi admin via WhatsApp.</span></div></li>
-          <li><div class="n">3</div><div><b>Produksi Transparan</b><span>8 tahap produksi — dari desain sampai QC — bisa kamu lacak dengan kode pesanan.</span></div></li>
-          <li><div class="n">4</div><div><b>Kirim & Garansi</b><span>Pesanan dikirim ke seluruh Indonesia dengan garansi remake cacat produksi.</span></div></li>
-        </ol>
-      </div>
-    </div>
-  </section>
 </section>
 
 <!-- ================= CATALOG ================= -->
@@ -463,10 +441,10 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:20px}
       </div>
       <div>
         <h4>HUBUNGI KAMI</h4>
-        <p>📍 Jl. Magelang KM 5, Yogyakarta<br>💬 WA: 0812-3456-7890<br>🕘 Senin–Sabtu, 08.00–17.00 WIB</p>
+        <p>📍 Jl. Burujul, RT.02 RW.17, Bandung, 40218<br>📞 +62 815-7227-7118<br>✉️ admin@radjaproduction.com</p>
       </div>
     </div>
-    <div class="f-bottom"><span>© 2026 RADJA Konveksi. All rights reserved.</span><span>Made with 🧵 in Yogyakarta</span></div>
+    <div class="f-bottom"><span>© 2026 RADJA Konveksi. All rights reserved.</span></div>
   </div>
 </footer>
 
@@ -493,7 +471,7 @@ let cart=LS.get('rj_cart',[]);
 let orders=LS.get('rj_orders',null);
 if(!orders){orders=seedOrders();LS.set('rj_orders',orders)}
 let settings=LS.get('rj_settings',{url:'https://arvzslzzgtscjwryybzu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFydnpzbHp6Z3RzY2p3cnl5Ynp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3ODAyMjYsImV4cCI6MjEwMjM1NjIyNn0.T86IQIGlI_MJw68vSj8eipoGI51S2ETAZpdkjgWTCcc',table:'inventory',pin:'1234'});
-let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',ship:'Kurir Partner (JNE/JNT/SiCepat)'};
+let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'FRD',sort:'sold',ship:'Kurir Partner (JNE/JNT/SiCepat)'};
 const WA='6281234567890';
 const ORDERS_TABLE='produksi_orders';
 let sb=null;
@@ -645,10 +623,8 @@ function cardHTML(p){return '<div class="p-card" onclick="openProduct(\''+p.id+'
  '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs • final dikonfirmasi admin</small></div></div>'+
  '<span class="p-min">Min. '+p.min+'</span></div>'}
 function populateBrandFilter(){
- const brands=[...new Set(PRODUCTS.filter(p=>p.aktif).map(p=>p.brand))].sort((a,b)=>a.localeCompare(b));
- if(!brands.includes(state.brand))state.brand='';
- const options=[{value:'',label:'Semua Brand'}].concat(brands.map(b=>({value:b,label:b})));
- $('brandSel').outerHTML=cselHTML('brandSel',options,state.brand,'setBrandFilter');
+ state.brand='FRD';
+ $('brandSel').outerHTML='<div class="csel" id="brandSel"><div class="csel-trigger" style="cursor:default;background:linear-gradient(90deg,var(--accent) 0%,var(--navy-700) 100%);color:#fff;border-color:transparent;font-weight:800">FRD</div></div>';
  $('sortSel').outerHTML=cselHTML('sortSel',[
   {value:'sold',label:'Paling Laris'},
   {value:'name',label:'Nama A–Z'},
@@ -669,6 +645,7 @@ function renderCatalog(){
  $('catGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">😕 Tidak ada produk yang cocok.</p>';
 }
 function renderHome(){
+ if(!$('homeGrid'))return;
  if(!sb){$('homeGrid').innerHTML='<p style="color:var(--muted)">🔌 Belum tersambung ke data Inventory.</p>';return}
  const list=PRODUCTS.filter(p=>p.aktif).sort((a,b)=>b.sold-a.sold).slice(0,4);
  $('homeGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted)">Belum ada produk aktif.</p>';
