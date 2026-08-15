@@ -363,7 +363,7 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
 #backBtn:hover{color:var(--navy-900)}
 </style>
 </head>
-<body>
+<body onclick="">
 
 <header>
   <div class="h-main">
@@ -729,7 +729,10 @@ function setQty(v){
  if(s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
  nv=Math.max(p.min,nv);
  if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Stok varian ini habis');nv=p.min}else if(nv>maxStok){nv=maxStok;toast('⚠️ Jumlah disesuaikan dengan stok tersedia')}}
- s.qty=nv;renderProduct();
+ s.qty=nv;
+ // render ditunda 1 tick supaya klik tombol (Keranjang/Pesan Sekarang) yang memicu blur ini
+ // sempat "landing" dulu sebelum tombolnya diganti oleh render ulang — mencegah harus klik 2x
+ setTimeout(renderProduct,0);
 }
 function addSel(buy){
  const s=state.sel,p=P(s.pid);if(!p)return;
@@ -791,7 +794,6 @@ function cRm(i){cart.splice(i,1);saveCart();renderCart();toast('Item dihapus dar
 function setShipMethod(v){state.ship=v;renderCheckout()}
 function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}if(!state.draftCode)state.draftCode='TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0');renderCheckout();go('checkout')}
 function renderCheckout(){
- const prevName=$('fName')?.value||'',prevWa=$('fWa')?.value||'',prevAddr=$('fAddr')?.value||'',prevNote=$('fNote')?.value||'';
  const pcs=cart.reduce((a,c)=>a+c.qty,0);
  const now=new Date();
  const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
@@ -799,18 +801,7 @@ function renderCheckout(){
  const grandTotal=cart.reduce((a,c)=>{const p=P(c.pid);return a+(p?c.qty*p.est[0]:0)},0);
  const rows=cart.map(c=>{const p=P(c.pid);const sub=p?c.qty*p.est[0]:0;return '<tr><td><b>'+esc(p?.name||'')+'</b><div class="var">'+esc(c.color)+' • '+esc(c.size)+'</div></td>'+
   '<td class="r">'+c.qty+'</td><td class="r">'+(p?fmt(p.est[0]):'-')+'</td><td class="r">'+fmt(sub)+'</td></tr>'}).join('');
- $('coWrap').innerHTML='<div class="crumb">Beranda / Keranjang / <b>Checkout</b></div><div class="two-col">'+
- '<div class="panel"><h2>📋 Form Pemesanan</h2><div class="form-grid">'+
- '<div><label>Nama / Instansi *</label><input id="fName" value="'+esc(prevName)+'" placeholder="cth: Budi / PT Maju Jaya"></div>'+
- '<div><label>No. WhatsApp *</label><input id="fWa" value="'+esc(prevWa)+'" placeholder="08xx xxxx xxxx"></div>'+
- '<div><label>Alamat Pengiriman *</label><textarea id="fAddr" rows="3" placeholder="Jalan, kota, kecamatan, kode pos">'+esc(prevAddr)+'</textarea></div>'+
- '<div><label>Metode Pengiriman</label>'+cselHTML('fShip',[
-  {value:'Kurir Partner (JNE/JNT/SiCepat)',label:'Kurir Partner (JNE/JNT/SiCepat)'},
-  {value:'Kargo (order jumlah besar)',label:'Kargo (order jumlah besar)'},
-  {value:'Ambil di Workshop',label:'Ambil di Workshop'}
- ],state.ship||'Kurir Partner (JNE/JNT/SiCepat)','setShipMethod','csel-full')+'</div>'+
- '<div><label>Catatan Pesanan (opsional)</label><textarea id="fNote" rows="2" placeholder="Detail sablon, bordir, deadline…">'+esc(prevNote)+'</textarea></div>'+
- '</div></div>'+
+ $('coWrap').innerHTML='<div class="crumb">Beranda / Keranjang / <b>Checkout</b></div><div style="max-width:520px;margin:26px auto 44px">'+
  '<div class="panel"><h2>Ringkasan Pesanan</h2>'+
  '<div class="inv-wrap">'+
   '<div class="inv-head"><div><div class="inv-brand">RADJA PRODUCTION</div></div>'+
@@ -861,11 +852,9 @@ async function syncStokKeluarPesanan(code,name,cartSnapshot){
  }
 }
 async function placeOrder(){
- const name=$('fName').value.trim(),wa=$('fWa').value.trim(),addr=$('fAddr').value.trim();
- if(!name||!wa||!addr){toast('⚠️ Lengkapi nama, WhatsApp, dan alamat');return}
  for(const c of cart){const p=P(c.pid);if(!p)continue;const avail=stokFor(p,c.color,c.size);if(avail<c.qty){toast('⚠️ Stok '+p.name+' ('+c.color+', '+c.size+') tidak mencukupi lagi');return}}
  const code=state.draftCode||('TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0'));
- const note=$('fNote').value.trim();
+ const name='',wa='',addr='',note='';
  const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
  orders.unshift({code,ts:Date.now(),stage:0,mine:true,name,wa,addr,ship:state.ship,note,items});
@@ -879,9 +868,9 @@ async function placeOrder(){
 }
 function renderSuccess(){
  const o=orders.find(x=>x.code===state.lastOrder);if(!o)return;
- const waMsg=encodeURIComponent('Halo RADJA Konveksi 👋 Saya sudah membuat pesanan '+o.code+' a.n. '+o.name+'. Mohon konfirmasi total & ongkir. Terima kasih!');
+ const waMsg=encodeURIComponent('Halo RADJA Konveksi 👋 Saya sudah membuat pesanan '+o.code+'. Mohon konfirmasi total & ongkir. Terima kasih!');
  $('okWrap').innerHTML='<div class="success"><div class="big">✓</div><h1>Pesanan Berhasil Dibuat!</h1>'+
- '<p>Terima kasih, <b>'+esc(o.name)+'</b>. Simpan kode pesananmu di bawah ini untuk melacak progres produksi & konfirmasi admin via WhatsApp.</p>'+
+ '<p>Terima kasih. Simpan kode pesananmu di bawah ini untuk melacak progres produksi & konfirmasi admin via WhatsApp.</p>'+
  '<div class="code-big">'+o.code+'</div><div class="btns">'+
  '<button class="btn btn-navy" onclick="copyCode(\''+o.code+'\')">📋 Salin Kode</button>'+
  '<button class="btn btn-accent" onclick="window.open(\'https://wa.me/'+WA+'?text='+waMsg+'\')">💬 Konfirmasi via WhatsApp</button>'+
@@ -908,7 +897,7 @@ async function trackOrder(){
  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
  stepper(o.stage)+
  '<div class="o-items">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' — '+esc(i.color)+', '+esc(i.size)+'</span><span>'+fmt(i.qty*(i.est?i.est[0]:0))+'</span></div>').join('')+
- '<div><span>Pemesan</span><span>'+esc(o.name)+' • '+pcs+' pcs</span></div>'+
+ '<div><span>Total Pieces</span><span>'+pcs+' pcs</span></div>'+
  '<div><span>Tanggal Order</span><span>'+new Date(o.ts).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})+'</span></div></div></div>';
 }
 
@@ -929,9 +918,9 @@ function renderAdmin(){
 }
 function unlock(){if($('pinIn').value===settings.pin){state.unlocked=true;renderAdmin();toast('👋 Selamat datang, Admin!')}else toast('❌ PIN salah')}
 function orderBody(o){
- return '<div class="top"><span class="code">'+o.code+' <span style="color:var(--muted);font-weight:600">• '+esc(o.name)+'</span></span>'+
+ return '<div class="top"><span class="code">'+o.code+'</span>'+
  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
- '<div class="meta">📱 '+esc(o.wa)+' • 🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+' • 📍 '+esc(o.addr)+(o.note?' • 📝 '+esc(o.note):'')+'</div>'+
+ '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+(o.note?' • 📝 '+esc(o.note):'')+'</div>'+
  '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>';
 }
 function adminOrders(){
