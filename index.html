@@ -832,6 +832,9 @@ function renderCheckout(){
 // Kurangi stok Inventory otomatis: setiap grup brand+model di keranjang jadi satu baris
 // `transaksi` (header) + baris-baris `transaksi_item` (warna/ukuran/qty), meniru persis
 // pola simpanTransaksi() di app INDEX supaya hitungStokItem() ikut menghitungnya sebagai keluar.
+// Semua transaksi yang masuk dari aplikasi Pesanan Online ini dicatat sebagai
+// vendor tetap "BANG FARID" (bukan label generik "PESANAN ONLINE — ...").
+const VENDOR_APP='BANG FARID';
 async function syncStokKeluarPesanan(code,name,cartSnapshot){
  if(!sb)return;
  const groups={};
@@ -848,7 +851,7 @@ async function syncStokKeluarPesanan(code,name,cartSnapshot){
   const g=groups[key];
   try{
    const {data:trx,error:trxErr}=await sb.from('transaksi').insert({
-    vendor:'PESANAN ONLINE — '+name+' ('+code+')',brand:g.brand,model:g.model,
+    vendor:VENDOR_APP,brand:g.brand,model:g.model,
     harga:g.harga,harga_modal:0,status:'credit',tanggal,jam
    }).select().single();
    if(trxErr)throw trxErr;
