@@ -57,7 +57,7 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 /* ============ HERO ============ */
 .hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden}
 .hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.95}
-.hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 40%,rgba(8,15,38,0) 90%,rgba(8,15,38,0) 100%)}
+.hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 38%,rgba(8,15,38,0) 58%,rgba(8,15,38,0) 100%)}
 .hero .container{position:relative;padding:74px 18px}
 .hero h1{color:#fff;font-size:clamp(26px,4vw,44px);font-weight:800;line-height:1.15;max-width:560px}
 .hero h1 em{color:var(--accent);font-style:normal}
@@ -492,7 +492,7 @@ const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==nul
 let cart=LS.get('rj_cart',[]);
 let orders=LS.get('rj_orders',null);
 if(!orders){orders=seedOrders();LS.set('rj_orders',orders)}
-let settings=LS.get('rj_settings',{url:'',key:'',table:'inventory',pin:'1234'});
+let settings=LS.get('rj_settings',{url:'https://arvzslzzgtscjwryybzu.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFydnpzbHp6Z3RzY2p3cnl5Ynp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3ODAyMjYsImV4cCI6MjEwMjM1NjIyNn0.T86IQIGlI_MJw68vSj8eipoGI51S2ETAZpdkjgWTCcc',table:'inventory',pin:'1234'});
 let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',ship:'Kurir Partner (JNE/JNT/SiCepat)'};
 const WA='6281234567890';
 const ORDERS_TABLE='produksi_orders';
