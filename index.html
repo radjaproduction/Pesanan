@@ -57,7 +57,7 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 /* ============ HERO ============ */
 .hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden}
 .hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.95}
-.hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 38%,rgba(8,15,38,0) 58%,rgba(8,15,38,0) 100%)}
+.hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 50%,rgba(8,15,38,0) 90%,rgba(8,15,38,0) 100%)}
 .hero .container{position:relative;padding:74px 18px}
 .hero h1{color:#fff;font-size:clamp(26px,4vw,44px);font-weight:800;line-height:1.15;max-width:560px}
 .hero h1 em{color:var(--accent);font-style:normal}
@@ -257,9 +257,25 @@ body.bg-catalog::after{
 
 /* ============ TRACK / STEPPER ============ */
 .track-box{max-width:860px;margin:30px auto 50px}
-.track-input{display:flex;gap:10px;margin:18px 0}
-.track-input input{flex:1;padding:13px 16px;border:1.5px solid var(--line);border-radius:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;outline:none}
+.track-input{display:flex;gap:10px;margin:18px 0;flex-wrap:wrap}
+.track-input input{flex:1;min-width:160px;padding:13px 16px;border:1.5px solid var(--line);border-radius:11px;font-weight:700;outline:none}
 .track-input input:focus{border-color:var(--navy-500)}
+
+/* ============ PERIOD SUMMARY CARD ============ */
+.period-card{position:relative;overflow:hidden;background:linear-gradient(120deg,var(--navy-950) 0%,var(--navy-800) 55%,var(--navy-700) 100%);border-radius:18px;color:#fff;padding:24px 26px;margin:16px 0;box-shadow:var(--shadow-lg)}
+.period-card::before{content:'';position:absolute;top:-40px;right:-40px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(255,159,28,.22),transparent 70%);pointer-events:none}
+.period-card::after{content:'';position:absolute;bottom:-60px;left:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);pointer-events:none}
+.period-card .pc-top{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.period-card .pc-label{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px}
+.period-card .pc-range{position:relative;font-size:13.5px;color:#C7D1EC;font-weight:600;margin-top:4px}
+.period-card .pc-stats{position:relative;display:flex;gap:0;margin-top:20px;flex-wrap:wrap}
+.period-card .pc-stat{flex:1;min-width:100px;padding:0 20px}
+.period-card .pc-stat:first-child{padding-left:0}
+.period-card .pc-stat+.pc-stat{border-left:1px solid rgba(255,255,255,.14)}
+.period-card .pc-stat b{display:block;font-size:24px;font-weight:800;color:#fff;line-height:1.2}
+.period-card .pc-stat.pc-total b{color:var(--accent);font-size:22px}
+.period-card .pc-stat span{display:block;font-size:10.5px;font-weight:700;color:#8FA1CC;letter-spacing:.5px;margin-top:3px}
+
 .stepper{display:flex;margin:26px 0 8px}
 .step{flex:1;text-align:center;position:relative}
 .step::before{content:'';position:absolute;top:19px;left:-50%;width:100%;height:3px;background:var(--line)}
@@ -274,6 +290,8 @@ body.bg-catalog::after{
 .order-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:16px}
 .order-card .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .order-card .code{font-weight:800;color:var(--navy-800);letter-spacing:.6px}
+.inv-icon-btn{width:34px;height:34px;border-radius:9px;background:var(--navy-800);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s}
+.inv-icon-btn:hover{background:var(--navy-600);transform:translateY(-1px)}
 .stage-pill{font-size:11px;font-weight:800;padding:5px 12px;border-radius:14px;background:var(--navy-100);color:var(--navy-700)}
 .stage-pill.final{background:#E7F8F0;color:var(--ok)}
 .o-items{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:12.5px;color:var(--muted)}
@@ -367,7 +385,8 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
   .search{order:3;flex-basis:100%}
   .cats{grid-template-columns:repeat(3,1fr)}
   .grid{grid-template-columns:repeat(2,1fr)}
-  .f-grid{grid-template-columns:1fr}
+  .f-grid{grid-template-columns:1fr 1fr;gap:26px 18px}
+  .f-grid .f-brand{grid-column:1/-1}
 }
 #backBar{display:none;background:transparent}
 #backBar.show{display:block}
@@ -453,12 +472,15 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
 <section class="view" id="view-track">
   <div class="container track-box">
     <div class="sec-head"><h2>Invoice</h2></div>
-    <p style="color:var(--muted);font-size:13px">Cari kode pesanan lain, atau lihat riwayat transaksimu di perangkat ini di bawah.</p>
+    <p style="color:var(--muted);font-size:13px">Filter riwayat transaksimu di perangkat ini berdasarkan periode tanggal pemesanan. Default periode: Sabtu s/d Jumat (mingguan).</p>
     <div class="track-input">
-      <input id="trackCode" placeholder="RJA-XXXXX">
-      <button class="btn btn-navy" onclick="trackOrder()">🔎 Cari</button>
+      <input id="trackDateFrom" type="date">
+      <span style="align-self:center;color:var(--muted);font-weight:700;font-size:12.5px">s/d</span>
+      <input id="trackDateTo" type="date">
+      <button class="btn btn-navy" onclick="filterByDate()">🔎 Cari</button>
+      <button class="btn btn-outline" onclick="resetDateFilter()">✕ Reset</button>
     </div>
-    <div id="trackResult"></div>
+    <div id="periodSummary"></div>
     <div style="margin-top:30px">
       <div class="sec-head" style="margin-bottom:6px"><h3 style="font-size:15px">Riwayat Transaksi</h3></div>
       <div id="historyList"></div>
@@ -474,7 +496,7 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
 <footer>
   <div class="container">
     <div class="f-grid">
-      <div>
+      <div class="f-brand">
         <h4>RADJA KONVEKSI</h4>
         <p>Platform order & tracking produksi konveksi dengan pengalaman belanja ala marketplace modern. Kualitas premium, progres transparan.</p>
       </div>
@@ -488,7 +510,7 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
         <a onclick="go('track')">Invoice</a><a onclick="go('cart')">Keranjang</a>
         <a onclick="go('home')">Beranda</a>
       </div>
-      <div>
+      <div class="f-brand">
         <h4>HUBUNGI KAMI</h4>
         <p>📍 Jl. Burujul, RT.02 RW.17, Bandung, 40218<br>📞 +62 815-7227-7118<br>✉️ admin@radjaproduction.com</p>
       </div>
@@ -912,8 +934,22 @@ function closeOrderModal(){
 }
 
 /* ================= TRACK / RIWAYAT TRANSAKSI ================= */
+function toISODate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function defaultPeriod(){
+ // periode mingguan Sabtu s/d Jumat, berdasarkan tanggal hari ini
+ const today=new Date();
+ const daysSinceSat=(today.getDay()-6+7)%7; // Sabtu=6
+ const start=new Date(today);start.setDate(today.getDate()-daysSinceSat);
+ const end=new Date(start);end.setDate(start.getDate()+6);
+ return{from:toISODate(start),to:toISODate(end)};
+}
 async function renderTrack(){
  const box=$('historyList');
+ const def=defaultPeriod();
+ if($('trackDateFrom'))$('trackDateFrom').value=def.from;
+ if($('trackDateTo'))$('trackDateTo').value=def.to;
+ window._dateFilterActive=false;
+ $('periodSummary').innerHTML='';
  if(!sb){box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Tidak terhubung ke server, riwayat transaksi tidak bisa dimuat.</p>';return}
  box.innerHTML='<p style="color:var(--muted);font-size:13px;margin-top:12px">Memuat riwayat transaksi…</p>';
  try{
@@ -921,16 +957,62 @@ async function renderTrack(){
   if(error)throw error;
   const list=data.map(rowToOrder);
   window._history=list;
-  box.innerHTML = list.length ? list.map(o=>{
-   const pcs=o.items.reduce((a,i)=>a+i.qty,0);
-   const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
-   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-   return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
-   '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
-   '<div style="font-size:12px;color:var(--muted);margin:8px 0 12px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div>'+
-   '<button class="btn btn-navy btn-sm" onclick="previewInvoice(\''+o.code+'\')">🧾 Preview Invoice</button></div>';
-  }).join('') : '<p style="color:var(--muted);font-size:13px;margin-top:12px">Belum ada transaksi.</p>';
+  filterByDate();
  }catch(e){console.error(e);box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Gagal memuat riwayat transaksi.</p>'}
+}
+function orderTotal(o){return o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0)}
+function renderHistoryList(list){
+ const box=$('historyList');
+ box.innerHTML = list.length ? list.map(o=>{
+  const pcs=o.items.reduce((a,i)=>a+i.qty,0);
+  const total=orderTotal(o);
+  const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
+  '<div style="display:flex;align-items:center;gap:8px">'+
+  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>'+
+  '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
+  '</div></div>'+
+  '<div style="font-size:12px;color:var(--muted);margin:8px 0 0">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div></div>';
+ }).join('') : '<p style="color:var(--muted);font-size:13px;margin-top:12px">'+(window._dateFilterActive?'Tidak ada transaksi pada periode ini.':'Belum ada transaksi.')+'</p>';
+ renderPeriodSummary(list);
+}
+function renderPeriodSummary(list){
+ const box=$('periodSummary');
+ if(!window._dateFilterActive){box.innerHTML='';return}
+ const pcs=list.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
+ const total=list.reduce((a,o)=>a+orderTotal(o),0);
+ const from=$('trackDateFrom').value,to=$('trackDateTo').value;
+ const label=(from&&to)?(from===to?fmtTgl(from):fmtTgl(from)+' – '+fmtTgl(to)):(from?'Sejak '+fmtTgl(from):'Sampai '+fmtTgl(to));
+ box.innerHTML='<div class="period-card">'+
+  '<div class="pc-top"><div><div class="pc-label">🗓️ Ringkasan Periode Tagihan</div>'+
+  '<div class="pc-range">'+label+'</div></div></div>'+
+  '<div class="pc-stats">'+
+   '<div class="pc-stat"><b>'+list.length+'</b><span>TRANSAKSI</span></div>'+
+   '<div class="pc-stat"><b>'+pcs+'</b><span>PCS</span></div>'+
+   '<div class="pc-stat pc-total"><b>'+fmt(total)+'</b><span>TOTAL TAGIHAN</span></div>'+
+  '</div></div>';
+}
+function fmtTgl(iso){const[y,m,d]=iso.split('-');return new Date(y,m-1,d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}
+function filterByDate(){
+ const from=$('trackDateFrom').value,to=$('trackDateTo').value;
+ const list=window._history||[];
+ if(!from&&!to){window._dateFilterActive=false;renderHistoryList(list);return}
+ window._dateFilterActive=true;
+ const fromD=from?new Date(from+'T00:00:00'):null;
+ const toD=to?new Date(to+'T23:59:59'):null;
+ const filtered=list.filter(o=>{
+  const d=new Date(o.ts);
+  if(fromD&&d<fromD)return false;
+  if(toD&&d>toD)return false;
+  return true;
+ });
+ renderHistoryList(filtered);
+}
+function resetDateFilter(){
+ const def=defaultPeriod();
+ if($('trackDateFrom'))$('trackDateFrom').value=def.from;
+ if($('trackDateTo'))$('trackDateTo').value=def.to;
+ filterByDate();
 }
 function previewInvoice(code){
  const o=(window._history||[]).find(x=>x.code===code)||orders.find(x=>x.code===code);if(!o)return;
@@ -958,23 +1040,6 @@ function previewInvoice(code){
  $('orderModal').classList.add('show');
 }
 function closeModal(){$('orderModal').classList.remove('show');$('omBox').className='om-box'}
-async function trackOrder(){
- const code=$('trackCode').value.trim().toUpperCase();if(!code)return;
- let o=orders.find(x=>x.code===code);
- if(sb){
-  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').eq('order_code',code).maybeSingle();
-   if(!error&&data){o=rowToOrder(data);const idx=orders.findIndex(x=>x.code===code);if(idx>-1)orders[idx]=o;else orders.unshift(o);LS.set('rj_orders',orders)}}
-  catch(e){console.error(e)}
- }
- if(!o){$('trackResult').innerHTML='<div class="order-card" style="text-align:center;color:var(--danger);font-weight:700">😕 Pesanan dengan kode '+esc(code)+' tidak ditemukan.</div>';return}
- const pcs=o.items.reduce((a,i)=>a+i.qty,0);
- $('trackResult').innerHTML='<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
- '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
- stepper(o.stage)+
- '<div class="o-items">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' — '+esc(i.color)+', '+esc(i.size)+'</span><span>'+fmt(i.qty*(i.est?i.est[0]:0))+'</span></div>').join('')+
- '<div><span>Total Pieces</span><span>'+pcs+' pcs</span></div>'+
- '<div><span>Tanggal Order</span><span>'+new Date(o.ts).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})+'</span></div></div></div>';
-}
 
 /* ================= ADMIN ================= */
 function renderAdmin(){
