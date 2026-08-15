@@ -579,7 +579,7 @@ function go(v,fromBack){
  $('backBar').classList.toggle('show', v!=='home');
  document.body.classList.toggle('bg-catalog', v==='catalog');
  if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();
- if((v==='admin'||v==='track')&&sb){syncOrdersFromCloud().then(ok=>{if(ok){if(v==='admin')renderAdmin();if(v==='track')renderTrack()}})}
+ if(v==='admin'&&sb){syncOrdersFromCloud().then(ok=>{if(ok)renderAdmin()})}
 }
 let navStack=[];
 function goBack(){const prev=navStack.pop();go(prev||'home',true)}
@@ -912,20 +912,28 @@ function closeOrderModal(){
 }
 
 /* ================= TRACK / RIWAYAT TRANSAKSI ================= */
-function renderTrack(){
- const list=orders.filter(o=>o.mine).sort((a,b)=>b.ts-a.ts);
- $('historyList').innerHTML = list.length ? list.map(o=>{
-  const pcs=o.items.reduce((a,i)=>a+i.qty,0);
-  const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
-  const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-  return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
-  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
-  '<div style="font-size:12px;color:var(--muted);margin:8px 0 12px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div>'+
-  '<button class="btn btn-navy btn-sm" onclick="previewInvoice(\''+o.code+'\')">🧾 Preview Invoice</button></div>';
- }).join('') : '<p style="color:var(--muted);font-size:13px;margin-top:12px">Belum ada riwayat transaksi di perangkat ini.</p>';
+async function renderTrack(){
+ const box=$('historyList');
+ if(!sb){box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Tidak terhubung ke server, riwayat transaksi tidak bisa dimuat.</p>';return}
+ box.innerHTML='<p style="color:var(--muted);font-size:13px;margin-top:12px">Memuat riwayat transaksi…</p>';
+ try{
+  const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30);
+  if(error)throw error;
+  const list=data.map(rowToOrder);
+  window._history=list;
+  box.innerHTML = list.length ? list.map(o=>{
+   const pcs=o.items.reduce((a,i)=>a+i.qty,0);
+   const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
+   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+   return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
+   '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
+   '<div style="font-size:12px;color:var(--muted);margin:8px 0 12px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div>'+
+   '<button class="btn btn-navy btn-sm" onclick="previewInvoice(\''+o.code+'\')">🧾 Preview Invoice</button></div>';
+  }).join('') : '<p style="color:var(--muted);font-size:13px;margin-top:12px">Belum ada transaksi.</p>';
+ }catch(e){console.error(e);box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Gagal memuat riwayat transaksi.</p>'}
 }
 function previewInvoice(code){
- const o=orders.find(x=>x.code===code);if(!o)return;
+ const o=(window._history||[]).find(x=>x.code===code)||orders.find(x=>x.code===code);if(!o)return;
  const pcs=o.items.reduce((a,i)=>a+i.qty,0);
  const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
  const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
