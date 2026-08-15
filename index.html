@@ -876,13 +876,17 @@ async function placeOrder(){
  const cartSnapshot=cart.slice();
  orders.unshift({code,ts:Date.now(),stage:0,mine:true,name,wa,addr,ship:state.ship,note,items});
  LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;cart=[];saveCart();
- showOrderModal(code);
+ // Sinkron ke server (produksi_orders + potong stok Inventory) DIDULUKAN dan
+ // dipisah dari urusan tampilan (popup), supaya kalau nanti ada error di UI
+ // popup, sinkronisasi stok Inventory tetap sudah selesai duluan dan tidak ikut gagal.
  if(sb){
   try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,customer_name:name,whatsapp:wa,address:addr,note,items,stage:0});
    if(error)throw error}
   catch(e){console.error(e);toast('⚠️ Pesanan tersimpan lokal, tapi gagal sync ke server')}
   await syncStokKeluarPesanan(code,name,cartSnapshot);
  }
+ try{showOrderModal(code)}
+ catch(e){console.error('Gagal menampilkan popup konfirmasi:',e);toast('✅ Pesanan '+code+' berhasil dibuat');navStack=[];go('home')}
 }
 function renderSuccess(){
  const o=orders.find(x=>x.code===state.lastOrder);if(!o)return;
