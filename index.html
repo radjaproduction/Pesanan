@@ -336,6 +336,19 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
 #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy-900);color:#fff;padding:13px 24px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:var(--shadow-lg);border-left:4px solid var(--accent);transition:.35s;opacity:0;z-index:999;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%);opacity:1}
 
+/* order success modal */
+#orderModal{position:fixed;inset:0;background:rgba(8,15,38,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+#orderModal.show{display:flex}
+.om-box{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:34px 28px;text-align:center;box-shadow:var(--shadow-lg);animation:omPop .25s ease}
+@keyframes omPop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.om-box .big{width:64px;height:64px;border-radius:50%;background:#E7F8EE;color:#1a9e52;font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.om-box h2{font-size:19px;margin-bottom:8px}
+.om-box p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.om-code{background:var(--navy-50);border:1.5px dashed var(--navy-300);border-radius:10px;padding:12px;font-size:18px;font-weight:800;color:var(--navy-900);letter-spacing:.5px;margin-bottom:18px}
+.om-box .btn{width:100%}
+.om-box.wide{max-width:640px;text-align:left}
+.om-box.wide .btn{margin-top:6px}
+
 /* responsive */
 @media(max-width:960px){
   .usp .container{grid-template-columns:repeat(2,1fr)}
@@ -400,7 +413,7 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
       <p>Pilih model, atur warna & ukuran, checkout dalam hitungan menit — lalu pantau progres produksi pesananmu secara real-time, seperti melacak paket di marketplace favoritmu.</p>
       <div class="hero-cta">
         <button class="btn btn-accent" onclick="go('catalog')">🛍️ Pesan Sekarang</button>
-        <button class="btn btn-ghost" onclick="go('track')">📍 Lacak Pesanan</button>
+        <button class="btn btn-ghost" onclick="go('track')">🧾 Invoice</button>
       </div>
       <div class="hero-contact">
         <div><span class="ic">📍</span><span>Jl. Burujul, RT.02 RW.17, Bandung, 40218</span></div>
@@ -436,18 +449,22 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
 <!-- ================= SUCCESS ================= -->
 <section class="view" id="view-success"><div class="container" id="okWrap"></div></section>
 
-<!-- ================= TRACK ================= -->
+<!-- ================= TRACK / RIWAYAT TRANSAKSI ================= -->
 <section class="view" id="view-track">
   <div class="container track-box">
-    <div class="sec-head"><h2>Lacak Pesanan</h2></div>
-    <p style="color:var(--muted);font-size:13px">Masukkan kode pesananmu (contoh: <b>RJA-10241</b>) untuk melihat progres produksi secara real-time.</p>
+    <div class="sec-head"><h2>Invoice</h2></div>
+    <p style="color:var(--muted);font-size:13px">Cari kode pesanan lain, atau lihat riwayat transaksimu di perangkat ini di bawah.</p>
     <div class="track-input">
       <input id="trackCode" placeholder="RJA-XXXXX">
-      <button class="btn btn-navy" onclick="trackOrder()">🔎 Lacak</button>
+      <button class="btn btn-navy" onclick="trackOrder()">🔎 Cari</button>
     </div>
-    <div id="myOrders"></div>
     <div id="trackResult"></div>
+    <div style="margin-top:30px">
+      <div class="sec-head" style="margin-bottom:6px"><h3 style="font-size:15px">Riwayat Transaksi</h3></div>
+      <div id="historyList"></div>
+    </div>
   </div>
+
 </section>
 
 <!-- ================= ADMIN ================= -->
@@ -468,7 +485,7 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
       </div>
       <div>
         <h4>BANTUAN</h4>
-        <a onclick="go('track')">Lacak Pesanan</a><a onclick="go('cart')">Keranjang</a>
+        <a onclick="go('track')">Invoice</a><a onclick="go('cart')">Keranjang</a>
         <a onclick="go('home')">Beranda</a>
       </div>
       <div>
@@ -481,6 +498,7 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
 </footer>
 
 <div id="toast"></div>
+<div id="orderModal"><div class="om-box" id="omBox"></div></div>
 
 <script>
 /* ================= DATA ================= */
@@ -767,7 +785,6 @@ function renderCart(){
  '<div class="sum-row"><span>Total Varian</span><b>'+cart.length+'</b></div>'+
  '<div class="sum-row"><span>Total Pieces</span><b>'+pcs+' pcs</b></div>'+
  '<div class="sum-row sum-total"><span>Total Harga</span><b>'+fmt(total)+'</b></div>'+
- '<div class="note-box">💡 <b>Checkout tanpa pembayaran online.</b> Admin akan mengonfirmasi ongkir & DP melalui WhatsApp setelah pesanan dibuat.</div>'+
  '<button class="btn btn-accent btn-block" onclick="goCheckout()">Checkout / Pesan →</button>'+
  '<button class="btn btn-ghost btn-block" style="color:var(--navy-700);border-color:var(--line);margin-top:8px" onclick="go(\'catalog\')">← Lanjut Belanja</button></div></div>';
 }
@@ -817,7 +834,7 @@ function renderCheckout(){
   '<tr class="inv-totalrow"><td colspan="3" class="lbl">TOTAL TAGIHAN (estimasi)</td><td class="val">'+fmt(grandTotal)+'</td></tr>'+
   '</table>'+
  '</div>'+
- '<div class="note-box">✅ Dengan membuat pesanan, kamu setuju bahwa <b>total final & ongkir dikonfirmasi admin</b> sebelum pembayaran.</div>'+
+ '<div class="note-box">✅ Total tagihan dan invoice per transaksi bisa dilihat di halaman Dashboard (menu awal).</div>'+
  '<button class="btn btn-accent btn-block" onclick="placeOrder()">✅ Buat Pesanan</button></div></div>';
 }
 // Kurangi stok Inventory otomatis: setiap grup brand+model di keranjang jadi satu baris
@@ -858,7 +875,8 @@ async function placeOrder(){
  const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
  orders.unshift({code,ts:Date.now(),stage:0,mine:true,name,wa,addr,ship:state.ship,note,items});
- LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;cart=[];saveCart();renderSuccess();navStack=['home'];go('success');
+ LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;cart=[];saveCart();
+ showOrderModal(code);
  if(sb){
   try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,customer_name:name,whatsapp:wa,address:addr,note,items,stage:0});
    if(error)throw error}
@@ -874,15 +892,60 @@ function renderSuccess(){
  '<div class="code-big">'+o.code+'</div><div class="btns">'+
  '<button class="btn btn-navy" onclick="copyCode(\''+o.code+'\')">📋 Salin Kode</button>'+
  '<button class="btn btn-accent" onclick="window.open(\'https://wa.me/'+WA+'?text='+waMsg+'\')">💬 Konfirmasi via WhatsApp</button>'+
- '<button class="btn btn-outline" onclick="go(\'track\')">📍 Lacak Pesanan</button></div></div>';
+ '<button class="btn btn-outline" onclick="go(\'track\')">🧾 Invoice</button></div></div>';
 }
 function copyCode(c){navigator.clipboard&&navigator.clipboard.writeText(c);toast('📋 Kode '+c+' disalin')}
-
-/* ================= TRACK ================= */
-function renderTrack(){
- const mine=orders.filter(o=>o.mine).slice(0,5);
- $('myOrders').innerHTML=mine.length?'<p style="font-size:12px;color:var(--muted);margin-top:8px">Pesananmu di perangkat ini: '+mine.map(o=>'<span class="chip" style="cursor:pointer" onclick="$(\'trackCode\').value=\''+o.code+'\';trackOrder()">'+o.code+'</span>').join(' ')+'</p>':'';
+function showOrderModal(code){
+ $('omBox').className='om-box';
+ $('omBox').innerHTML='<div class="big">✓</div><h2>Pesanan Berhasil Dibuat</h2>'+
+ '<div class="om-code">'+code+'</div>'+
+ '<button class="btn btn-accent" onclick="closeOrderModal()">Oke, Kembali ke Beranda</button>';
+ $('orderModal').classList.add('show');
 }
+function closeOrderModal(){
+ $('orderModal').classList.remove('show');
+ navStack=[];go('home');
+}
+
+/* ================= TRACK / RIWAYAT TRANSAKSI ================= */
+function renderTrack(){
+ const list=orders.filter(o=>o.mine).sort((a,b)=>b.ts-a.ts);
+ $('historyList').innerHTML = list.length ? list.map(o=>{
+  const pcs=o.items.reduce((a,i)=>a+i.qty,0);
+  const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
+  const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+  return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
+  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
+  '<div style="font-size:12px;color:var(--muted);margin:8px 0 12px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div>'+
+  '<button class="btn btn-navy btn-sm" onclick="previewInvoice(\''+o.code+'\')">🧾 Preview Invoice</button></div>';
+ }).join('') : '<p style="color:var(--muted);font-size:13px;margin-top:12px">Belum ada riwayat transaksi di perangkat ini.</p>';
+}
+function previewInvoice(code){
+ const o=orders.find(x=>x.code===code);if(!o)return;
+ const pcs=o.items.reduce((a,i)=>a+i.qty,0);
+ const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
+ const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+ const jam=new Date(o.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+ const rows=o.items.map(i=>'<tr><td><b>'+esc(i.name)+'</b><div class="var">'+esc(i.color)+' • '+esc(i.size)+'</div></td>'+
+  '<td class="r">'+i.qty+'</td><td class="r">'+(i.est?fmt(i.est[0]):'-')+'</td><td class="r">'+fmt(i.qty*(i.est?i.est[0]:0))+'</td></tr>').join('');
+ $('omBox').className='om-box wide';
+ $('omBox').innerHTML='<div class="inv-wrap">'+
+  '<div class="inv-head"><div><div class="inv-brand">RADJA PRODUCTION</div></div>'+
+   '<div><div class="inv-badge">TAGIHAN</div><div class="inv-no">'+esc(o.code)+'</div></div></div>'+
+  '<div class="inv-infobox">'+
+   '<div class="inv-inforow"><span class="inv-infolabel">No. Tagihan</span><span class="inv-infoval">'+esc(o.code)+'</span></div>'+
+   '<div class="inv-inforow"><span class="inv-infolabel">Tanggal</span><span class="inv-infoval">'+tgl+', '+jam+'</span></div>'+
+   '<div class="inv-inforow"><span class="inv-infolabel">Jumlah Varian</span><span class="inv-infoval">'+o.items.length+' varian</span></div>'+
+   '<div class="inv-inforow"><span class="inv-infolabel">Total Pieces</span><span class="inv-infoval">'+pcs+' pcs</span></div>'+
+  '</div>'+
+  '<table class="inv-table"><thead><tr><th>Produk</th><th class="r">Qty</th><th class="r">Harga</th><th class="r">Subtotal</th></tr></thead>'+
+  '<tbody>'+rows+'</tbody>'+
+  '<tr class="inv-totalrow"><td colspan="3" class="lbl">TOTAL TAGIHAN (estimasi)</td><td class="val">'+fmt(total)+'</td></tr>'+
+  '</table></div>'+
+  '<button class="btn btn-accent" onclick="closeModal()">Tutup</button>';
+ $('orderModal').classList.add('show');
+}
+function closeModal(){$('orderModal').classList.remove('show');$('omBox').className='om-box'}
 async function trackOrder(){
  const code=$('trackCode').value.trim().toUpperCase();if(!code)return;
  let o=orders.find(x=>x.code===code);
