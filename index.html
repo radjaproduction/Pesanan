@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RADJA Konveksi — Konveksi Rasa Marketplace</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B1633">
+<meta name="description" content="Marketplace konveksi RADJA Production — pesan, lacak, dan pantau produksi kaos anak secara real-time.">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RADJA">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy-950:#080F26; --navy-900:#0B1633; --navy-800:#101F45; --navy-700:#16295C;
+  --navy-600:#1D3474; --navy-500:#2A459A; --navy-100:#E8EDF8; --navy-50:#F3F6FC;
+  --accent:#FF9F1C; --accent-600:#F28C00; --accent-soft:#FFF4E3;
+  --ink:#101828; --muted:#5B6478; --line:#E3E8F2; --bg:#F3F5FA; --ok:#12B76A; --danger:#E5484D;
+  --radius:14px; --shadow:0 2px 10px rgba(11,22,51,.06); --shadow-lg:0 12px 32px rgba(11,22,51,.14);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px}
+.container{max-width:1180px;margin:0 auto;padding:0 18px}
+.hidden{display:none!important}
+
+/* ============ HEADER ============ */
+header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0 4px 18px rgba(8,15,38,.35)}
+.h-main{display:flex;align-items:center;gap:18px;padding:14px 18px;max-width:1180px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0}
+.logo-mark-svg{width:40px;height:auto;flex-shrink:0;display:block}
+.logo-txt{line-height:1.05;display:flex;align-items:center}
+.logo-word-svg{display:block;height:20px;width:auto}
+.search{flex:1;display:flex;background:#fff;border-radius:10px;overflow:hidden;border:2px solid transparent}
+.search:focus-within{border-color:var(--accent)}
+.search input{flex:1;border:none;outline:none;padding:11px 16px;font-size:13.5px}
+.search button{background:var(--accent);color:var(--navy-900);padding:0 20px;font-size:16px}
+.h-actions{display:flex;align-items:center;gap:8px}
+.h-btn{position:relative;color:#DCE4F7;font-size:12.5px;font-weight:600;padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:7px;transition:.2s}
+.h-btn:hover{background:var(--navy-700)}
+.h-btn .ico{font-size:17px}
+.badge{position:absolute;top:2px;right:2px;background:var(--accent);color:var(--navy-900);font-size:10px;font-weight:800;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* ============ VIEWS ============ */
+.view{display:none}
+.view.on{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ============ HERO ============ */
+.hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden}
+.hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.95}
+.hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,.96) 0%,rgba(8,15,38,.75) 45%,rgba(8,15,38,.15) 100%)}
+.hero .container{position:relative;padding:74px 18px}
+.hero h1{color:#fff;font-size:clamp(26px,4vw,44px);font-weight:800;line-height:1.15;max-width:560px}
+.hero h1 em{color:var(--accent);font-style:normal}
+.hero p{color:#B9C4E0;max-width:520px;margin:16px 0 26px;font-size:15px;line-height:1.7}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+.hero-stats{display:flex;gap:28px;margin-top:38px;flex-wrap:wrap}
+.hero-stats div b{display:block;color:#fff;font-size:20px;font-weight:800}
+.hero-stats div span{color:#8FA1CC;font-size:11.5px;font-weight:600}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:13.5px;border-radius:10px;padding:12px 22px;transition:.2s}
+.btn-accent{background:var(--accent);color:var(--navy-900)}
+.btn-accent:hover{background:var(--accent-600);transform:translateY(-1px)}
+.btn-navy{background:var(--navy-700);color:#fff}
+.btn-navy:hover{background:var(--navy-600)}
+.btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.35)}
+.btn-ghost:hover{border-color:#fff}
+.btn-outline{background:#fff;color:var(--navy-700);border:1.5px solid var(--navy-600)}
+.btn-outline:hover{background:var(--navy-50)}
+.btn-sm{padding:8px 14px;font-size:12px;border-radius:8px}
+.btn-danger{background:#FDEBEC;color:var(--danger)}
+.btn-block{width:100%}
+
+/* ============ USP STRIP ============ */
+.usp{background:#fff;border-bottom:1px solid var(--line)}
+.usp .container{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:18px}
+.usp div{display:flex;align-items:center;gap:11px;padding:6px 10px}
+.usp .ic{width:42px;height:42px;border-radius:11px;background:var(--navy-100);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.usp b{display:block;font-size:12.5px}
+.usp span{font-size:11px;color:var(--muted)}
+
+/* ============ SECTIONS ============ */
+section.block{padding:44px 0}
+.sec-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:20px;gap:10px}
+.sec-head h2{font-size:20px;font-weight:800;color:var(--navy-900)}
+.sec-head h2::after{content:'';display:block;width:42px;height:4px;border-radius:2px;background:var(--accent);margin-top:6px}
+.sec-head a{color:var(--navy-600);font-weight:700;font-size:12.5px;cursor:pointer;text-decoration:none}
+.sec-head a:hover{color:var(--accent-600)}
+
+/* promo strip */
+.promo{background:linear-gradient(100deg,var(--navy-800),var(--navy-600));border-radius:16px;color:#fff;padding:26px 30px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;box-shadow:var(--shadow-lg)}
+.promo h3{font-size:18px;font-weight:800}
+.promo h3 em{color:var(--accent);font-style:normal}
+.promo p{color:#B9C4E0;font-size:12.5px;margin-top:5px}
+
+/* ============ PRODUCT GRID ============ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:16px}
+.p-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:.22s;position:relative}
+.p-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--navy-500)}
+.p-card .ph{position:relative;aspect-ratio:1/1;overflow:hidden;background:#EEF1F7}
+.p-card .ph img{width:100%;height:100%;object-fit:cover;transition:.4s}
+.p-card:hover .ph img{transform:scale(1.05)}
+.p-badge{position:absolute;top:10px;left:10px;background:var(--accent);color:var(--navy-900);font-size:10px;font-weight:800;padding:4px 9px;border-radius:6px;letter-spacing:.3px}
+.p-body{padding:13px 14px 15px}
+.p-brand{font-size:10px;font-weight:700;color:var(--navy-500);text-transform:uppercase;letter-spacing:.8px}
+.p-name{font-size:13.5px;font-weight:700;margin:4px 0 6px;color:var(--ink);min-height:34px}
+.p-rate{font-size:11.5px;color:var(--muted)}
+.p-rate b{color:var(--accent-600)}
+.p-price{margin-top:8px;font-size:13px;font-weight:800;color:var(--navy-800)}
+.p-price small{display:block;font-weight:600;color:var(--muted);font-size:10.5px}
+.p-min{position:absolute;bottom:12px;right:12px;background:var(--navy-100);color:var(--navy-700);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px}
+
+/* ============ CATALOG ============ */
+.cat-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 18px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 15px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s}
+.chip.on{background:var(--navy-800);color:#fff;border-color:var(--navy-800)}
+.cat-bar select{padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:600;color:var(--navy-800);outline:none}
+.cat-bar .csel{min-width:170px}
+.crumb{font-size:12px;color:var(--muted);margin:20px 0 4px}
+.crumb b{color:var(--navy-700)}
+
+/* ============ CUSTOM DROPDOWN ============ */
+.csel{position:relative;display:inline-block}
+.csel-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:9px 14px;border-radius:9px;border:1.5px solid var(--line);background:#fff;font-weight:600;font-size:13px;color:var(--navy-800);cursor:pointer;transition:.15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csel-trigger:hover{border-color:var(--navy-500)}
+.csel.open .csel-trigger{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(29,52,116,.1)}
+.csel-arrow{font-size:10px;color:var(--muted);transition:transform .15s;flex-shrink:0}
+.csel.open .csel-arrow{transform:rotate(180deg)}
+.csel-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;z-index:70;display:none;max-height:260px;overflow-y:auto}
+.csel.open .csel-menu{display:block}
+.csel-opt{padding:9px 12px;border-radius:7px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.csel-opt:hover{background:var(--navy-50)}
+.csel-opt.on{background:var(--navy-800);color:#fff}
+.csel-full{width:100%}
+.csel-full .csel-menu{width:100%}
+
+/* ============ PRODUCT DETAIL ============ */
+.pd{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin:26px 0 40px}
+.pd-img{border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1}
+.pd-img img{width:100%;height:100%;object-fit:cover}
+.pd-info h1{font-size:24px;font-weight:800;color:var(--navy-900)}
+.pd-meta{display:flex;gap:14px;align-items:center;margin:8px 0 14px;font-size:12.5px;color:var(--muted)}
+.pd-meta b{color:var(--accent-600)}
+.pd-price{background:var(--navy-50);border:1px dashed var(--navy-500);border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.pd-price b{font-size:20px;color:var(--navy-800)}
+.pd-price span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.opt-lbl{font-size:12px;font-weight:800;color:var(--navy-800);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.6px}
+.opt-lbl span{color:var(--navy-500);font-weight:600;text-transform:none;letter-spacing:0}
+.swatches{display:flex;gap:11px;flex-wrap:wrap}
+.sw{display:flex;flex-direction:column;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s;min-width:84px}
+.sw i{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.12)}
+.sw.on{border-color:var(--navy-700);background:var(--navy-50);color:var(--navy-800)}
+.sw .sw-stok{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
+.sw.on .sw-stok{color:var(--navy-500)}
+.sw.off{opacity:.4;cursor:not-allowed}
+.sw.off .sw-stok{color:var(--danger)}
+.sizes{display:flex;gap:8px;flex-wrap:wrap}
+.sz{min-width:44px;text-align:center;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;transition:.15s}
+.sz.on{background:var(--navy-800);border-color:var(--navy-800);color:#fff}
+.sz.off{opacity:.35;text-decoration:line-through;cursor:not-allowed;pointer-events:none}
+.qty-row{display:flex;align-items:center;gap:14px}
+.stepper-qty{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.stepper-qty button{width:38px;height:38px;font-size:17px;font-weight:800;color:var(--navy-700);background:#fff}
+.stepper-qty button:hover{background:var(--navy-50)}
+.stepper-qty input{width:58px;text-align:center;border:none;border-left:1.5px solid var(--line);border-right:1.5px solid var(--line);height:38px;font-weight:700;outline:none}
+.qty-note{font-size:11.5px;color:var(--muted)}
+.pd-cta{display:flex;gap:10px;margin-top:22px}
+.pd-cta .btn{flex:1}
+.pd-desc{grid-column:1/-1;background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px 28px}
+.pd-desc h3{font-size:15px;color:var(--navy-900);margin-bottom:10px}
+.pd-desc p{color:var(--muted);line-height:1.75;font-size:13px}
+.spec{margin-top:16px;border-top:1px solid var(--line)}
+.spec div{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);font-size:12.5px}
+.spec div span:first-child{color:var(--muted)}
+.spec div span:last-child{font-weight:700;color:var(--navy-800)}
+
+/* ============ CART & CHECKOUT ============ */
+.two-col{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start;margin:26px 0 44px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+.panel h2{font-size:16px;color:var(--navy-900);margin-bottom:16px}
+.c-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.c-item:last-child{border-bottom:none}
+.c-item img{width:78px;height:78px;border-radius:10px;object-fit:cover;flex-shrink:0}
+.c-item .inf{flex:1}
+.c-item .inf b{font-size:13.5px;color:var(--ink)}
+.c-item .var{font-size:11.5px;color:var(--muted);margin:3px 0 8px}
+.c-item .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.c-item .est{font-size:12px;font-weight:700;color:var(--navy-700)}
+.rm{color:var(--danger);font-size:11px;font-weight:700}
+.sum-row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;color:var(--muted)}
+.sum-row b{color:var(--ink)}
+.sum-total{border-top:1.5px dashed var(--line);margin-top:8px;padding-top:12px;font-size:14px}
+.note-box{background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#8A5A00;margin:14px 0}
+.form-grid{display:grid;gap:13px}
+.form-grid label{font-size:11.5px;font-weight:800;color:var(--navy-800);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px}
+.form-grid input,.form-grid textarea,.form-grid select{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;outline:none;transition:.15s;background:#fff}
+.form-grid input:focus,.form-grid textarea:focus{border-color:var(--navy-500);box-shadow:0 0 0 3px rgba(42,69,154,.12)}
+
+/* ============ TRACK / STEPPER ============ */
+.track-box{max-width:860px;margin:30px auto 50px}
+.track-input{display:flex;gap:10px;margin:18px 0}
+.track-input input{flex:1;padding:13px 16px;border:1.5px solid var(--line);border-radius:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;outline:none}
+.track-input input:focus{border-color:var(--navy-500)}
+.stepper{display:flex;margin:26px 0 8px}
+.step{flex:1;text-align:center;position:relative}
+.step::before{content:'';position:absolute;top:19px;left:-50%;width:100%;height:3px;background:var(--line)}
+.step:first-child::before{display:none}
+.step.done::before,.step.now::before{background:var(--navy-600)}
+.step .dot{width:38px;height:38px;border-radius:50%;background:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative;z-index:1;font-size:15px}
+.step.done .dot{background:var(--navy-700);border-color:var(--navy-700)}
+.step.now .dot{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 5px rgba(255,159,28,.18);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(255,159,28,.08)}}
+.step .lbl{font-size:9.8px;margin-top:7px;color:var(--muted);font-weight:700;line-height:1.3}
+.step.now .lbl{color:var(--accent-600)}
+.order-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:16px}
+.order-card .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.order-card .code{font-weight:800;color:var(--navy-800);letter-spacing:.6px}
+.stage-pill{font-size:11px;font-weight:800;padding:5px 12px;border-radius:14px;background:var(--navy-100);color:var(--navy-700)}
+.stage-pill.final{background:#E7F8F0;color:var(--ok)}
+.o-items{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:12.5px;color:var(--muted)}
+.o-items div{padding:4px 0;display:flex;justify-content:space-between;gap:10px}
+
+/* ============ SUCCESS ============ */
+.success{max-width:640px;margin:44px auto 60px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:44px 34px}
+.success .big{width:74px;height:74px;border-radius:50%;background:#E7F8F0;color:var(--ok);font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.success h1{color:var(--navy-900);font-size:22px}
+.success p{color:var(--muted);margin:10px 0 20px;line-height:1.7}
+.code-big{background:var(--navy-50);border:1.5px dashed var(--navy-500);border-radius:12px;padding:14px;font-size:22px;font-weight:800;letter-spacing:2px;color:var(--navy-800);margin-bottom:22px}
+.success .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ============ CARA KERJA ============ */
+.how{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center;background:var(--navy-900);border-radius:20px;overflow:hidden}
+.how img{width:100%;height:100%;object-fit:cover}
+.how .txt{padding:38px 38px 38px 4px;color:#fff}
+.how h2{font-size:22px;font-weight:800;margin-bottom:6px}
+.how h2 em{color:var(--accent);font-style:normal}
+.how p.sub{color:#8FA1CC;font-size:13px;margin-bottom:22px}
+.how ol{list-style:none;display:grid;gap:15px}
+.how li{display:flex;gap:14px;align-items:flex-start}
+.how li .n{width:32px;height:32px;border-radius:9px;background:var(--accent);color:var(--navy-900);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.how li b{font-size:13.5px}
+.how li span{display:block;color:#8FA1CC;font-size:12px;margin-top:3px;line-height:1.6}
+
+/* ============ ADMIN ============ */
+.admin-wrap{display:grid;grid-template-columns:230px 1fr;gap:20px;margin:26px 0 50px;align-items:start}
+.a-side{background:var(--navy-900);border-radius:16px;padding:14px;position:sticky;top:130px}
+.a-side .who{color:#8FA1CC;font-size:11px;font-weight:700;padding:8px 12px;letter-spacing:1px}
+.a-side button{display:flex;width:100%;text-align:left;color:#B9C4E0;font-size:13px;font-weight:600;padding:11px 13px;border-radius:10px;gap:10px;margin-bottom:2px}
+.a-side button:hover{background:var(--navy-700);color:#fff}
+.a-side button.on{background:var(--accent);color:var(--navy-900);font-weight:800}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px}
+.stat b{font-size:21px;color:var(--navy-800);display:block}
+.stat span{font-size:11px;color:var(--muted);font-weight:700}
+.a-order{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:13px}
+.a-order .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.a-order .meta{font-size:12px;color:var(--muted);margin:6px 0 10px}
+.a-order .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gate{max-width:400px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:36px;text-align:center}
+.gate .lock{width:64px;height:64px;border-radius:50%;background:var(--navy-100);font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.gate input{width:100%;text-align:center;font-size:22px;letter-spacing:8px;padding:12px;border:1.5px solid var(--line);border-radius:11px;margin:16px 0;outline:none;font-weight:800}
+.gate input:focus{border-color:var(--navy-500)}
+.switch{position:relative;width:42px;height:24px;background:#D5DBE8;border-radius:14px;cursor:pointer;transition:.2s;flex-shrink:0}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on{background:var(--ok)}
+.switch.on::after{left:21px}
+
+/* ============ FOOTER ============ */
+footer{background:var(--navy-950);color:#8FA1CC;margin-top:20px}
+.f-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;gap:30px;padding:46px 0 34px}
+.f-grid h4{color:#fff;font-size:13px;margin-bottom:14px;letter-spacing:.5px}
+.f-grid p,.f-grid a{font-size:12.5px;line-height:2;color:#8FA1CC;text-decoration:none;display:block}
+.f-grid a:hover{color:var(--accent)}
+.f-bottom{border-top:1px solid rgba(255,255,255,.08);padding:16px 0;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* toast */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy-900);color:#fff;padding:13px 24px;border-radius:12px;font-size:13px;font-weight:700;box-shadow:var(--shadow-lg);border-left:4px solid var(--accent);transition:.35s;opacity:0;z-index:999;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%);opacity:1}
+
+/* responsive */
+@media(max-width:960px){
+  .usp .container{grid-template-columns:repeat(2,1fr)}
+  .cats{grid-template-columns:repeat(4,1fr)}
+  .pd,.two-col,.how{grid-template-columns:1fr}
+  .how .txt{padding:0 28px 32px}
+  .admin-wrap{grid-template-columns:1fr}
+  .a-side{position:static;display:flex;overflow-x:auto}
+  .a-side button{width:auto;white-space:nowrap}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .f-grid{grid-template-columns:1fr 1fr}
+  .step .lbl{font-size:8.5px}
+}
+@media(max-width:640px){
+  .h-main{flex-wrap:wrap}
+  .search{order:3;flex-basis:100%}
+  .cats{grid-template-columns:repeat(3,1fr)}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .f-grid{grid-template-columns:1fr}
+}
+#backBar{display:none;background:var(--bg)}
+#backBar.show{display:block}
+#backBtn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:14px 0 0;
+  font-size:13px;font-weight:700;color:var(--navy-700);cursor:pointer}
+#backBtn:hover{color:var(--navy-900)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-main">
+    <div class="logo" onclick="logoTap()">
+      <svg class="logo-mark-svg" viewBox="0 0 6.9253 4.7051" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RADJA">
+        <path fill="var(--accent)" d="M2.39084 3.60162l-0.5886 -0.78037 -1.38174 0 1.42083 1.88384 0.64056 0 0.74127 0 1.34968 0c1.29387,0 2.35241,-1.05859 2.35241,-2.35241 0,-1.29388 -1.05859,-2.35242 -2.35241,-2.35242l-1.18791 0c0.42092,0.22035 0.73145,0.62347 0.82562,1.10347l0.36229 0c0.68692,0 1.249,0.56203 1.249,1.249 0,0.68693 -0.56203,1.24901 -1.249,1.24901l-2.182 0 0 -0.0001zm1.57123 -0.18058l-0.45241 -0.59993 -0.0001 0 -0.14655 -0.19431c0.4166,-0.24539 0.69685,-0.69862 0.69685,-1.21627 0,-0.77796 -0.63267,-1.41053 -1.41053,-1.41053l-2.64933 0 0.83227 1.10347 1.81706 0c0.16884,0 0.30706,0.13818 0.30706,0.30706 0,0.16898 -0.13823,0.30716 -0.30706,0.30716l-1.35376 0 1.28472 1.70329 1.38179 0 0 0.00005z"/>
+      </svg>
+      <div class="logo-txt">
+        <svg class="logo-word-svg" viewBox="7.5089 0.6672 12.6328 3.3693" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RADJA">
+          <path fill="#ffffff" d="M7.50912 2.62353l12.63266 0 0 0.22185 -12.63266 0 0 -0.22185zm0.36441 0.88953l0 -0.15924 0.44496 0c0.02163,0 0.04036,0.00764 0.05553,0.02351 0.01615,0.0154 0.02374,0.03417 0.02374,0.05651 0,0.02159 -0.00759,0.04031 -0.02374,0.05623 -0.01517,0.01517 -0.03391,0.02299 -0.05553,0.02299l-0.44496 0zm-0.36436 -0.43268l0 0.93467 0.36436 0 0 -0.22812 0.53612 0c0.19249,0.0029 0.35598,-0.1606 0.35313,-0.35309 0.00285,-0.19346 -0.16064,-0.35533 -0.35313,-0.35346l-0.90049 0zm1.35231 -0.00066l0 0.93462 0.36432 0 0 -0.22807 0.32537 0 0.1759 0.22807 0.38802 0 -0.20387 -0.26202c0.06125,-0.02874 0.11059,-0.07173 0.14763,-0.12815 0.03746,-0.05698 0.05623,-0.12081 0.05623,-0.19109 0.0028,-0.19342 -0.16069,-0.35528 -0.35314,-0.35337l-0.90049 0zm0.80858 0.27335c0.04434,0 0.07997,0.03541 0.07997,0.07998 0,0.02163 -0.00759,0.04031 -0.02374,0.05627 -0.01517,0.01541 -0.03395,0.02304 -0.05623,0.02304l-0.4443 0 0 -0.15929 0.4443 0zm1.16882 -0.29695c-0.35168,0.00075 -0.63959,0.10231 -0.63818,0.45624l0 0.06808c-0.0014,0.35309 0.2865,0.45544 0.63818,0.4561 0.35131,-0.00066 0.63894,-0.10301 0.63772,-0.4561l0 -0.06808c0,-0.35346 -0.28599,-0.45624 -0.63772,-0.45624zm0.27317 0.50129c0.0021,0.1531 -0.12441,0.18087 -0.27321,0.18298 -0.14951,-0.00211 -0.27597,-0.02988 -0.27382,-0.18298l0 -0.02276c-0.00215,-0.1524 0.12431,-0.18017 0.27382,-0.18228 0.1488,0.00211 0.27531,0.02988 0.27321,0.18228l0 0.02276zm1.38364 -0.00969c0,0.09397 -0.05338,0.17114 -0.14815,0.17114l-0.39888 0 0 -0.34223 0.39888 0c0.09477,0 0.14815,0.07661 0.14815,0.1711zm-0.91139 -0.46738l0 0.93467 0.83156 0c0.25659,0.00355 0.44692,-0.21337 0.445,-0.46728 0.00192,-0.25519 -0.18841,-0.47071 -0.445,-0.46738l-0.83156 0zm2.29026 0.47778c0.00216,0.1538 -0.12436,0.18017 -0.27311,0.18228 -0.14955,-0.00211 -0.27536,-0.02848 -0.27391,-0.18228l0 -0.47895 -0.36432 0 0 0.50194c-0.0014,0.35323 0.28768,0.45474 0.63823,0.45544 0.35052,-0.00066 0.6396,-0.10221 0.63837,-0.45544l0 -0.50194 -0.36526 0 0 0.47895zm1.38079 0.06817c-0.03319,0.09178 -0.13766,0.11411 -0.26267,0.11411 -0.14885,-0.00211 -0.27532,-0.02988 -0.27316,-0.18228l0 -0.02299c-0.00216,-0.15358 0.12431,-0.17994 0.27316,-0.18205 0.12501,0 0.22877,0.02164 0.26267,0.11327l0.37364 0c-0.02308,-0.31502 -0.2998,-0.40946 -0.63626,-0.41021 -0.35052,0.0015 -0.63965,0.10278 -0.63824,0.45624l0 0.06808c-0.0014,0.35389 0.28773,0.45544 0.63824,0.4561 0.33651,0 0.61323,-0.09468 0.63626,-0.41026l-0.37364 0zm1.19875 0.38868l0 -0.63837 0.43315 0 0 -0.2963 -1.23058 0 0 0.2963 0.43315 0 0 0.63837 0.36428 0zm0.55485 -0.93579l0 0.93439 0.36437 0 0 -0.93439 -0.36437 0zm1.1096 -0.02304c-0.35173,0.00075 -0.63964,0.10231 -0.63818,0.45624l0 0.06808c-0.00145,0.35309 0.28646,0.45544 0.63818,0.4561 0.35127,-0.00066 0.6389,-0.10301 0.63767,-0.4561l0 -0.06808c0,-0.35346 -0.28594,-0.45624 -0.63767,-0.45624zm0.27316 0.50129c0.00211,0.1531 -0.12436,0.18087 -0.27316,0.18298 -0.1495,-0.00211 -0.27606,-0.02988 -0.27386,-0.18298l0 -0.02276c-0.0022,-0.1524 0.12436,-0.18017 0.27386,-0.18228 0.1488,0.00211 0.27527,0.02988 0.27316,0.18228l0 0.02276zm1.38365 0.01685l-0.41012 -0.4951 -0.50123 0 0 0.93439 0.36432 0 0 -0.57077 0.50193 0.57077 0.41035 0 0 -0.93439 -0.36525 0 0 0.4951zm-12.26642 -2.90697l0 1.74535 0.68032 0 0 -0.42599 0.60762 0 0.32842 0.42599 0.72467 0 -0.38076 -0.48934c0.11434,-0.05362 0.20653,-0.13383 0.27569,-0.23931 0.07,-0.10634 0.10507,-0.22559 0.10507,-0.35678 0.00524,-0.36115 -0.30009,-0.66342 -0.65954,-0.65987l-1.68148 0 0 -0.00005zm1.51002 0.5106c0.08283,0 0.14932,0.06598 0.14932,0.14927 0,0.04041 -0.01419,0.07538 -0.0443,0.10507 -0.02838,0.02889 -0.0634,0.04303 -0.10502,0.04303l-0.82969 0 0 -0.29737 0.82969 0zm2.22392 -0.00403l0.23889 0.51537 -0.47908 0 0.24019 -0.51537zm-1.34113 1.24005l0.76587 0 0.13784 -0.29867 0.87352 0 0.13784 0.29867 0.76588 0 -0.93603 -1.74535 -0.80886 0 -0.93607 1.74535zm4.43506 -0.87262c0,0.17549 -0.09968,0.31951 -0.27653,0.31951l-0.74504 0 0 -0.63912 0.74504 0c0.17684,0 0.27653,0.14318 0.27653,0.31961zm-1.70189 -0.87277l0 1.74534 1.553 0c0.47908,0.00665 0.83456,-0.39836 0.831,-0.87262 0.00356,-0.47646 -0.35192,-0.87886 -0.831,-0.87272l-1.553 0zm4.2547 0.89215c0.00402,0.28722 -0.23225,0.33642 -0.51145,0.3404 -0.27784,-0.00398 -0.51411,-0.05318 -0.51008,-0.3404l0 -0.17015 -0.68032 0 0 0.21323c-0.00267,0.65944 0.53494,0.84907 1.19041,0.85043 0.6595,0 1.19224,-0.1923 1.19224,-0.85043l0 -0.93654 -0.6808 0 0 0.89346zm1.91156 -0.38684l0.23884 0.51537 -0.47908 0 0.24024 -0.51537zm-1.34118 1.24004l0.76587 0 0.13785 -0.29867 0.87351 0 0.1378 0.29867 0.76587 0 -0.93603 -1.74534 -0.80885 0 -0.93608 1.74534 0.00005 0z"/>
+        </svg>
+      </div>
+    </div>
+    <form class="search" onsubmit="doSearch(event)">
+      <input id="searchInput" placeholder="Cari kaos anak…">
+      <button type="submit">🔍</button>
+    </form>
+    <div class="h-actions">
+      <button class="h-btn" onclick="go('cart')"><span class="ico">🛒</span><span class="badge" id="cartCount">0</span></button>
+    </div>
+  </div>
+</header>
+
+<div id="backBar"><div class="container"><button id="backBtn" onclick="goBack()">← Kembali</button></div></div>
+
+<main>
+<!-- ================= HOME ================= -->
+<section class="view on" id="view-home">
+  <div class="hero">
+    <img class="bg" src="img/hero.jpg" alt="">
+    <div class="overlay"></div>
+    <div class="container">
+      <h1>RADJA Production,<br>Spesialis <em>Kaos Anak.</em></h1>
+      <p>Pilih model, atur warna & ukuran, checkout dalam hitungan menit — lalu pantau progres produksi pesananmu secara real-time, seperti melacak paket di marketplace favoritmu.</p>
+      <div class="hero-cta">
+        <button class="btn btn-accent" onclick="go('catalog')">🛍️ Pesan Sekarang</button>
+        <button class="btn btn-ghost" onclick="go('track')">📍 Lacak Pesanan</button>
+      </div>
+      <div class="hero-stats">
+        <div><b>12.400+</b><span>PCS / BULAN</span></div>
+        <div><b>480+</b><span>KLIEN SE-INDONESIA</span></div>
+        <div><b>4.9 ★</b><span>RATING KEPUASAN</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="usp"><div class="container">
+    <div><div class="ic">🎨</div><div><b>Gratis Desain</b><span>Mockup tanpa batas revisi</span></div></div>
+    <div><div class="ic">🧵</div><div><b>QC 2 Lapis</b><span>Jahitan & hasil sablon</span></div></div>
+    <div><div class="ic">⚡</div><div><b>Produksi Cepat</b><span>7–21 hari kerja</span></div></div>
+    <div><div class="ic">🔄</div><div><b>Garansi Remake</b><span>Cacat produksi kami ganti</span></div></div>
+  </div></div>
+
+  <section class="block container" style="padding-top:0">
+    <div class="promo">
+      <div>
+        <h3>⚡ PROMO BULK ORDER — <em>HEMAT s.d. 20%</em></h3>
+        <p>Berlaku untuk pemesanan ≥ 100 pcs. Harga final dikonfirmasi admin setelah checkout.</p>
+      </div>
+      <button class="btn btn-accent" onclick="go('catalog')">Ambil Promo →</button>
+    </div>
+  </section>
+
+  <section class="block container" style="padding-top:6px">
+    <div class="sec-head"><h2>Produk Unggulan</h2><a onclick="go('catalog')">Lihat Semua →</a></div>
+    <div class="grid" id="homeGrid"></div>
+  </section>
+
+  <section class="block container" style="padding-top:6px">
+    <div class="how">
+      <img src="img/custom.jpg" alt="">
+      <div class="txt">
+        <h2>Flow Baru, <em>Lebih Simpel.</em></h2>
+        <p class="sub">Tidak lagi sekadar form order — kini pengalaman penuh ala marketplace.</p>
+        <ol>
+          <li><div class="n">1</div><div><b>Pilih & Kustomisasi</b><span>Telusuri katalog, pilih warna, ukuran, dan jumlah langsung di halaman produk.</span></div></li>
+          <li><div class="n">2</div><div><b>Checkout Tanpa Harga</b><span>Keranjang & checkout seperti e-commerce; total & DP dikonfirmasi admin via WhatsApp.</span></div></li>
+          <li><div class="n">3</div><div><b>Produksi Transparan</b><span>8 tahap produksi — dari desain sampai QC — bisa kamu lacak dengan kode pesanan.</span></div></li>
+          <li><div class="n">4</div><div><b>Kirim & Garansi</b><span>Pesanan dikirim ke seluruh Indonesia dengan garansi remake cacat produksi.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ================= CATALOG ================= -->
+<section class="view" id="view-catalog">
+  <div class="container">
+    <div class="crumb">Beranda / <b>Katalog</b> <span id="crumbQ"></span></div>
+    <div class="cat-bar">
+      <div class="csel" id="brandSel"></div>
+      <div class="csel" id="sortSel"></div>
+    </div>
+    <div class="grid" id="catGrid"></div>
+    <div style="height:50px"></div>
+  </div>
+</section>
+
+<!-- ================= PRODUCT ================= -->
+<section class="view" id="view-product"><div class="container" id="pdWrap"></div></section>
+
+<!-- ================= CART ================= -->
+<section class="view" id="view-cart"><div class="container" id="cartWrap"></div></section>
+
+<!-- ================= CHECKOUT ================= -->
+<section class="view" id="view-checkout"><div class="container" id="coWrap"></div></section>
+
+<!-- ================= SUCCESS ================= -->
+<section class="view" id="view-success"><div class="container" id="okWrap"></div></section>
+
+<!-- ================= TRACK ================= -->
+<section class="view" id="view-track">
+  <div class="container track-box">
+    <div class="sec-head"><h2>Lacak Pesanan</h2></div>
+    <p style="color:var(--muted);font-size:13px">Masukkan kode pesananmu (contoh: <b>RJA-10241</b>) untuk melihat progres produksi secara real-time.</p>
+    <div class="track-input">
+      <input id="trackCode" placeholder="RJA-XXXXX">
+      <button class="btn btn-navy" onclick="trackOrder()">🔎 Lacak</button>
+    </div>
+    <div id="myOrders"></div>
+    <div id="trackResult"></div>
+  </div>
+</section>
+
+<!-- ================= ADMIN ================= -->
+<section class="view" id="view-admin"><div class="container" id="adminWrap"></div></section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="f-grid">
+      <div>
+        <h4>RADJA KONVEKSI</h4>
+        <p>Platform order & tracking produksi konveksi dengan pengalaman belanja ala marketplace modern. Kualitas premium, progres transparan.</p>
+      </div>
+      <div>
+        <h4>LAYANAN</h4>
+        <a onclick="go('catalog')">Kaos Anak Polos</a><a onclick="go('catalog')">Kaos Anak Sablon Custom</a>
+        <a onclick="go('catalog')">Kaos Anak Raglan</a>
+      </div>
+      <div>
+        <h4>BANTUAN</h4>
+        <a onclick="go('track')">Lacak Pesanan</a><a onclick="go('cart')">Keranjang</a>
+        <a onclick="go('home')">Beranda</a>
+      </div>
+      <div>
+        <h4>HUBUNGI KAMI</h4>
+        <p>📍 Jl. Magelang KM 5, Yogyakarta<br>💬 WA: 0812-3456-7890<br>🕘 Senin–Sabtu, 08.00–17.00 WIB</p>
+      </div>
+    </div>
+    <div class="f-bottom"><span>© 2026 RADJA Konveksi. All rights reserved.</span><span>Made with 🧵 in Yogyakarta</span></div>
+  </div>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+/* ================= DATA ================= */
+const IMG = {hero:'img/hero.jpg',custom:'img/custom.jpg'};
+const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="%23EEF1F7"/><text x="50%" y="50%" font-family="sans-serif" font-size="15" fill="%235B6478" text-anchor="middle" dy=".3em">Belum ada foto</text></svg>'.replace(/%23/g,'#'));
+const STAGES = [['📥','Pesanan Diterima'],['💬','Konfirmasi & DP'],['🎨','Desain & Approval'],['✂️','Pemotongan'],['🧵','Penjahitan'],['🖨️','Sablon / Bordir'],['✅','Quality Control'],['🚚','Dikirim']];
+
+/* Katalog produk sekarang diambil LANGSUNG & REALTIME dari data brand/model/stok
+   aplikasi Inventory (INDEX) via Supabase — bukan lagi data statis. Lihat
+   loadInventoryData() & buildProducts() di bawah. Aplikasi Inventory itu sendiri
+   TIDAK PERNAH ditulis/diubah oleh halaman ini (hanya SELECT, read-only). */
+let masterData = {brand:[], model:[], warna:[], ukuran:[]};
+let stokRows = [];      // dari view v_stok_ringkas: {brand,model,warna,ukuran,stok,terjual}
+let produkMeta = {};    // dari tabel pesanan_produk_meta, keyed by model_id
+let PRODUCTS = [];      // hasil gabungan (dibangun oleh buildProducts())
+
+/* ================= STATE ================= */
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
+let cart=LS.get('rj_cart',[]);
+let orders=LS.get('rj_orders',null);
+if(!orders){orders=seedOrders();LS.set('rj_orders',orders)}
+let settings=LS.get('rj_settings',{url:'',key:'',table:'inventory',pin:'1234'});
+let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',ship:'Kurir Partner (JNE/JNT/SiCepat)'};
+const WA='6281234567890';
+const ORDERS_TABLE='produksi_orders';
+let sb=null;
+let rtChannel=null;
+let _rtTimer=null;
+function initSupabase(){
+ if(settings.url&&settings.key&&window.supabase){try{sb=window.supabase.createClient(settings.url,settings.key)}catch(e){sb=null}}
+ else sb=null;
+}
+initSupabase();
+function rowToOrder(r){return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,mine:false,name:r.customer_name,wa:r.whatsapp,addr:r.address,note:r.note||'',items:r.items||[]};}
+async function syncOrdersFromCloud(){
+ if(!sb)return false;
+ try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false});
+  if(error)throw error;
+  orders=data.map(rowToOrder);LS.set('rj_orders',orders);return true}
+ catch(e){console.error(e);return false}
+}
+function seedOrders(){const n=Date.now(),D=86400000;return[
+ {code:'RJA-10241',ts:n-6*D,stage:6,mine:false,name:'TK Tunas Bangsa',wa:'081227001122',addr:'Jl. Parasamya No.1, Sleman, DIY',note:'Kaos anak untuk acara perpisahan TK, sablon DTF depan-belakang.',items:[]},
+ {code:'RJA-10257',ts:n-3*D,stage:3,mine:false,name:'Budi Santoso',wa:'085743320091',addr:'Jl. Kaliurang KM 8, Yogyakarta',note:'Kaos anak polos untuk merchandise komunitas.',items:[]},
+ {code:'RJA-10263',ts:n-1*D,stage:1,mine:false,name:'SD Negeri 2 Yogyakarta',wa:'081904455667',addr:'Jl. Prawirotaman No.4, Yogyakarta',note:'Kaos raglan olahraga anak, dua warna kontras.',items:[]}];}
+
+/* ================= HELPERS ================= */
+const $=id=>document.getElementById(id);
+const fmt=n=>'Rp '+(n||0).toLocaleString('id-ID');
+const esc=s=>String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const P=id=>PRODUCTS.find(p=>p.id===id);
+function priceLabel(p){if(!p.est[0])return 'Hubungi Admin';return p.est[0]===p.est[1]?fmt(p.est[0]):fmt(p.est[0])+' – '+fmt(p.est[1])}
+function stokFor(p,warna,ukuran){if(!p)return 0;const row=p.stokIndex[(warna||'').trim().toUpperCase()+'|'+(ukuran||'').trim().toUpperCase()];return row?Math.max(0,row.stok):0}
+function stokForColor(p,warna){if(!p)return 0;const w=(warna||'').trim().toUpperCase();let t=0;Object.keys(p.stokIndex).forEach(k=>{if(k.split('|')[0]===w)t+=Math.max(0,p.stokIndex[k].stok)});return t}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* ================= CUSTOM DROPDOWN ================= */
+// options: [{value,label}]. onSelect: string JS dieksekusi saat opsi diklik (harus tutup sendiri via cselCloseAll() bila perlu).
+function cselHTML(id,options,selectedValue,onSelectPrefix,extraClass){
+ const sel=options.find(o=>String(o.value)===String(selectedValue))||options[0]||{label:'—'};
+ return '<div class="csel'+(extraClass?' '+extraClass:'')+'" id="'+id+'">'+
+  '<button type="button" class="csel-trigger" onclick="event.stopPropagation();cselToggle(\''+id+'\')"><span>'+esc(sel.label)+'</span><span class="csel-arrow">▾</span></button>'+
+  '<div class="csel-menu">'+options.map(o=>'<div class="csel-opt'+(String(o.value)===String(selectedValue)?' on':'')+'" onclick="event.stopPropagation();cselCloseAll();'+onSelectPrefix+'(\''+String(o.value).replace(/'/g,"\\'")+'\')">'+esc(o.label)+'</div>').join('')+'</div>'+
+ '</div>';
+}
+function cselToggle(id){
+ const el=document.getElementById(id);if(!el)return;
+ const isOpen=el.classList.contains('open');
+ cselCloseAll();
+ if(!isOpen)el.classList.add('open');
+}
+function cselCloseAll(){document.querySelectorAll('.csel.open').forEach(x=>x.classList.remove('open'))}
+document.addEventListener('click',()=>cselCloseAll());
+function go(v,fromBack){
+ const cur=document.querySelector('.view.on')?.id?.replace('view-','');
+ if(!fromBack && cur && cur!==v) navStack.push(cur);
+ document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('view-'+v).classList.add('on');window.scrollTo({top:0,behavior:'smooth'});
+ $('backBar').classList.toggle('show', v!=='home');
+ if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();
+ if((v==='admin'||v==='track')&&sb){syncOrdersFromCloud().then(ok=>{if(ok){if(v==='admin')renderAdmin();if(v==='track')renderTrack()}})}
+}
+let navStack=[];
+function goBack(){const prev=navStack.pop();go(prev||'home',true)}
+let logoTapCount=0,logoTapTimer=null;
+function logoTap(){
+ logoTapCount++;
+ clearTimeout(logoTapTimer);
+ logoTapTimer=setTimeout(()=>{logoTapCount=0},2000);
+ if(logoTapCount>=5){logoTapCount=0;go('admin');return}
+ go('home');
+}
+function saveCart(){LS.set('rj_cart',cart);updateBadge()}
+function updateBadge(){$('cartCount').textContent=cart.reduce((a,c)=>a+c.qty,0)}
+function stepper(stage){return '<div class="stepper">'+STAGES.map((s,i)=>'<div class="step '+(i<stage?'done':i===stage?'now':'')+'"><div class="dot">'+s[0]+'</div><div class="lbl">'+s[1]+'</div></div>').join('')+'</div>'}
+
+/* ================= SINKRON STOK DARI INVENTORY (INDEX) ================= */
+// Tabel Inventory (brand, model, warna, ukuran, riwayat_input_item) HANYA dibaca (select) di sini.
+// Pengecualian: transaksi + transaksi_item DITULIS saat order dibuat (lihat syncStokKeluarPesanan()
+// di bagian CHECKOUT) supaya stok otomatis berkurang, konsisten dengan hitungStokItem() di app INDEX.
+const SIZE_RANK={XXS:0,XS:1,S:2,M:3,L:4,XL:5,XXL:6,'2XL':6,XXXL:7,'3XL':7,'4XL':8,XXXXL:8,'5XL':9,XXXXXL:9,'6XL':10};
+function sizeSortKey(nama){
+ const u=(nama||'').trim().toUpperCase();
+ if(SIZE_RANK.hasOwnProperty(u))return SIZE_RANK[u];
+ const num=parseFloat(u);
+ if(!isNaN(num))return 100+num;
+ return 200;
+}
+function buildProducts(){
+ PRODUCTS = masterData.model.map(m=>{
+  const meta = produkMeta[m.id] || {};
+  const bUp=(m.brandNama||'').trim().toUpperCase(), mUp=(m.nama||'').trim().toUpperCase();
+  const rows = stokRows.filter(r=>r.brand===bUp && r.model===mUp);
+  const stokIndex={};let totalStok=0,totalTerjual=0;
+  rows.forEach(r=>{stokIndex[r.warna+'|'+r.ukuran]={stok:r.stok,terjual:r.terjual||0};totalStok+=Math.max(0,r.stok);totalTerjual+=(r.terjual||0)});
+  const colors = masterData.warna.filter(w=>rows.some(r=>r.warna===(w.nama||'').trim().toUpperCase())).map(w=>({n:w.nama,h:w.kode||'#CBD3E3'}));
+  const sizes = masterData.ukuran.filter(u=>rows.some(r=>r.ukuran===(u.nama||'').trim().toUpperCase())).map(u=>u.nama).sort((a,b)=>sizeSortKey(a)-sizeSortKey(b));
+  return {
+   id:'m'+m.id, modelId:m.id, brand:m.brandNama||'—', cat:meta.kategori||m.brandNama||'Produk',
+   name:m.nama, img:meta.gambar_url||PLACEHOLDER_IMG, est:[m.harga||0,m.harga||0],
+   min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
+   badge:meta.badge||'', desc:meta.deskripsi||'Belum ada deskripsi untuk produk ini.',
+   specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
+   colors, sizes, stokIndex, totalStok, aktif: meta.aktif!==false
+  };
+ });
+}
+async function loadInventoryData(){
+ if(!sb)return;
+ try{
+  const [b,m,w,u,s,pm] = await Promise.all([
+   sb.from('brand').select('*').order('nama'),
+   sb.from('model').select('*, brand:brand_id(nama)').order('nama'),
+   sb.from('warna').select('*'),
+   sb.from('ukuran').select('*'),
+   sb.from('v_stok_ringkas').select('*'),
+   sb.from('pesanan_produk_meta').select('*')
+  ]);
+  masterData.brand = b.data||[];
+  masterData.model = (m.data||[]).map(x=>({id:x.id,brandId:x.brand_id,brandNama:x.brand?.nama||'',nama:x.nama,harga:x.harga||0}));
+  masterData.warna = w.data||[];
+  masterData.ukuran = u.data||[];
+  stokRows = s.data||[];
+  produkMeta = {};(pm.data||[]).forEach(x=>produkMeta[x.model_id]=x);
+  buildProducts();
+  const activeView = document.querySelector('.view.on')?.id;
+  if(activeView==='view-home')renderHome();
+  if(activeView==='view-catalog')renderCatalog();
+  if(activeView==='view-product')renderProduct();
+  if(activeView==='view-cart')renderCart();
+  if(activeView==='view-admin')renderAdmin();
+ }catch(e){console.error('Gagal memuat data Inventory:',e)}
+}
+function scheduleReload(){clearTimeout(_rtTimer);_rtTimer=setTimeout(loadInventoryData,400)}
+function setupRealtimeStok(){
+ if(!sb)return;
+ if(rtChannel){try{sb.removeChannel(rtChannel)}catch(e){}rtChannel=null}
+ rtChannel = sb.channel('pesanan-stok-sync');
+ ['brand','model','warna','ukuran','riwayat_input','riwayat_input_item','transaksi','transaksi_item','pesanan_produk_meta'].forEach(t=>{
+  rtChannel = rtChannel.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload);
+ });
+ rtChannel.subscribe();
+}
+
+/* ================= HEADER / NAV ================= */
+function doSearch(e){e.preventDefault();state.q=$('searchInput').value.trim();go('catalog')}
+
+/* ================= CATALOG ================= */
+function cardHTML(p){return '<div class="p-card" onclick="openProduct(\''+p.id+'\')">'+
+ '<div class="ph"><img src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
+ '<div class="p-body"><div class="p-brand">'+esc(p.brand)+'</div><div class="p-name">'+esc(p.name)+'</div>'+
+ '<div class="p-rate">'+p.sold.toLocaleString('id-ID')+' terjual • '+(p.totalStok>0?p.totalStok+' pcs siap':'stok habis')+'</div>'+
+ '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs • final dikonfirmasi admin</small></div></div>'+
+ '<span class="p-min">Min. '+p.min+'</span></div>'}
+function populateBrandFilter(){
+ const brands=[...new Set(PRODUCTS.filter(p=>p.aktif).map(p=>p.brand))].sort((a,b)=>a.localeCompare(b));
+ if(!brands.includes(state.brand))state.brand='';
+ const options=[{value:'',label:'Semua Brand'}].concat(brands.map(b=>({value:b,label:b})));
+ $('brandSel').outerHTML=cselHTML('brandSel',options,state.brand,'setBrandFilter');
+ $('sortSel').outerHTML=cselHTML('sortSel',[
+  {value:'sold',label:'Paling Laris'},
+  {value:'name',label:'Nama A–Z'},
+  {value:'min',label:'Min. Order Terkecil'}
+ ],state.sort,'setSortFilter');
+}
+function setBrandFilter(v){state.brand=v;renderCatalog()}
+function setSortFilter(v){state.sort=v;renderCatalog()}
+function renderCatalog(){
+ populateBrandFilter();
+ let list=PRODUCTS.filter(p=>p.aktif);
+ if(state.brand)list=list.filter(p=>p.brand===state.brand);
+ if(state.q)list=list.filter(p=>(p.name+' '+p.brand).toLowerCase().includes(state.q.toLowerCase()));
+ const s=state.sort;
+ if(s==='sold')list.sort((a,b)=>b.sold-a.sold);if(s==='name')list.sort((a,b)=>a.name.localeCompare(b.name));if(s==='min')list.sort((a,b)=>a.min-b.min);
+ $('crumbQ').innerHTML=state.q?'• hasil untuk <b>"'+esc(state.q)+'"</b>':'';
+ if(!sb){$('catGrid').innerHTML='<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">🔌 Belum tersambung ke data Inventory. Hubungi admin untuk menyambungkan.</p>';return}
+ $('catGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">😕 Tidak ada produk yang cocok.</p>';
+}
+function renderHome(){
+ if(!sb){$('homeGrid').innerHTML='<p style="color:var(--muted)">🔌 Belum tersambung ke data Inventory.</p>';return}
+ const list=PRODUCTS.filter(p=>p.aktif).sort((a,b)=>b.sold-a.sold).slice(0,4);
+ $('homeGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted)">Belum ada produk aktif.</p>';
+}
+
+/* ================= PRODUCT DETAIL ================= */
+function openProduct(id){const p=P(id);if(!p)return;state.sel={pid:id,color:0,size:null,qty:p.min};renderProduct();go('product')}
+function renderProduct(){
+ const s=state.sel,p=P(s.pid);if(!p)return;
+ const hasVar=p.colors.length>0;
+ if(hasVar && !s.size){
+  const firstAvail=p.sizes.find(z=>stokFor(p,p.colors[s.color].n,z)>0);
+  if(firstAvail){s.size=firstAvail;s.qty=p.min}
+ }
+ const curStok = s.size&&hasVar?stokFor(p,p.colors[s.color].n,s.size):null;
+ $('pdWrap').innerHTML=
+ '<div class="crumb">Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b></div>'+
+ '<div class="pd"><div class="pd-img"><img src="'+p.img+'" alt=""></div>'+
+ '<div class="pd-info"><div class="p-brand">'+esc(p.brand)+'</div><h1>'+esc(p.name)+'</h1>'+
+ '<div class="pd-meta"><span>'+p.sold.toLocaleString('id-ID')+' terjual</span><span>⏱ '+esc(p.days)+'</span></div>'+
+ '<div class="pd-price"><b>'+priceLabel(p)+'</b><span>Harga per pcs — total final dikonfirmasi admin setelah checkout.</span></div>'+
+ (hasVar?(
+ '<div class="opt-lbl">Warna — <span>'+esc(p.colors[s.color].n)+'</span></div>'+
+ '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;const dispSt=(!off&&s.size)?stokFor(p,c.n,s.size):tot;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct()"')+'><i style="background:'+c.h+'"></i>'+esc(c.n)+'<span class="sw-stok">'+(off?'Habis':dispSt+' pcs')+'</span></div>'}).join('')+'</div>'+
+ '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
+ '<div class="sizes">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty='+p.min+';renderProduct()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
+ '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'
+ ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p>')+
+ '<div class="opt-lbl">Jumlah</div><div class="qty-row"><div class="stepper-qty">'+
+ '<button onclick="chgQty(-1)">−</button><input value="'+s.qty+'" readonly><button onclick="chgQty(1)">+</button></div>'+
+ '<span class="qty-note">Min. order '+p.min+' pcs</span></div>'+
+ '<div class="pd-cta">'+(hasVar?'<button class="btn btn-outline" onclick="addSel(false)">🛒 Keranjang</button><button class="btn btn-accent" onclick="addSel(true)">⚡ Pesan Sekarang</button>':'<button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button>')+'</div></div>'+
+ '<div class="pd-desc"><h3>Deskripsi Produk</h3><p>'+esc(p.desc)+'</p><div class="spec">'+
+ p.specs.map(x=>'<div><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></div>').join('')+
+ '<div><span>Estimasi Produksi</span><span>'+esc(p.days)+'</span></div></div></div></div>';
+}
+function chgQty(d){
+ const s=state.sel,p=P(s.pid);if(!p)return;
+ let maxStok=Infinity;
+ if(s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
+ let nv=Math.max(p.min,s.qty+d);
+ if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Stok varian ini habis');return}nv=Math.min(nv,Math.max(p.min,maxStok))}
+ s.qty=nv;renderProduct();
+}
+function addSel(buy){
+ const s=state.sel,p=P(s.pid);if(!p)return;
+ if(!p.colors.length){toast('⚠️ Produk belum memiliki stok');return}
+ if(!s.size){toast('⚠️ Pilih ukuran terlebih dahulu');return}
+ const avail=stokFor(p,p.colors[s.color].n,s.size);
+ if(avail<=0){toast('⚠️ Stok habis untuk varian ini');return}
+ if(s.qty>avail){toast('⚠️ Stok tidak cukup, tersedia '+avail+' pcs');return}
+ const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
+ const ex=cart.find(c=>c.key===key);
+ if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
+ saveCart();toast('✅ '+p.name+' masuk keranjang');
+ if(buy)go('cart');else renderProduct();
+}
+
+/* ================= CART ================= */
+function renderCart(){
+ const w=$('cartWrap');
+ if(!cart.length){w.innerHTML='<div class="success"><div class="big" style="background:var(--navy-100);color:var(--navy-600)">🛒</div><h1>Keranjang Kosong</h1><p>Yuk mulai pilih produk konveksi favoritmu.</p><button class="btn btn-accent" onclick="go(\'catalog\')">🛍️ Belanja Sekarang</button></div>';return}
+ const rows=cart.map((c,i)=>{const p=P(c.pid);if(!p)return '';const avail=stokFor(p,c.color,c.size);return '<div class="c-item"><img src="'+p.img+'">'+
+  '<div class="inf"><b>'+esc(p.name)+'</b><div class="var">'+esc(c.color)+' • Ukuran '+esc(c.size)+' • '+priceLabel(p)+'/pcs'+(avail<c.qty?' • <span style="color:var(--danger);font-weight:700">stok hanya '+avail+'</span>':'')+'</div>'+
+  '<div class="row"><div class="stepper-qty"><button onclick="cQty('+i+',-1)">−</button><input value="'+c.qty+'" readonly><button onclick="cQty('+i+',1)">+</button></div>'+
+  '<span class="est">'+fmt(c.qty*p.est[0])+'</span>'+
+  '<button class="rm" onclick="cRm('+i+')">🗑 Hapus</button></div></div></div>'}).join('');
+ const pcs=cart.reduce((a,c)=>a+c.qty,0);
+ const total=cart.reduce((a,c)=>{const p=P(c.pid);return a+(p?c.qty*p.est[0]:0)},0);
+ w.innerHTML='<div class="crumb">Beranda / <b>Keranjang</b></div><div class="two-col"><div class="panel"><h2> Keranjang Belanja ('+cart.length+' varian)</h2>'+rows+'</div>'+
+ '<div class="panel"><h2>Ringkasan</h2>'+
+ '<div class="sum-row"><span>Total Varian</span><b>'+cart.length+'</b></div>'+
+ '<div class="sum-row"><span>Total Pieces</span><b>'+pcs+' pcs</b></div>'+
+ '<div class="sum-row sum-total"><span>Total Harga</span><b>'+fmt(total)+'</b></div>'+
+ '<div class="note-box">💡 <b>Checkout tanpa pembayaran online.</b> Admin akan mengonfirmasi ongkir & DP melalui WhatsApp setelah pesanan dibuat.</div>'+
+ '<button class="btn btn-accent btn-block" onclick="goCheckout()">Checkout / Pesan →</button>'+
+ '<button class="btn btn-ghost btn-block" style="color:var(--navy-700);border-color:var(--line);margin-top:8px" onclick="go(\'catalog\')">← Lanjut Belanja</button></div></div>';
+}
+function cQty(i,d){
+ const c=cart[i],p=P(c.pid);if(!p)return;
+ const avail=stokFor(p,c.color,c.size);
+ if(d>0){if(avail<=c.qty){toast('⚠️ Stok tidak mencukupi');return}}
+ c.qty=Math.max(p.min,c.qty+d);
+ if(avail)c.qty=Math.min(c.qty,avail);
+ saveCart();renderCart();
+}
+function cRm(i){cart.splice(i,1);saveCart();renderCart();toast('Item dihapus dari keranjang')}
+
+/* ================= CHECKOUT ================= */
+function setShipMethod(v){state.ship=v;renderCheckout()}
+function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}renderCheckout();go('checkout')}
+function renderCheckout(){
+ const prevName=$('fName')?.value||'',prevWa=$('fWa')?.value||'',prevAddr=$('fAddr')?.value||'',prevNote=$('fNote')?.value||'';
+ const pcs=cart.reduce((a,c)=>a+c.qty,0);
+ $('coWrap').innerHTML='<div class="crumb">Beranda / Keranjang / <b>Checkout</b></div><div class="two-col">'+
+ '<div class="panel"><h2>📋 Form Pemesanan</h2><div class="form-grid">'+
+ '<div><label>Nama / Instansi *</label><input id="fName" value="'+esc(prevName)+'" placeholder="cth: Budi / PT Maju Jaya"></div>'+
+ '<div><label>No. WhatsApp *</label><input id="fWa" value="'+esc(prevWa)+'" placeholder="08xx xxxx xxxx"></div>'+
+ '<div><label>Alamat Pengiriman *</label><textarea id="fAddr" rows="3" placeholder="Jalan, kota, kecamatan, kode pos">'+esc(prevAddr)+'</textarea></div>'+
+ '<div><label>Metode Pengiriman</label>'+cselHTML('fShip',[
+  {value:'Kurir Partner (JNE/JNT/SiCepat)',label:'Kurir Partner (JNE/JNT/SiCepat)'},
+  {value:'Kargo (order jumlah besar)',label:'Kargo (order jumlah besar)'},
+  {value:'Ambil di Workshop',label:'Ambil di Workshop'}
+ ],state.ship||'Kurir Partner (JNE/JNT/SiCepat)','setShipMethod','csel-full')+'</div>'+
+ '<div><label>Catatan Pesanan (opsional)</label><textarea id="fNote" rows="2" placeholder="Detail sablon, bordir, deadline…">'+esc(prevNote)+'</textarea></div>'+
+ '</div></div>'+
+ '<div class="panel"><h2>Ringkasan Pesanan</h2>'+
+ cart.map(c=>'<div class="sum-row"><span>'+c.qty+'× '+esc(P(c.pid)?.name||'')+' <small style="color:var(--muted)">('+esc(c.color)+', '+esc(c.size)+')</small></span></div>').join('')+
+ '<div class="sum-row sum-total"><span>Total</span><b>'+pcs+' pcs</b></div>'+
+ '<div class="note-box">✅ Dengan membuat pesanan, kamu setuju bahwa <b>total final & ongkir dikonfirmasi admin</b> sebelum pembayaran.</div>'+
+ '<button class="btn btn-accent btn-block" onclick="placeOrder()">✅ Buat Pesanan</button></div></div>';
+}
+// Kurangi stok Inventory otomatis: setiap grup brand+model di keranjang jadi satu baris
+// `transaksi` (header) + baris-baris `transaksi_item` (warna/ukuran/qty), meniru persis
+// pola simpanTransaksi() di app INDEX supaya hitungStokItem() ikut menghitungnya sebagai keluar.
+async function syncStokKeluarPesanan(code,name,cartSnapshot){
+ if(!sb)return;
+ const groups={};
+ cartSnapshot.forEach(c=>{
+  const p=P(c.pid);if(!p)return;
+  const gKey=p.brand+'||'+p.name;
+  if(!groups[gKey])groups[gKey]={brand:p.brand,model:p.name,harga:(p.est&&p.est[0])||0,items:[]};
+  groups[gKey].items.push({warna:c.color,ukuran:c.size,qty:c.qty,ssk:'-'});
+ });
+ const now=new Date();
+ const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+ const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+ for(const key in groups){
+  const g=groups[key];
+  try{
+   const {data:trx,error:trxErr}=await sb.from('transaksi').insert({
+    vendor:'PESANAN ONLINE — '+name+' ('+code+')',brand:g.brand,model:g.model,
+    harga:g.harga,harga_modal:0,status:'credit',tanggal,jam
+   }).select().single();
+   if(trxErr)throw trxErr;
+   const {error:itemErr}=await sb.from('transaksi_item').insert(g.items.map(i=>({transaksi_id:trx.id,...i})));
+   if(itemErr){await sb.from('transaksi').delete().eq('id',trx.id);throw itemErr}
+  }catch(e){console.error('Gagal sinkron stok Inventory untuk order '+code+' ('+g.model+'):',e);toast('⚠️ Order tersimpan, tapi sinkron stok Inventory gagal untuk '+g.model)}
+ }
+}
+async function placeOrder(){
+ const name=$('fName').value.trim(),wa=$('fWa').value.trim(),addr=$('fAddr').value.trim();
+ if(!name||!wa||!addr){toast('⚠️ Lengkapi nama, WhatsApp, dan alamat');return}
+ for(const c of cart){const p=P(c.pid);if(!p)continue;const avail=stokFor(p,c.color,c.size);if(avail<c.qty){toast('⚠️ Stok '+p.name+' ('+c.color+', '+c.size+') tidak mencukupi lagi');return}}
+ const code='RJA-'+(10000+Math.floor(Math.random()*89999));
+ const note=$('fNote').value.trim();
+ const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
+ const cartSnapshot=cart.slice();
+ orders.unshift({code,ts:Date.now(),stage:0,mine:true,name,wa,addr,ship:state.ship,note,items});
+ LS.set('rj_orders',orders);state.lastOrder=code;cart=[];saveCart();renderSuccess();navStack=['home'];go('success');
+ if(sb){
+  try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,customer_name:name,whatsapp:wa,address:addr,note,items,stage:0});
+   if(error)throw error}
+  catch(e){console.error(e);toast('⚠️ Pesanan tersimpan lokal, tapi gagal sync ke server')}
+  await syncStokKeluarPesanan(code,name,cartSnapshot);
+ }
+}
+function renderSuccess(){
+ const o=orders.find(x=>x.code===state.lastOrder);if(!o)return;
+ const waMsg=encodeURIComponent('Halo RADJA Konveksi 👋 Saya sudah membuat pesanan '+o.code+' a.n. '+o.name+'. Mohon konfirmasi total & ongkir. Terima kasih!');
+ $('okWrap').innerHTML='<div class="success"><div class="big">✓</div><h1>Pesanan Berhasil Dibuat!</h1>'+
+ '<p>Terima kasih, <b>'+esc(o.name)+'</b>. Simpan kode pesananmu di bawah ini untuk melacak progres produksi & konfirmasi admin via WhatsApp.</p>'+
+ '<div class="code-big">'+o.code+'</div><div class="btns">'+
+ '<button class="btn btn-navy" onclick="copyCode(\''+o.code+'\')">📋 Salin Kode</button>'+
+ '<button class="btn btn-accent" onclick="window.open(\'https://wa.me/'+WA+'?text='+waMsg+'\')">💬 Konfirmasi via WhatsApp</button>'+
+ '<button class="btn btn-outline" onclick="go(\'track\')">📍 Lacak Pesanan</button></div></div>';
+}
+function copyCode(c){navigator.clipboard&&navigator.clipboard.writeText(c);toast('📋 Kode '+c+' disalin')}
+
+/* ================= TRACK ================= */
+function renderTrack(){
+ const mine=orders.filter(o=>o.mine).slice(0,5);
+ $('myOrders').innerHTML=mine.length?'<p style="font-size:12px;color:var(--muted);margin-top:8px">Pesananmu di perangkat ini: '+mine.map(o=>'<span class="chip" style="cursor:pointer" onclick="$(\'trackCode\').value=\''+o.code+'\';trackOrder()">'+o.code+'</span>').join(' ')+'</p>':'';
+}
+async function trackOrder(){
+ const code=$('trackCode').value.trim().toUpperCase();if(!code)return;
+ let o=orders.find(x=>x.code===code);
+ if(sb){
+  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').eq('order_code',code).maybeSingle();
+   if(!error&&data){o=rowToOrder(data);const idx=orders.findIndex(x=>x.code===code);if(idx>-1)orders[idx]=o;else orders.unshift(o);LS.set('rj_orders',orders)}}
+  catch(e){console.error(e)}
+ }
+ if(!o){$('trackResult').innerHTML='<div class="order-card" style="text-align:center;color:var(--danger);font-weight:700">😕 Pesanan dengan kode '+esc(code)+' tidak ditemukan.</div>';return}
+ const pcs=o.items.reduce((a,i)=>a+i.qty,0);
+ $('trackResult').innerHTML='<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
+ '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
+ stepper(o.stage)+
+ '<div class="o-items">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' — '+esc(i.color)+', '+esc(i.size)+'</span><span>'+fmt(i.qty*(i.est?i.est[0]:0))+'</span></div>').join('')+
+ '<div><span>Pemesan</span><span>'+esc(o.name)+' • '+pcs+' pcs</span></div>'+
+ '<div><span>Tanggal Order</span><span>'+new Date(o.ts).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})+'</span></div></div></div>';
+}
+
+/* ================= ADMIN ================= */
+function renderAdmin(){
+ const w=$('adminWrap');
+ if(!state.unlocked){w.innerHTML='<div class="gate"><div class="lock">🔒</div><h2 style="color:var(--navy-900)">Admin / Owner</h2><p style="color:var(--muted);font-size:12.5px;margin-top:6px">Masukkan PIN untuk membuka dashboard.</p><input id="pinIn" type="password" maxlength="6" inputmode="numeric" placeholder="••••"><button class="btn btn-navy btn-block" onclick="unlock()">Buka Dashboard</button><p style="font-size:11px;color:var(--muted);margin-top:12px">PIN default: 1234</p></div>';return}
+ const t=state.adminTab;
+ const inProd=orders.filter(o=>o.stage>=2&&o.stage<7).length,done=orders.filter(o=>o.stage>=7).length,pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
+ w.innerHTML='<div class="crumb">Beranda / <b>Admin Dashboard</b> <span style="margin-left:8px;font-size:11px;font-weight:700;color:'+(sb?'var(--ok)':'var(--danger)')+'">'+(sb?'🟢 Tersambung':'🔴 Belum Tersambung')+'</span></div><div class="admin-wrap">'+
+ '<div class="a-side"><div class="who">🛡️ ADMIN PANEL</div>'+
+ [['pesanan','📦 Pesanan'],['produksi','🏭 Produksi'],['produk','📷 Produk'],['pengaturan','⚙️ Pengaturan']].map(x=>'<button class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()">'+x[1]+'</button>').join('')+
+ '<button onclick="state.unlocked=false;go(\'home\')">🚪 Keluar</button></div>'+
+ '<div><div class="stat-row">'+
+ '<div class="stat"><b>'+orders.length+'</b><span>TOTAL PESANAN</span></div><div class="stat"><b>'+inProd+'</b><span>DALAM PRODUKSI</span></div>'+
+ '<div class="stat"><b>'+done+'</b><span>SELESAI / DIKIRIM</span></div><div class="stat"><b>'+pcs.toLocaleString('id-ID')+'</b><span>TOTAL PCS</span></div></div>'+
+ (t==='pesanan'?adminOrders():t==='produksi'?adminProd():t==='produk'?adminProduk():adminSettings())+'</div></div>';
+}
+function unlock(){if($('pinIn').value===settings.pin){state.unlocked=true;renderAdmin();toast('👋 Selamat datang, Admin!')}else toast('❌ PIN salah')}
+function orderBody(o){
+ return '<div class="top"><span class="code">'+o.code+' <span style="color:var(--muted);font-weight:600">• '+esc(o.name)+'</span></span>'+
+ '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
+ '<div class="meta">📱 '+esc(o.wa)+' • 🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+' • 📍 '+esc(o.addr)+(o.note?' • 📝 '+esc(o.note):'')+'</div>'+
+ '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>';
+}
+function adminOrders(){
+ if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
+ return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+'<div class="acts">'+
+ cselHTML('stageSel'+i,STAGES.map((s,j)=>({value:j,label:s[0]+' '+s[1]})),o.stage,'setStage.bind(null,'+i+')')+
+ (o.stage<7?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+','+(o.stage+1)+')">Tahap Berikutnya →</button>':'')+
+ '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
+}
+function adminProd(){
+ const act=orders.filter(o=>o.stage<7);
+ if(!act.length)return '<p style="color:var(--muted)">Tidak ada order aktif di lantai produksi. 🎉</p>';
+ return act.map(o=>{const i=orders.indexOf(o);return '<div class="a-order">'+orderBody(o)+stepper(o.stage)+
+ '<div class="acts"><button class="btn btn-accent btn-sm" onclick="setStage('+i+','+(o.stage+1)+')">✅ Selesai: '+STAGES[o.stage][1]+' → lanjut</button></div></div>'}).join('');
+}
+function setStage(i,v){
+ v=+v;const code=orders[i].code;orders[i].stage=v;LS.set('rj_orders',orders);renderAdmin();toast('🏭 '+code+' → '+STAGES[v][1]);
+ if(sb)sb.from(ORDERS_TABLE).update({stage:v}).eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal sync status ke server')}});
+}
+function delOrder(i){
+ if(!confirm('Hapus pesanan '+orders[i].code+'?'))return;
+ const code=orders[i].code;orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();
+ if(sb)sb.from(ORDERS_TABLE).delete().eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal hapus di server')}});
+}
+function adminProduk(){
+ if(!sb)return '<p style="color:var(--muted)">🔌 Sambungkan ke Supabase dulu di tab Pengaturan.</p>';
+ if(!masterData.model.length)return '<p style="color:var(--muted)">Belum ada data Model di aplikasi Inventory. Tambahkan Brand & Model dulu di sana — daftar produk di sini mengikuti data itu secara otomatis.</p>';
+ return masterData.model.map(m=>{
+  const meta=produkMeta[m.id]||{};
+  const bUp=(m.brandNama||'').trim().toUpperCase(),mUp=(m.nama||'').trim().toUpperCase();
+  const totalStok=stokRows.filter(r=>r.brand===bUp&&r.model===mUp).reduce((a,r)=>a+Math.max(0,r.stok),0);
+  return '<div class="a-order">'+
+   '<div class="top" style="align-items:center">'+
+   '<span style="display:flex;gap:10px;align-items:center"><img src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:46px;height:46px;border-radius:9px;object-fit:cover;background:#EEF1F7"><b style="font-size:13px">'+esc(m.nama)+' <span style="color:var(--muted);font-weight:600">— '+esc(m.brandNama||'—')+'</span></b></span>'+
+   '<div class="switch '+(meta.aktif!==false?'on':'')+'" onclick="toggleProdukAktif('+m.id+')"></div></div>'+
+   '<div class="meta">📦 Stok saat ini: '+totalStok+' pcs • 💰 Harga: '+fmt(m.harga||0)+'</div>'+
+   '<div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:10px">'+
+   '<div><label>URL Gambar Produk</label><input id="pm-img-'+m.id+'" value="'+esc(meta.gambar_url||'')+'" placeholder="https://..."></div>'+
+   '<div><label>Kategori</label><input id="pm-cat-'+m.id+'" value="'+esc(meta.kategori||'')+'" placeholder="cth: Kaos Anak"></div>'+
+   '<div><label>Min. Order (pcs)</label><input id="pm-min-'+m.id+'" type="number" min="1" value="'+(meta.min_order||1)+'"></div>'+
+   '<div><label>Estimasi Produksi</label><input id="pm-days-'+m.id+'" value="'+esc(meta.estimasi_hari||'')+'" placeholder="cth: 7–14 hari"></div>'+
+   '<div style="grid-column:1/-1"><label>Badge (opsional)</label><input id="pm-badge-'+m.id+'" value="'+esc(meta.badge||'')+'" placeholder="cth: TERLARIS"></div>'+
+   '<div style="grid-column:1/-1"><label>Deskripsi</label><textarea id="pm-desc-'+m.id+'" rows="2" placeholder="Deskripsi produk untuk pembeli">'+esc(meta.deskripsi||'')+'</textarea></div>'+
+   '</div>'+
+   '<button class="btn btn-navy btn-sm" style="margin-top:10px" onclick="saveProdukMeta('+m.id+')">💾 Simpan</button>'+
+   '</div>';
+ }).join('');
+}
+async function saveProdukMeta(modelId){
+ if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
+ const row={model_id:modelId,gambar_url:$('pm-img-'+modelId).value.trim(),kategori:$('pm-cat-'+modelId).value.trim(),min_order:parseInt($('pm-min-'+modelId).value)||1,estimasi_hari:$('pm-days-'+modelId).value.trim(),badge:$('pm-badge-'+modelId).value.trim(),deskripsi:$('pm-desc-'+modelId).value.trim(),aktif:produkMeta[modelId]?.aktif!==false};
+ const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
+ if(error){console.error(error);toast('❌ Gagal simpan: cek apakah tabel pesanan_produk_meta sudah dibuat');return}
+ produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();toast('💾 Produk disimpan');renderAdmin();
+}
+async function toggleProdukAktif(modelId){
+ if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
+ const cur=produkMeta[modelId]?.aktif!==false;
+ const row={model_id:modelId,aktif:!cur};
+ const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
+ if(error){console.error(error);toast('❌ Gagal update');return}
+ produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();renderAdmin();toast(!cur?'Produk ditampilkan':'Produk disembunyikan dari katalog');
+}
+function adminSettings(){
+ const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  customer_name text, whatsapp text, address text, note text,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\nend $$;";
+ return '<div class="panel" style="margin-bottom:14px"><h2>🔗 Koneksi Supabase</h2>'+
+ '<p style="font-size:12px;color:var(--muted);margin-bottom:6px">'+(sb?'🟢 <b style="color:var(--ok)">Tersambung</b> — pesanan tersinkron & katalog stok mengikuti data Inventory secara realtime.':'🔴 <b style="color:var(--danger)">Belum tersambung</b>.')+'</p>'+
+ '<p style="font-size:12px;color:var(--muted);margin-bottom:14px">Isi URL & Anon Key project Supabase yang <b>sama dengan aplikasi Inventory</b>. Katalog produk & stok akan otomatis mengikuti data Brand/Model/Warna/Ukuran di sana (read-only) — Inventory tidak pernah ditulis dari sini. Jalankan SQL di bawah sekali di Supabase SQL Editor untuk menyiapkan tabel pesanan & view stok.</p>'+
+ '<div class="form-grid"><div><label>Supabase URL</label><input id="sUrl" value="'+esc(settings.url)+'" placeholder="https://xxxx.supabase.co"></div>'+
+ '<div><label>Anon Key</label><input id="sKey" value="'+esc(settings.key)+'" placeholder="eyJhbGciOi…"></div></div>'+
+ '<div class="acts" style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">'+
+ '<button class="btn btn-navy btn-sm" onclick="saveSettings()">💾 Simpan & Hubungkan</button>'+
+ '<button class="btn btn-outline btn-sm" onclick="testConn()">🔌 Tes Koneksi Pesanan</button>'+
+ '<button class="btn btn-outline btn-sm" onclick="copySQL()">📄 Copy SQL Schema</button></div>'+
+ '<p style="font-size:11px;color:var(--muted);margin-top:10px">📦 Model ter-load: <b>'+masterData.model.length+'</b> • Baris stok ter-load: <b>'+stokRows.length+'</b></p></div>'+
+ '<div class="panel"><h2>🔐 Ganti PIN Admin</h2><div class="form-grid" style="max-width:340px">'+
+ '<div><label>PIN Baru</label><input id="sPin" maxlength="6" placeholder="4–6 digit"></div></div>'+
+ '<button class="btn btn-accent btn-sm" style="margin-top:12px" onclick="changePin()">Ganti PIN</button></div>'+
+ '<textarea id="sqlBox" style="position:fixed;left:-9999px">'+SQL+'</textarea>';
+}
+async function saveSettings(){
+ settings.url=$('sUrl').value.trim();settings.key=$('sKey').value.trim();LS.set('rj_settings',settings);
+ initSupabase();
+ if(sb){
+  const ok=await syncOrdersFromCloud();
+  await loadInventoryData();
+  setupRealtimeStok();
+  toast(ok?'💾 Tersambung & data tersinkron!':'💾 Tersimpan, tapi gagal ambil data pesanan. Cek URL/Key & SQL Schema.');
+ } else toast('💾 Pengaturan tersimpan');
+ renderAdmin();
+}
+function changePin(){const v=$('sPin').value.trim();if(v.length<4){toast('⚠️ PIN minimal 4 digit');return}settings.pin=v;LS.set('rj_settings',settings);toast('🔐 PIN berhasil diganti')}
+function copySQL(){const t=$('sqlBox');t.style.left='0';t.select();document.execCommand('copy');t.style.left='-9999px';toast('📄 SQL schema disalin')}
+async function testConn(){
+ if(!settings.url||!settings.key){toast('⚠️ Isi URL & Anon Key dulu');return}
+ initSupabase();
+ if(!sb){toast('❌ Gagal membuat koneksi. Cek URL & Key.');return}
+ try{const {data,error}=await sb.from(ORDERS_TABLE).select('*',{count:'exact',head:false}).limit(1);
+  if(error)throw error;
+  toast('✅ Terhubung ke tabel '+ORDERS_TABLE+'!')}
+ catch(e){console.error(e);toast('❌ Gagal: tabel belum ada / RLS salah. Jalankan SQL Schema dulu.')}
+}
+
+/* ================= INIT ================= */
+renderHome();updateBadge();
+if(sb){loadInventoryData().then(()=>{renderHome();});setupRealtimeStok();}
+
+/* ================= PWA: SERVICE WORKER ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW gagal daftar:', err));
+  });
+}
+
+</script>
+</body>
+</html>
