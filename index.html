@@ -789,7 +789,7 @@ function cRm(i){cart.splice(i,1);saveCart();renderCart();toast('Item dihapus dar
 
 /* ================= CHECKOUT ================= */
 function setShipMethod(v){state.ship=v;renderCheckout()}
-function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}if(!state.draftCode)state.draftCode='DRAFT-'+(10000+Math.floor(Math.random()*89999));renderCheckout();go('checkout')}
+function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}if(!state.draftCode)state.draftCode='TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0');renderCheckout();go('checkout')}
 function renderCheckout(){
  const prevName=$('fName')?.value||'',prevWa=$('fWa')?.value||'',prevAddr=$('fAddr')?.value||'',prevNote=$('fNote')?.value||'';
  const pcs=cart.reduce((a,c)=>a+c.qty,0);
@@ -864,7 +864,7 @@ async function placeOrder(){
  const name=$('fName').value.trim(),wa=$('fWa').value.trim(),addr=$('fAddr').value.trim();
  if(!name||!wa||!addr){toast('⚠️ Lengkapi nama, WhatsApp, dan alamat');return}
  for(const c of cart){const p=P(c.pid);if(!p)continue;const avail=stokFor(p,c.color,c.size);if(avail<c.qty){toast('⚠️ Stok '+p.name+' ('+c.color+', '+c.size+') tidak mencukupi lagi');return}}
- const code='RJA-'+(10000+Math.floor(Math.random()*89999));
+ const code=state.draftCode||('TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0'));
  const note=$('fNote').value.trim();
  const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
