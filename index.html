@@ -56,7 +56,7 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 
 /* ============ HERO ============ */
 .hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden;flex:1;display:flex;flex-direction:column}
-.hero .container{position:relative;padding:74px 18px;margin:auto 0;width:100%}
+.hero .container{position:relative;padding:74px 18px;width:100%}
 .hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.95}
 .hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 38%,rgba(8,15,38,0) 58%,rgba(8,15,38,0) 100%)}
 .hero h1{color:#fff;font-size:clamp(26px,4vw,44px);font-weight:800;line-height:1.15;max-width:560px}
@@ -387,8 +387,6 @@ body.hide-footer footer{display:none}
   .step .lbl{font-size:8.5px}
 }
 @media(max-width:640px){
-  main,.view.on,.hero{flex:none}
-  .hero .container{margin:0;padding:44px 18px 40px}
   .h-main{flex-wrap:wrap}
   .search{order:3;flex-basis:100%}
   .cats{grid-template-columns:repeat(3,1fr)}
