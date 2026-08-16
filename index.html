@@ -24,7 +24,9 @@
   --radius:14px; --shadow:0 2px 10px rgba(11,22,51,.06); --shadow-lg:0 12px 32px rgba(11,22,51,.14);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar{display:none}
+body::-webkit-scrollbar{display:none}
 body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;display:flex;flex-direction:column;min-height:100dvh;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-touch-callout:none}
 img{display:block;max-width:100%}
 button{font-family:inherit;cursor:pointer;border:none;background:none;-webkit-tap-highlight-color:transparent}
@@ -100,8 +102,8 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
   .hero .container{padding:clamp(20px,5vh,44px) 18px clamp(20px,5vh,48px)}
   .hero-why{margin-top:clamp(14px,3vh,26px)}
   .hero-why-grid{grid-template-columns:1fr;gap:clamp(6px,1.2vh,9px)}
-  .hero-why-card{min-height:auto;display:grid;grid-template-columns:56px 1px 1fr;column-gap:14px;align-items:center;padding:clamp(9px,1.8vh,14.5px) 13px}
-  .hero-why-icon{grid-row:1;width:50px;height:50px;margin:0}
+  .hero-why-card{min-height:auto;display:grid;grid-template-columns:52px 1px 1fr;column-gap:12px;align-items:center;padding:clamp(9px,1.8vh,14.5px) 12px}
+  .hero-why-icon{grid-row:1;width:46px;height:46px;margin:0}
   .hero-why-div{grid-row:1;width:0;height:100%;min-height:60px;border-top:none;border-left:1.5px dashed rgba(255,159,28,.5);margin:0;align-self:stretch}
   .hero-why-text{grid-row:1;gap:2px}
   .hero-why-num{margin:0 0 3px;font-size:15px}
