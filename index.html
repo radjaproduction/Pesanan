@@ -1242,7 +1242,7 @@ function numpadKey(k){
  }
  const el=$('qtyInput');if(el)el.value=numpadBuf;
 }
-function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;numpadOpen=false;renderProduct();renderBuyModal()}
+function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;if(numpadOpen)numpadBuf=String(p.min);renderProduct();renderBuyModal()}
 function pdSwipeColor(dir){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
  const order=sortedColorIdxs(p);
