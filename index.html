@@ -1155,17 +1155,16 @@ function renderBuyModal(){
  '<button class="pbm-close" onclick="closeBuyModal()">✕</button>'+
  '<div class="pbm-handle"></div>'+
  '<div class="pbm-head"><img src="'+curImgSrc+'" alt=""><div><div class="p-brand">'+esc(p.brand)+'</div><h3>'+esc(p.name)+'</h3></div></div>'+
- '<div class="opt-lbl">Warna — <span>'+esc(curColorObj.n)+'</span></div>'+
- '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="selectModalColor('+i+')"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
+ (p.sizes.filter(z=>stokFor(p,curColorObj.n,z)>0).length?(
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
- '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,curColorObj.n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="selectModalSize(\''+z.replace(/'/g,"\\'")+'\')"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
+ '<div class="sizes sizes-lg">'+p.sizes.filter(z=>stokFor(p,curColorObj.n,z)>0).map(z=>{return '<div class="sz sz-lg '+(s.size===z?'on':'')+'" onclick="selectModalSize(\''+z.replace(/'/g,"\\'")+'\')">'+esc(z)+'</div>'}).join('')+'</div>'
+ ):'')+
  '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Pilih ukuran untuk melihat stok')+'</div>'+
  '<div class="opt-lbl">Jumlah</div><div class="qty-row"><div class="stepper-qty">'+
  '<button onclick="chgQty(-1)">−</button><input id="qtyInput" value="'+s.qty+'" type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')" onchange="setQty(this.value)" onblur="setQty(this.value)"><button onclick="chgQty(1)">+</button></div>'+
  '<span class="qty-note">Min. order '+p.min+' pcs</span></div>'+
- '<div class="pd-cta" style="margin-top:18px"><button class="btn btn-outline" onclick="addSel(false)">🛒 Keranjang</button><button class="btn btn-accent" onclick="addSel(true)">⚡ Pesan Sekarang</button></div>';
+ '<div class="pd-cta" style="margin-top:18px"><button class="btn btn-outline" style="flex:1" onclick="addSel(false)">🛒 Keranjang</button></div>';
 }
-function selectModalColor(i){const p=P(state.sel.pid);if(!p)return;state.sel.color=i;state.sel.size='';state.sel.qty=p.min;renderProduct();renderBuyModal()}
 function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;renderProduct();renderBuyModal()}
 function pdSwipeColor(dir){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
