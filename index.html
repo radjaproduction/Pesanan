@@ -1335,6 +1335,7 @@ function addSel(buy){
  const s=state.sel,p=P(s.pid);if(!p)return;
  if(!p.colors.length){toast('⚠️ Produk belum memiliki stok');return}
  if(!s.size){toast('⚠️ Pilih ukuran terlebih dahulu');return}
+ if(!s.qty||s.qty<1){toast('⚠️ Masukkan jumlah terlebih dahulu');return}
  const avail=stokFor(p,p.colors[s.color].n,s.size);
  if(avail<=0){toast('⚠️ Stok habis untuk varian ini');return}
  if(s.qty>avail){toast('⚠️ Stok tidak cukup, tersedia '+avail+' pcs');return}
@@ -1342,8 +1343,8 @@ function addSel(buy){
  const ex=cart.find(c=>c.key===key);
  if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
  saveCart();toast('✅ '+p.name+' masuk keranjang');
- s.qty=p.min;
- if(numpadOpen)numpadBuf=String(p.min);
+ s.qty=0;
+ if(numpadOpen)numpadBuf='';
  renderProduct();
  if(buy){numpadOpen=false;closeBuyModal();go('cart')}else if(buyModalOpen){renderBuyModal()}
 }
