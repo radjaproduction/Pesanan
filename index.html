@@ -1049,8 +1049,10 @@ function renderProduct(){
  const curDispSt = hasVar?((!curOff&&s.size)?stokFor(p,curColorObj.n,s.size):curTot):0;
  const nColors = hasVar?p.colors.length:0;
  const canCarousel = nColors>1;
- const prevIdx = canCarousel?((s.color-1+nColors)%nColors):null;
- const nextIdx = canCarousel?((s.color+1)%nColors):null;
+ const colorOrder = canCarousel?sortedColorIdxs(p):[];
+ const posInOrder = canCarousel?colorOrder.indexOf(s.color):-1;
+ const prevIdx = canCarousel?colorOrder[(posInOrder-1+nColors)%nColors]:null;
+ const nextIdx = canCarousel?colorOrder[(posInOrder+1)%nColors]:null;
  const curPending = willProcess && !composeCache[composeKey];
  const prevPending = canCarousel && colorTintPending(p,prevIdx);
  const nextPending = canCarousel && colorTintPending(p,nextIdx);
@@ -1117,6 +1119,9 @@ function preloadColorVariants(p,pid){
   });
  });
 }
+function sortedColorIdxs(p){
+ return p.colors.map((c,i)=>({i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(o=>o.i);
+}
 function chgQty(d){
  const s=state.sel,p=P(s.pid);if(!p)return;
  let maxStok=Infinity;
@@ -1164,23 +1169,20 @@ function selectModalColor(i){const p=P(state.sel.pid);if(!p)return;state.sel.col
 function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;renderProduct();renderBuyModal()}
 function pdSwipeColor(dir){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
- const n=p.colors.length;
- s.color=((s.color+dir)%n+n)%n;s.size='';s.qty=p.min;renderProduct();
+ const order=sortedColorIdxs(p);
+ const n=order.length;
+ const pos=order.indexOf(s.color);
+ const newPos=((pos+dir)%n+n)%n;
+ s.color=order[newPos];s.size='';s.qty=p.min;renderProduct();renderBuyModal();
 }
-let _pdDragging=false,_pdDragX=0,_pdDragY=0,_pdContW=0,_pdPtrId=null,_pdSuppressClick=false;
+let _pdDragging=false,_pdDragX=0,_pdDragY=0,_pdContW=0,_pdPtrId=null;
 document.addEventListener('pointerdown',e=>{
  const box=e.target.closest('#pdImgBox');if(!box)return;
- const track=$('pdImgTrack');if(!track)return;
  _pdDragging=true;_pdDragX=e.clientX;_pdDragY=e.clientY;_pdPtrId=e.pointerId;
  _pdContW=box.getBoundingClientRect().width||1;
- track.classList.add('dragging');
+ const track=$('pdImgTrack');
+ if(track)track.classList.add('dragging');
  try{box.setPointerCapture(e.pointerId)}catch(err){}
-});
-document.addEventListener('click',e=>{
- const box=e.target.closest('#pdImgBox');if(!box)return;
- if(_pdSuppressClick){_pdSuppressClick=false;return}
- const s=state.sel,p=s?P(s.pid):null;
- if(p&&p.colors&&p.colors.length)openBuyModal();
 });
 document.addEventListener('pointermove',e=>{
  if(!_pdDragging||e.pointerId!==_pdPtrId)return;
@@ -1199,17 +1201,22 @@ function pdEndDrag(track,cancel){
 document.addEventListener('pointerup',e=>{
  if(!_pdDragging||e.pointerId!==_pdPtrId)return;
  const track=$('pdImgTrack');
- const dx=e.clientX-_pdDragX;
+ const dx=e.clientX-_pdDragX,dy=e.clientY-_pdDragY;
  _pdDragging=false;_pdPtrId=null;
+ if(track)track.classList.remove('dragging');
+ // Tap murni (tanpa geser) -> langsung buka popup beli, tidak perlu klik dua kali
+ if(Math.abs(dx)<8&&Math.abs(dy)<8){
+  if(track)track.style.transform='translateX(-33.3334%)';
+  const s=state.sel,p=s?P(s.pid):null;
+  if(p&&p.colors&&p.colors.length)openBuyModal();
+  return;
+ }
  if(!track)return;
- track.classList.remove('dragging');
  const threshold=Math.max(44,_pdContW*0.16);
  if(dx>threshold){
-  _pdSuppressClick=true;
   track.style.transform='translateX(0%)';
   setTimeout(()=>pdSwipeColor(-1),240);
  }else if(dx<-threshold){
-  _pdSuppressClick=true;
   track.style.transform='translateX(-66.6668%)';
   setTimeout(()=>pdSwipeColor(1),240);
  }else{
