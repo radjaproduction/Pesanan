@@ -1003,9 +1003,9 @@ function renderProduct(){
  const nextIdx = canCarousel?((s.color+1)%nColors):null;
  const imgBody = canCarousel?(
   '<div class="pd-img-track" id="pdImgTrack" style="transform:translateX(-33.3334%)">'+
-   '<div class="pd-img-slide"><img src="'+esc(previewImgForColor(p,prevIdx))+'" alt=""></div>'+
-   '<div class="pd-img-slide"><img id="pdImgTag" src="'+curImg+'" alt=""></div>'+
-   '<div class="pd-img-slide"><img src="'+esc(previewImgForColor(p,nextIdx))+'" alt=""></div>'+
+   '<div class="pd-img-slide"><img data-cidx="'+prevIdx+'" src="'+esc(previewImgForColor(p,prevIdx))+'" alt=""></div>'+
+   '<div class="pd-img-slide"><img id="pdImgTag" data-cidx="'+s.color+'" src="'+curImg+'" alt=""></div>'+
+   '<div class="pd-img-slide"><img data-cidx="'+nextIdx+'" src="'+esc(previewImgForColor(p,nextIdx))+'" alt=""></div>'+
   '</div>'
  ):('<img id="pdImgTag" src="'+curImg+'" alt="">');
  $('pdWrap').innerHTML=
@@ -1037,6 +1037,29 @@ function renderProduct(){
    }
   });
  }
+ if(canCarousel)preloadColorVariants(p,s.pid);
+}
+let _pdWarmedPids={};
+// Siapkan (compose) lebih dulu foto tint/overlay SEMUA warna produk ini di background begitu halaman produk
+// dibuka, supaya pas digeser gambarnya langsung tampil warna yang benar — tidak sempat kelihatan baju putih/
+// warna dasar dulu. Warna yang sudah punya foto asli sendiri (bukan hasil tint) dilewati karena tidak perlu diproses.
+function preloadColorVariants(p,pid){
+ if(_pdWarmedPids[pid])return;
+ _pdWarmedPids[pid]=true;
+ if(!p.img||p.img===PLACEHOLDER_IMG)return;
+ const hasOverlay=!!(p.overlay&&p.overlay.url);
+ p.colors.forEach((c,idx)=>{
+  const explicitImg=(p.imgByColor[(c.n||'').trim().toUpperCase()]||'');
+  if(explicitImg)return;
+  const tintHex=(p.autoTint&&c.h)?c.h:null;
+  if(!tintHex&&!hasOverlay)return;
+  const invertNow=hasOverlay?shouldInvertForColor(p.overlay,c.n):false;
+  const ov=hasOverlay?Object.assign({},p.overlay,{invert:invertNow}):null;
+  composeImage(p.img,ov,tintHex,function(url){
+   if(!(state.sel&&state.sel.pid===pid))return;
+   document.querySelectorAll('#pdImgBox [data-cidx="'+idx+'"]').forEach(img=>{if(img.src!==url)img.src=url});
+  });
+ });
 }
 function chgQty(d){
  const s=state.sel,p=P(s.pid);if(!p)return;
