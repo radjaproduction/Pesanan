@@ -1223,9 +1223,23 @@ function closeNumpad(commit){
  else renderBuyModal();
 }
 function numpadKey(k){
- if(k==='back')numpadBuf=numpadBuf.slice(0,-1);
- else if(k==='clear')numpadBuf='';
- else if(numpadBuf.length<5)numpadBuf=(numpadBuf==='0'?'':numpadBuf)+k;
+ const s=state.sel,p=P(s.pid);
+ let maxStok=Infinity;
+ if(p&&s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
+ if(k==='back'){numpadBuf=numpadBuf.slice(0,-1)}
+ else if(k==='clear'){numpadBuf=''}
+ else if(numpadBuf.length<5){
+  const candidate=(numpadBuf==='0'?'':numpadBuf)+k;
+  const nv=parseInt(candidate,10);
+  if(isFinite(maxStok)&&maxStok<=0){
+   toast('⚠️ Stok varian ini habis');
+  }else if(isFinite(maxStok)&&nv>maxStok){
+   numpadBuf=String(maxStok);
+   toast('⚠️ Jumlah tidak boleh melebihi stok tersedia ('+maxStok+' pcs)');
+  }else{
+   numpadBuf=candidate;
+  }
+ }
  const el=$('qtyInput');if(el)el.value=numpadBuf;
 }
 function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;numpadOpen=false;renderProduct();renderBuyModal()}
@@ -1315,8 +1329,10 @@ function addSel(buy){
  const ex=cart.find(c=>c.key===key);
  if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
  saveCart();toast('✅ '+p.name+' masuk keranjang');
- closeBuyModal();
- if(buy){go('cart')}else{s.qty=p.min;renderProduct()}
+ numpadOpen=false;
+ s.qty=p.min;
+ renderProduct();
+ if(buy){closeBuyModal();go('cart')}else if(buyModalOpen){renderBuyModal()}
 }
 
 /* ================= CART ================= */
