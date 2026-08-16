@@ -1170,30 +1170,10 @@ function openBuyModal(){
  lockBodyScroll();
 }
 function closeBuyModal(){
- const s=state.sel,p=s?P(s.pid):null;
- if(buyModalOpen&&p&&p.colors.length&&s.size){
-  let qty=s.qty;
-  if(numpadOpen){
-   const nv=parseInt(numpadBuf,10);
-   qty=(!isNaN(nv)&&nv>0)?nv:0;
-  }
-  if(qty>0){
-   const avail=stokFor(p,p.colors[s.color].n,s.size);
-   if(avail>0){
-    qty=Math.min(qty,avail);
-    const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
-    const ex=cart.find(c=>c.key===key);
-    if(ex)ex.qty+=qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:qty});
-    saveCart();toast('✅ '+p.name+' masuk keranjang');
-   }
-  }
- }
- if(s)s.qty=0;
  buyModalOpen=false;
  numpadOpen=false;
  $('pdBuyModal').classList.remove('show');
  unlockBodyScroll();
- renderProduct();
 }
 function renderBuyModal(){
  if(!buyModalOpen)return;
@@ -1237,10 +1217,26 @@ function openNumpad(){
  renderBuyModal();
 }
 function closeNumpad(commit){
- const v=numpadBuf;
+ if(!commit){numpadOpen=false;renderBuyModal();return}
+ const s=state.sel,p=P(s.pid);
+ let nv=parseInt(numpadBuf,10);
+ if(isNaN(nv)||nv<1)nv=0;
  numpadOpen=false;
- if(commit)setQty(v);
- else renderBuyModal();
+ if(nv>0&&p&&p.colors.length&&s.size){
+  const avail=stokFor(p,p.colors[s.color].n,s.size);
+  if(avail<=0){
+   toast('⚠️ Stok varian ini habis');
+  }else{
+   nv=Math.min(nv,avail);
+   const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
+   const ex=cart.find(c=>c.key===key);
+   if(ex)ex.qty+=nv;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:nv});
+   saveCart();toast('✅ '+p.name+' masuk keranjang');
+  }
+ }
+ if(s)s.qty=0;
+ closeBuyModal();
+ renderProduct();
 }
 function numpadKey(k){
  const s=state.sel,p=P(s.pid);
