@@ -328,6 +328,7 @@ footer{flex-shrink:0}
 .inv-icon-btn{width:34px;height:34px;border-radius:9px;background:var(--navy-800);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s}
 .inv-icon-btn:hover{background:var(--navy-600);transform:translateY(-1px)}
 .stage-pill{font-size:11px;font-weight:800;padding:5px 12px;border-radius:14px;background:var(--navy-100);color:var(--navy-700)}
+.stage-pill.ord-stage{display:inline-block;min-width:148px;text-align:center}
 .stage-pill.final{background:#E7F8F0;color:var(--ok)}
 .o-items{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:12.5px;color:var(--muted)}
 .o-items div{padding:4px 0;display:flex;justify-content:space-between;gap:10px}
@@ -449,6 +450,7 @@ body.hide-footer footer{display:none}
 #backBar.show{display:block}
 #backBar .container{display:flex;align-items:center;justify-content:space-between;gap:12px}
 #backBar .crumb{margin:0}
+#backBar .crumb-title{font-size:17px;font-weight:800;color:var(--navy-900)}
 #backBtn{display:inline-flex;align-items:center;gap:6px;background:var(--navy-900);border:none;padding:10px 18px;
   margin:14px 0 0;border-radius:20px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:var(--shadow);flex-shrink:0}
 #backBtn:hover{background:var(--navy-800)}
@@ -591,7 +593,6 @@ body.boot-lock{overflow:hidden}
 <!-- ================= TRACK / RIWAYAT TRANSAKSI ================= -->
 <section class="view" id="view-track">
   <div class="container track-box">
-    <div class="sec-head"><h2>Invoice</h2></div>
     <div class="track-input">
       <input id="trackDateFrom" type="date">
       <span style="align-self:center;color:var(--muted);font-weight:700;font-size:12.5px">s/d</span>
@@ -1655,6 +1656,7 @@ function defaultPeriod(){
 }
 async function renderTrack(){
  const box=$('historyList');
+ setCrumb('<span class="crumb-title">Invoice</span>');
  const def=defaultPeriod();
  if($('trackDateFrom'))$('trackDateFrom').value=def.from;
  if($('trackDateTo'))$('trackDateTo').value=def.to;
@@ -1679,7 +1681,7 @@ function renderHistoryList(list){
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
-  '<span class="stage-pill '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>'+
+  '<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>'+
   payBadge(o)+
   '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
   '</div></div>'+
@@ -1793,7 +1795,7 @@ function payBadge(o){
 function orderBody(o,showPill){
  if(showPill===undefined)showPill=true;
  return '<div class="top"><span class="code">'+o.code+'</span>'+
- (showPill?'<span class="stage-pill '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>':'')+(showPill?payBadge(o):'')+'</div>'+
+ (showPill?'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>':'')+(showPill?payBadge(o):'')+'</div>'+
  '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+(o.note?' • 📝 '+esc(o.note):'')+'</div>'+
  '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>';
 }
