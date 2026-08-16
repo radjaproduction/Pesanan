@@ -178,12 +178,15 @@ footer{flex-shrink:0}
 /* ============ PRODUCT DETAIL ============ */
 .pd{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin:26px 0 40px}
 .pd-img{position:relative;border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1;touch-action:pan-y;cursor:grab;user-select:none}
-.pd-img img{width:100%;height:100%;object-fit:cover;pointer-events:none}
-.pd-img-tag{position:absolute;bottom:12px;background:rgba(11,22,51,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;backdrop-filter:blur(2px)}
+.pd-img img{width:100%;height:100%;object-fit:cover;pointer-events:none;display:block}
+.pd-img-track{display:flex;width:300%;height:100%;transition:transform .3s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.pd-img-track.dragging{transition:none}
+.pd-img-slide{flex:0 0 33.3334%;width:33.3334%;height:100%}
+.pd-img-tag{position:absolute;bottom:12px;background:rgba(11,22,51,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;backdrop-filter:blur(2px);z-index:2}
 .pd-img-tag.tag-color{left:12px}
 .pd-img-tag.tag-qty{right:12px}
 .pd-img-tag.tag-qty.low{background:rgba(229,72,77,.85)}
-.pd-img-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(11,22,51,.55);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;pointer-events:none;white-space:nowrap}
+.pd-img-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(11,22,51,.55);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;pointer-events:none;white-space:nowrap;z-index:2}
 .pd-info h1{font-size:24px;font-weight:800;display:block;color:#fff;padding:14px 24px;border-radius:10px;margin-bottom:14px;background:linear-gradient(90deg,var(--navy-900) 0%,var(--navy-800) 55%,transparent 100%)}
 .pd-meta{display:flex;gap:14px;align-items:center;margin:8px 0 14px;font-size:12.5px;color:var(--muted)}
 .pd-meta b{color:var(--accent-600)}
@@ -867,6 +870,23 @@ function imgForColor(p,warnaName){
  if(p.imgByColor && p.imgByColor[key])return p.imgByColor[key];
  return p.img;
 }
+// Gambar preview cepat (sinkron) untuk slide carousel prev/next: pakai foto khusus warna kalau ada,
+// kalau butuh proses tint/overlay pakai versi yang sudah ke-cache (kalau belum ke-cache, fallback ke foto dasar
+// sementara — nanti otomatis jadi akurat begitu warna itu benar-benar dipilih lewat renderProduct).
+function previewImgForColor(p,idx){
+ if(!p||!p.colors||idx==null||!p.colors[idx])return p?p.img:PLACEHOLDER_IMG;
+ const c=p.colors[idx];
+ const explicitImg=(p.imgByColor[(c.n||'').trim().toUpperCase()]||'');
+ if(explicitImg)return explicitImg;
+ const tintHex=(p.autoTint&&c.h)?c.h:null;
+ const hasOverlay=!!(p.overlay&&p.overlay.url);
+ if(p.img && p.img!==PLACEHOLDER_IMG && (tintHex||hasOverlay)){
+  const invertNow=hasOverlay?shouldInvertForColor(p.overlay,c.n):false;
+  const composeKey=p.img+'|'+(hasOverlay?(p.overlay.url+'|'+p.overlay.mode+'|'+p.overlay.size+'|'+p.overlay.x+'|'+p.overlay.y+'|'+(invertNow?1:0)):'')+'|'+(tintHex||'');
+  if(composeCache[composeKey])return composeCache[composeKey];
+ }
+ return p.img;
+}
 async function loadInventoryData(){
  if(!sb)return;
  try{
@@ -977,11 +997,22 @@ function renderProduct(){
  const curTot = hasVar?stokForColor(p,curColorObj.n):0;
  const curOff = hasVar?(curTot<=0):false;
  const curDispSt = hasVar?((!curOff&&s.size)?stokFor(p,curColorObj.n,s.size):curTot):0;
+ const nColors = hasVar?p.colors.length:0;
+ const canCarousel = nColors>1;
+ const prevIdx = canCarousel?((s.color-1+nColors)%nColors):null;
+ const nextIdx = canCarousel?((s.color+1)%nColors):null;
+ const imgBody = canCarousel?(
+  '<div class="pd-img-track" id="pdImgTrack" style="transform:translateX(-33.3334%)">'+
+   '<div class="pd-img-slide"><img src="'+esc(previewImgForColor(p,prevIdx))+'" alt=""></div>'+
+   '<div class="pd-img-slide"><img id="pdImgTag" src="'+curImg+'" alt=""></div>'+
+   '<div class="pd-img-slide"><img src="'+esc(previewImgForColor(p,nextIdx))+'" alt=""></div>'+
+  '</div>'
+ ):('<img id="pdImgTag" src="'+curImg+'" alt="">');
  $('pdWrap').innerHTML=
  '<div class="crumb">Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b></div>'+
- '<div class="pd"><div class="pd-img" id="pdImgBox"><img id="pdImgTag" src="'+curImg+'" alt="">'+
+ '<div class="pd"><div class="pd-img" id="pdImgBox">'+imgBody+
  (hasVar?('<div class="pd-img-tag tag-color">'+esc(curColorObj.n)+'</div>'+'<div class="pd-img-tag tag-qty'+(curOff?' low':'')+'">'+(curOff?'Habis':curDispSt+' pcs')+'</div>'):'')+
- (hasVar&&p.colors.length>1?'<div class="pd-img-hint">↔ Geser untuk ganti warna</div>':'')+
+ (canCarousel?'<div class="pd-img-hint">↔ Geser untuk ganti warna</div>':'')+
  '</div>'+
  '<div class="pd-info"><div class="p-brand">'+esc(p.brand)+'</div><h1>'+esc(p.name)+'</h1>'+
  (hasVar?(
@@ -1018,25 +1049,55 @@ function chgQty(d){
 function pdSwipeColor(dir){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
  const n=p.colors.length;
- for(let i=1;i<=n;i++){
-  const idx=((s.color+dir*i)%n+n)%n;
-  if(stokForColor(p,p.colors[idx].n)>0){s.color=idx;s.size='';s.qty=p.min;renderProduct();return}
- }
+ s.color=((s.color+dir)%n+n)%n;s.size='';s.qty=p.min;renderProduct();
 }
-let _pdSwipeX=null,_pdSwipeY=null;
+let _pdDragging=false,_pdDragX=0,_pdDragY=0,_pdContW=0,_pdPtrId=null;
 document.addEventListener('pointerdown',e=>{
  const box=e.target.closest('#pdImgBox');if(!box)return;
- _pdSwipeX=e.clientX;_pdSwipeY=e.clientY;
-},{passive:true});
+ const track=$('pdImgTrack');if(!track)return;
+ _pdDragging=true;_pdDragX=e.clientX;_pdDragY=e.clientY;_pdPtrId=e.pointerId;
+ _pdContW=box.getBoundingClientRect().width||1;
+ track.classList.add('dragging');
+ try{box.setPointerCapture(e.pointerId)}catch(err){}
+});
+document.addEventListener('pointermove',e=>{
+ if(!_pdDragging||e.pointerId!==_pdPtrId)return;
+ const track=$('pdImgTrack');if(!track)return;
+ const dx=e.clientX-_pdDragX,dy=e.clientY-_pdDragY;
+ if(Math.abs(dy)>Math.abs(dx)+12){pdEndDrag(track,true);return}
+ const clamped=Math.max(-_pdContW,Math.min(_pdContW,dx));
+ track.style.transform='translateX(calc(-33.3334% + '+clamped+'px))';
+});
+function pdEndDrag(track,cancel){
+ if(!_pdDragging)return;
+ _pdDragging=false;_pdPtrId=null;
+ track.classList.remove('dragging');
+ track.style.transform='translateX(-33.3334%)';
+}
 document.addEventListener('pointerup',e=>{
- if(_pdSwipeX===null)return;
- const box=e.target.closest('#pdImgBox');
- const dx=e.clientX-_pdSwipeX,dy=e.clientY-(_pdSwipeY||0);
- _pdSwipeX=null;_pdSwipeY=null;
- if(!box)return;
- if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy))return;
- pdSwipeColor(dx<0?1:-1);
-},{passive:true});
+ if(!_pdDragging||e.pointerId!==_pdPtrId)return;
+ const track=$('pdImgTrack');
+ const dx=e.clientX-_pdDragX;
+ _pdDragging=false;_pdPtrId=null;
+ if(!track)return;
+ track.classList.remove('dragging');
+ const threshold=Math.max(44,_pdContW*0.16);
+ if(dx>threshold){
+  track.style.transform='translateX(0%)';
+  setTimeout(()=>pdSwipeColor(-1),240);
+ }else if(dx<-threshold){
+  track.style.transform='translateX(-66.6668%)';
+  setTimeout(()=>pdSwipeColor(1),240);
+ }else{
+  track.style.transform='translateX(-33.3334%)';
+ }
+});
+document.addEventListener('pointercancel',e=>{
+ if(!_pdDragging||e.pointerId!==_pdPtrId)return;
+ const track=$('pdImgTrack');
+ _pdDragging=false;_pdPtrId=null;
+ if(track){track.classList.remove('dragging');track.style.transform='translateX(-33.3334%)'}
+});
 function setQty(v){
  const s=state.sel,p=P(s.pid);if(!p)return;
  let nv=parseInt(v,10);
