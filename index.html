@@ -1329,10 +1329,10 @@ function addSel(buy){
  const ex=cart.find(c=>c.key===key);
  if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
  saveCart();toast('✅ '+p.name+' masuk keranjang');
- numpadOpen=false;
  s.qty=p.min;
+ if(numpadOpen)numpadBuf=String(p.min);
  renderProduct();
- if(buy){closeBuyModal();go('cart')}else if(buyModalOpen){renderBuyModal()}
+ if(buy){numpadOpen=false;closeBuyModal();go('cart')}else if(buyModalOpen){renderBuyModal()}
 }
 
 /* ================= CART ================= */
