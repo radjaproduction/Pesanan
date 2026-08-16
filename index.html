@@ -742,7 +742,7 @@ function buildProducts(){
    id:'m'+m.id, modelId:m.id, brand:m.brandNama||'—', cat:meta.kategori||m.brandNama||'Produk',
    name:m.nama, img:meta.gambar_url||PLACEHOLDER_IMG, imgByColor, autoTint:meta.auto_tint===true, overlay, est:[m.harga||0,m.harga||0],
    min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
-   badge:meta.badge||'', desc:meta.deskripsi||'Belum ada deskripsi untuk produk ini.',
+   badge:meta.badge||'', desc:meta.deskripsi||'',
    specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
    colors, sizes, stokIndex, totalStok, aktif: meta.aktif!==false
   };
@@ -1091,9 +1091,9 @@ function renderProduct(){
  '<div class="pd-tap-hint" onclick="openBuyModal()">👆 <b>Ketuk foto produk</b> untuk isi jumlah &amp; pesan</div>'
  ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p><div class="pd-cta"><button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button></div>')+
  '</div>'+
- '<div class="pd-desc"><h3>Deskripsi Produk</h3><p>'+esc(p.desc)+'</p><div class="spec">'+
+ '<div class="pd-desc"><h3>Deskripsi Produk</h3>'+(p.desc?('<p>'+esc(p.desc)+'</p>'):'')+'<div class="spec">'+
  p.specs.map(x=>'<div><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></div>').join('')+
- '<div><span>Estimasi Produksi</span><span>'+esc(p.days)+'</span></div></div></div></div>';
+ '</div></div></div>';
  if(willProcess){
   const pid=s.pid,cIdx=s.color;
   composeImage(p.img,ovNow,tintHex,function(url){
