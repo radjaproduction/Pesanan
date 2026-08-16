@@ -668,6 +668,7 @@ function go(v,fromBack){
 }
 let navStack=[];
 function goBack(){
+ if(buyModalOpen)closeBuyModal();
  // Kalau ada history entry yang kita daftarkan sendiri, minta browser mundur
  // (ini akan memicu event 'popstate' di bawah, yang baru benar-benar pindah tab).
  // Dengan begitu tombol "← Kembali" di UI dan tombol back fisik HP berperilaku sama.
@@ -675,6 +676,7 @@ function goBack(){
  else{go('home',true)}
 }
 window.addEventListener('popstate',(e)=>{
+ if(buyModalOpen)closeBuyModal();
  const prev=navStack.pop();
  go(prev||'home',true);
 });
@@ -1132,15 +1134,36 @@ function chgQty(d){
 }
 /* ================= POPUP BELI (dari klik foto) ================= */
 let buyModalOpen=false;
+let _bodyScrollY=0;
+function lockBodyScroll(){
+ _bodyScrollY=window.scrollY||document.documentElement.scrollTop||0;
+ document.documentElement.style.overflow='hidden';
+ document.body.style.position='fixed';
+ document.body.style.top='-'+_bodyScrollY+'px';
+ document.body.style.left='0';
+ document.body.style.right='0';
+ document.body.style.width='100%';
+}
+function unlockBodyScroll(){
+ document.documentElement.style.overflow='';
+ document.body.style.position='';
+ document.body.style.top='';
+ document.body.style.left='';
+ document.body.style.right='';
+ document.body.style.width='';
+ window.scrollTo(0,_bodyScrollY);
+}
 function openBuyModal(){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors.length)return;
  buyModalOpen=true;
  renderBuyModal();
  $('pdBuyModal').classList.add('show');
+ lockBodyScroll();
 }
 function closeBuyModal(){
  buyModalOpen=false;
  $('pdBuyModal').classList.remove('show');
+ unlockBodyScroll();
 }
 function renderBuyModal(){
  if(!buyModalOpen)return;
