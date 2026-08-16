@@ -290,7 +290,7 @@ footer{flex-shrink:0}
 .form-grid input:focus,.form-grid textarea:focus{border-color:var(--navy-500);box-shadow:0 0 0 3px rgba(42,69,154,.12)}
 
 /* ============ TRACK / STEPPER ============ */
-.track-box{max-width:860px;margin:14px auto 50px;padding-left:6px;padding-right:6px}
+.track-box{max-width:860px;margin:14px auto 50px;padding-left:2px;padding-right:2px}
 .track-input{display:flex;gap:6px;margin:18px 0;flex-wrap:wrap;align-items:center}
 .track-input input{flex:1 1 100px;min-width:100px;padding:9px 8px;border:1.5px solid var(--line);border-radius:10px;font-weight:700;outline:none;font-size:12px}
 .track-input input:focus{border-color:var(--navy-500)}
@@ -309,6 +309,7 @@ footer{flex-shrink:0}
 .period-card .pc-stat b{display:block;font-size:24px;font-weight:800;color:#fff;line-height:1.2}
 .period-card .pc-stat.pc-total b{color:var(--accent);font-size:17px;line-height:1.25}
 .period-card .pc-stat span{display:block;font-size:10.5px;font-weight:700;color:#8FA1CC;letter-spacing:.5px;margin-top:3px}
+.period-card .pc-paid-note{position:relative;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;font-weight:600;color:#9FE8C1}
 
 .stepper{display:flex;margin:26px 0 8px}
 .step{flex:1;text-align:center;position:relative}
@@ -1690,7 +1691,15 @@ function renderPeriodSummary(list){
  const box=$('periodSummary');
  if(!window._dateFilterActive){box.innerHTML='';return}
  const pcs=list.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
- const total=list.reduce((a,o)=>a+orderTotal(o),0);
+ // PERBAIKAN: "Total Tagihan" sebelumnya menjumlah SEMUA transaksi di periode ini,
+ // termasuk yang sudah dilunasi — jadi angkanya tidak pernah berkurang walau owner
+ // sudah menandai LUNAS di app Inventory. Sekarang cuma transaksi yang statusnya
+ // BELUM lunas yang dihitung sebagai tagihan; yang sudah lunas dijumlah terpisah
+ // sekadar info, tidak ikut menambah Total Tagihan.
+ const belumLunas=list.filter(o=>o.statusBayar!=='lunas');
+ const sudahLunas=list.filter(o=>o.statusBayar==='lunas');
+ const totalTagihan=belumLunas.reduce((a,o)=>a+orderTotal(o),0);
+ const totalLunas=sudahLunas.reduce((a,o)=>a+orderTotal(o),0);
  const from=$('trackDateFrom').value,to=$('trackDateTo').value;
  const label=(from&&to)?(from===to?fmtTgl(from):fmtTgl(from)+' – '+fmtTgl(to)):(from?'Sejak '+fmtTgl(from):'Sampai '+fmtTgl(to));
  box.innerHTML='<div class="period-card">'+
@@ -1699,8 +1708,10 @@ function renderPeriodSummary(list){
   '<div class="pc-stats">'+
    '<div class="pc-stat"><b>'+list.length+'</b><span>TRANSAKSI</span></div>'+
    '<div class="pc-stat"><b>'+pcs+'</b><span>PCS</span></div>'+
-   '<div class="pc-stat pc-total"><b>'+fmt(total)+'</b><span>TOTAL TAGIHAN</span></div>'+
-  '</div></div>';
+   '<div class="pc-stat pc-total"><b>'+fmt(totalTagihan)+'</b><span>TOTAL TAGIHAN</span></div>'+
+  '</div>'+
+  (totalLunas>0?'<div class="pc-paid-note">✅ '+fmt(totalLunas)+' dari '+sudahLunas.length+' transaksi sudah lunas — tidak termasuk tagihan di atas.</div>':'')+
+  '</div>';
 }
 function fmtTgl(iso){const[y,m,d]=iso.split('-');return new Date(y,m-1,d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}
 function filterByDate(){
