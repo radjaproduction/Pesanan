@@ -451,9 +451,69 @@ body.hide-footer footer{display:none}
 #backBtn{display:inline-flex;align-items:center;gap:6px;background:var(--navy-900);border:none;padding:10px 18px;
   margin:14px 0 0;border-radius:20px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:var(--shadow);flex-shrink:0}
 #backBtn:hover{background:var(--navy-800)}
+/* ================= BOOT OVERLAY (loading awal) =================
+   Nutup layar sampai katalog/stok/pesanan selesai disiapkan di belakang
+   layar. Motif "benang jahit" dipakai sebagai signature element karena
+   RADJA jualan produksi garmen — bar progress meniru jahitan yang
+   terisi, bukan spinner generik. */
+#boot-overlay{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(ellipse 120% 90% at 50% 15%,var(--navy-700) 0%,var(--navy-900) 55%,var(--navy-950) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity .4s ease,visibility .4s ease}
+#boot-overlay.hide{opacity:0;visibility:hidden;pointer-events:none}
+#boot-overlay .boot-weave{position:absolute;inset:-10% -10%;background-image:repeating-linear-gradient(45deg,rgba(255,159,28,.05) 0 1px,transparent 1px 26px),repeating-linear-gradient(-45deg,rgba(255,159,28,.05) 0 1px,transparent 1px 26px);animation:bootWeave 9s linear infinite;pointer-events:none}
+#boot-overlay .boot-glow{position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(255,159,28,.22) 0%,rgba(255,159,28,0) 70%);animation:bootGlow 2.6s ease-in-out infinite}
+#boot-overlay .boot-stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:22px}
+#boot-overlay .boot-ring-wrap{position:relative;width:104px;height:104px;display:flex;align-items:center;justify-content:center}
+#boot-overlay .boot-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,159,28,.35)}
+#boot-overlay .boot-ring.r1{animation:bootRing 2.2s ease-out infinite}
+#boot-overlay .boot-ring.r2{animation:bootRing 2.2s ease-out infinite;animation-delay:.7s}
+#boot-overlay .boot-ring.r3{animation:bootRing 2.2s ease-out infinite;animation-delay:1.4s}
+#boot-overlay .boot-mark{position:relative;width:46px;height:auto;filter:drop-shadow(0 0 14px rgba(255,159,28,.55))}
+#boot-overlay .boot-word{height:20px;width:auto;opacity:0;transform:translateY(6px);animation:bootWordIn .6s ease .15s forwards}
+#boot-overlay .boot-track{position:relative;width:184px;height:8px}
+#boot-overlay .boot-track svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#boot-overlay .boot-track .rail{stroke:rgba(255,255,255,.14);stroke-width:1.5;stroke-dasharray:1 7;stroke-linecap:round;fill:none}
+#boot-overlay .boot-track .fill{stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;fill:none;stroke-dasharray:184;stroke-dashoffset:184;transition:stroke-dashoffset .5s cubic-bezier(.4,0,.2,1);filter:drop-shadow(0 0 6px rgba(255,159,28,.65))}
+#boot-overlay .boot-needle{position:absolute;top:50%;width:7px;height:7px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px rgba(255,159,28,.85);transform:translate(-50%,-50%);left:0;transition:left .5s cubic-bezier(.4,0,.2,1)}
+#boot-overlay .boot-meta{display:flex;flex-direction:column;align-items:center;gap:6px}
+#boot-overlay .boot-pct{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;font-weight:800;color:var(--accent);letter-spacing:.3px;font-variant-numeric:tabular-nums}
+#boot-overlay .boot-txt{font-size:10.5px;font-weight:700;letter-spacing:.7px;color:#8A95B5;text-transform:uppercase;min-height:14px;transition:opacity .25s ease}
+@keyframes bootWeave{from{transform:translate(0,0)}to{transform:translate(26px,26px)}}
+@keyframes bootGlow{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.05)}}
+@keyframes bootRing{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.55);opacity:0}}
+@keyframes bootWordIn{to{opacity:1;transform:translateY(0)}}
+body.boot-lock{overflow:hidden}
+@media (prefers-reduced-motion:reduce){
+ #boot-overlay .boot-weave,#boot-overlay .boot-glow,#boot-overlay .boot-ring{animation:none}
+ #boot-overlay .boot-word{animation:none;opacity:1;transform:none}
+}
 </style>
 </head>
-<body onclick="">
+<body onclick="" class="boot-lock">
+
+<div id="boot-overlay">
+  <div class="boot-weave"></div>
+  <div class="boot-stage">
+    <div class="boot-ring-wrap">
+      <div class="boot-glow"></div>
+      <div class="boot-ring r1"></div>
+      <div class="boot-ring r2"></div>
+      <div class="boot-ring r3"></div>
+      <svg class="boot-mark" viewBox="0 0 6.9253 4.7051" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RADJA">
+        <path fill="var(--accent)" d="M2.39084 3.60162l-0.5886 -0.78037 -1.38174 0 1.42083 1.88384 0.64056 0 0.74127 0 1.34968 0c1.29387,0 2.35241,-1.05859 2.35241,-2.35241 0,-1.29388 -1.05859,-2.35242 -2.35241,-2.35242l-1.18791 0c0.42092,0.22035 0.73145,0.62347 0.82562,1.10347l0.36229 0c0.68692,0 1.249,0.56203 1.249,1.249 0,0.68693 -0.56203,1.24901 -1.249,1.24901l-2.182 0 0 -0.0001zm1.57123 -0.18058l-0.45241 -0.59993 -0.0001 0 -0.14655 -0.19431c0.4166,-0.24539 0.69685,-0.69862 0.69685,-1.21627 0,-0.77796 -0.63267,-1.41053 -1.41053,-1.41053l-2.64933 0 0.83227 1.10347 1.81706 0c0.16884,0 0.30706,0.13818 0.30706,0.30706 0,0.16898 -0.13823,0.30716 -0.30706,0.30716l-1.35376 0 1.28472 1.70329 1.38179 0 0 0.00005z"/>
+      </svg>
+    </div>
+    <svg class="boot-word" viewBox="7.5089 0.6672 12.6328 3.3693" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RADJA">
+      <path fill="#ffffff" d="M7.50912 2.62353l12.63266 0 0 0.22185 -12.63266 0 0 -0.22185zm0.36441 0.88953l0 -0.15924 0.44496 0c0.02163,0 0.04036,0.00764 0.05553,0.02351 0.01615,0.0154 0.02374,0.03417 0.02374,0.05651 0,0.02159 -0.00759,0.04031 -0.02374,0.05623 -0.01517,0.01517 -0.03391,0.02299 -0.05553,0.02299l-0.44496 0zm-0.36436 -0.43268l0 0.93467 0.36436 0 0 -0.22812 0.53612 0c0.19249,0.0029 0.35598,-0.1606 0.35313,-0.35309 0.00285,-0.19346 -0.16064,-0.35533 -0.35313,-0.35346l-0.90049 0zm1.35231 -0.00066l0 0.93462 0.36432 0 0 -0.22807 0.32537 0 0.1759 0.22807 0.38802 0 -0.20387 -0.26202c0.06125,-0.02874 0.11059,-0.07173 0.14763,-0.12815 0.03746,-0.05698 0.05623,-0.12081 0.05623,-0.19109 0.0028,-0.19342 -0.16069,-0.35528 -0.35314,-0.35337l-0.90049 0zm0.80858 0.27335c0.04434,0 0.07997,0.03541 0.07997,0.07998 0,0.02163 -0.00759,0.04031 -0.02374,0.05627 -0.01517,0.01541 -0.03395,0.02304 -0.05623,0.02304l-0.4443 0 0 -0.15929 0.4443 0zm1.16882 -0.29695c-0.35168,0.00075 -0.63959,0.10231 -0.63818,0.45624l0 0.06808c-0.0014,0.35309 0.2865,0.45544 0.63818,0.4561 0.35131,-0.00066 0.63894,-0.10301 0.63772,-0.4561l0 -0.06808c0,-0.35346 -0.28599,-0.45624 -0.63772,-0.45624zm0.27317 0.50129c0.0021,0.1531 -0.12441,0.18087 -0.27321,0.18298 -0.14951,-0.00211 -0.27597,-0.02988 -0.27382,-0.18298l0 -0.02276c-0.00215,-0.1524 0.12431,-0.18017 0.27382,-0.18228 0.1488,0.00211 0.27531,0.02988 0.27321,0.18228l0 0.02276zm1.38364 -0.00969c0,0.09397 -0.05338,0.17114 -0.14815,0.17114l-0.39888 0 0 -0.34223 0.39888 0c0.09477,0 0.14815,0.07661 0.14815,0.1711zm-0.91139 -0.46738l0 0.93467 0.83156 0c0.25659,0.00355 0.44692,-0.21337 0.445,-0.46728 0.00192,-0.25519 -0.18841,-0.47071 -0.445,-0.46738l-0.83156 0zm2.29026 0.47778c0.00216,0.1538 -0.12436,0.18017 -0.27311,0.18228 -0.14955,-0.00211 -0.27536,-0.02848 -0.27391,-0.18228l0 -0.47895 -0.36432 0 0 0.50194c-0.0014,0.35323 0.28768,0.45474 0.63823,0.45544 0.35052,-0.00066 0.6396,-0.10221 0.63837,-0.45544l0 -0.50194 -0.36526 0 0 0.47895zm1.38079 0.06817c-0.03319,0.09178 -0.13766,0.11411 -0.26267,0.11411 -0.14885,-0.00211 -0.27532,-0.02988 -0.27316,-0.18228l0 -0.02299c-0.00216,-0.15358 0.12431,-0.17994 0.27316,-0.18205 0.12501,0 0.22877,0.02164 0.26267,0.11327l0.37364 0c-0.02308,-0.31502 -0.2998,-0.40946 -0.63626,-0.41021 -0.35052,0.0015 -0.63965,0.10278 -0.63824,0.45624l0 0.06808c-0.0014,0.35389 0.28773,0.45544 0.63824,0.4561 0.33651,0 0.61323,-0.09468 0.63626,-0.41026l-0.37364 0zm1.19875 0.38868l0 -0.63837 0.43315 0 0 -0.2963 -1.23058 0 0 0.2963 0.43315 0 0 0.63837 0.36428 0zm0.55485 -0.93579l0 0.93439 0.36437 0 0 -0.93439 -0.36437 0zm1.1096 -0.02304c-0.35173,0.00075 -0.63964,0.10231 -0.63818,0.45624l0 0.06808c-0.00145,0.35309 0.28646,0.45544 0.63818,0.4561 0.35127,-0.00066 0.6389,-0.10301 0.63767,-0.4561l0 -0.06808c0,-0.35346 -0.28594,-0.45624 -0.63767,-0.45624zm0.27316 0.50129c0.00211,0.1531 -0.12436,0.18087 -0.27316,0.18298 -0.1495,-0.00211 -0.27606,-0.02988 -0.27386,-0.18298l0 -0.02276c-0.0022,-0.1524 0.12436,-0.18017 0.27386,-0.18228 0.1488,0.00211 0.27527,0.02988 0.27316,0.18228l0 0.02276zm1.38365 0.01685l-0.41012 -0.4951 -0.50123 0 0 0.93439 0.36432 0 0 -0.57077 0.50193 0.57077 0.41035 0 0 -0.93439 -0.36525 0 0 0.4951zm-12.26642 -2.90697l0 1.74535 0.68032 0 0 -0.42599 0.60762 0 0.32842 0.42599 0.72467 0 -0.38076 -0.48934c0.11434,-0.05362 0.20653,-0.13383 0.27569,-0.23931 0.07,-0.10634 0.10507,-0.22559 0.10507,-0.35678 0.00524,-0.36115 -0.30009,-0.66342 -0.65954,-0.65987l-1.68148 0 0 -0.00005zm1.51002 0.5106c0.08283,0 0.14932,0.06598 0.14932,0.14927 0,0.04041 -0.01419,0.07538 -0.0443,0.10507 -0.02838,0.02889 -0.0634,0.04303 -0.10502,0.04303l-0.82969 0 0 -0.29737 0.82969 0zm2.22392 -0.00403l0.23889 0.51537 -0.47908 0 0.24019 -0.51537zm-1.34113 1.24005l0.76587 0 0.13784 -0.29867 0.87352 0 0.13784 0.29867 0.76588 0 -0.93603 -1.74535 -0.80886 0 -0.93607 1.74535zm4.43506 -0.87262c0,0.17549 -0.09968,0.31951 -0.27653,0.31951l-0.74504 0 0 -0.63912 0.74504 0c0.17684,0 0.27653,0.14318 0.27653,0.31961zm-1.70189 -0.87277l0 1.74534 1.553 0c0.47908,0.00665 0.83456,-0.39836 0.831,-0.87262 0.00356,-0.47646 -0.35192,-0.87886 -0.831,-0.87272l-1.553 0zm4.2547 0.89215c0.00402,0.28722 -0.23225,0.33642 -0.51145,0.3404 -0.27784,-0.00398 -0.51411,-0.05318 -0.51008,-0.3404l0 -0.17015 -0.68032 0 0 0.21323c-0.00267,0.65944 0.53494,0.84907 1.19041,0.85043 0.6595,0 1.19224,-0.1923 1.19224,-0.85043l0 -0.93654 -0.6808 0 0 0.89346zm1.91156 -0.38684l0.23884 0.51537 -0.47908 0 0.24024 -0.51537zm-1.34118 1.24004l0.76587 0 0.13785 -0.29867 0.87351 0 0.1378 0.29867 0.76587 0 -0.93603 -1.74534 -0.80885 0 -0.93608 1.74534 0.00005 0z"/>
+    </svg>
+    <div class="boot-track">
+      <svg viewBox="0 0 184 8" preserveAspectRatio="none"><line class="rail" x1="4" y1="4" x2="180" y2="4"/><line id="boot-fill" class="fill" x1="4" y1="4" x2="180" y2="4"/></svg>
+      <div id="boot-needle" class="boot-needle"></div>
+    </div>
+    <div class="boot-meta">
+      <div class="boot-pct" id="boot-pct">0%</div>
+      <div class="boot-txt" id="boot-status">Menghubungkan ke server...</div>
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="h-main">
@@ -2015,8 +2075,58 @@ async function testConn(){
 }
 
 /* ================= INIT ================= */
-renderHome();updateBadge();
-if(sb){loadInventoryData().then(()=>{renderHome();});setupRealtimeStok();}
+// Semua persiapan awal (katalog+stok dari Inventory, sinkron pesanan cloud, buka koneksi
+// realtime) dijalankan paralel DI BELAKANG boot-overlay, supaya begitu overlay terbuka
+// halaman yang tampil sudah lengkap & konsisten — bukan render dulu baru "loncat" isinya
+// pas data cloud nyusul datang. Progress bar-nya benaran mengikuti tahap yang sedang
+// berjalan (bukan animasi dekoratif), total panjang garis 176 (184 dikurangi margin 4+4).
+const BOOT_TRACK_LEN=176;
+function _setBootProgress(pct,label){
+ pct=Math.max(0,Math.min(100,pct));
+ const fillEl=$('boot-fill');
+ if(fillEl)fillEl.style.strokeDashoffset=String(BOOT_TRACK_LEN-(BOOT_TRACK_LEN*pct/100));
+ const needleEl=$('boot-needle');
+ if(needleEl)needleEl.style.left=(4+(pct/100)*BOOT_TRACK_LEN)+'px';
+ const pctEl=$('boot-pct');
+ if(pctEl)pctEl.textContent=Math.round(pct)+'%';
+ if(label){
+  const txtEl=$('boot-status');
+  if(txtEl && txtEl.textContent!==label){
+   txtEl.style.opacity='0';
+   setTimeout(()=>{txtEl.textContent=label;txtEl.style.opacity='1'},150);
+  }
+ }
+}
+function _hideBootOverlay(){
+ const ov=$('boot-overlay');
+ document.body.classList.remove('boot-lock');
+ if(!ov)return;
+ ov.classList.add('hide');
+ setTimeout(()=>{ov.remove()},420);
+}
+function _withBootTimeout(promise,ms){
+ return Promise.race([promise,new Promise(res=>setTimeout(res,ms))]);
+}
+async function bootApp(){
+ updateBadge();
+ _setBootProgress(6,'Menghubungkan ke server...');
+ if(sb){
+  try{
+   const invP=loadInventoryData().then(()=>_setBootProgress(65,'Menyusun katalog & stok...'));
+   const ordP=syncOrdersFromCloud().then(()=>_setBootProgress(85,'Sinkron data pesanan...'));
+   await _withBootTimeout(Promise.all([invP,ordP]),8000);
+  }catch(e){console.error('Gagal menyiapkan data awal:',e)}
+  _setBootProgress(93,'Menyalakan live sync...');
+  setupRealtimeStok();
+ }else{
+  _setBootProgress(70,'Mode offline...');
+ }
+ renderHome();
+ updateBadge();
+ _setBootProgress(100,'Siap!');
+ setTimeout(_hideBootOverlay,260);
+}
+bootApp();
 
 /* ================= PWA: SERVICE WORKER ================= */
 if('serviceWorker' in navigator){
