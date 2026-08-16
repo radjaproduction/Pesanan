@@ -55,7 +55,7 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* ============ HERO ============ */
-.hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden;flex:1;display:flex;flex-direction:column}
+.hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden}
 .hero .container{position:relative;padding:74px 18px;width:100%}
 .hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.95}
 .hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 38%,rgba(8,15,38,0) 58%,rgba(8,15,38,0) 100%)}
@@ -147,7 +147,9 @@ body.bg-catalog::after{
 }
 #backBar,main{position:relative;z-index:1}
 main{flex:1 0 auto;display:flex;flex-direction:column}
-.view.on{flex:1;display:flex;flex-direction:column}
+/* Kalau konten Beranda (hero) lebih pendek dari tinggi layar, sisa ruang di bawah footer
+   otomatis mengikuti warna gelap tema Beranda (bukan putih polos) — footer tetap nempel di bawah. */
+body:has(#view-home.on){background:var(--navy-900)}
 footer{flex-shrink:0}
 @keyframes shakePin{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
 #pinIn.shake{animation:shakePin .4s;border-color:var(--danger)!important}
