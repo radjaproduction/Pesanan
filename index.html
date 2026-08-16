@@ -177,12 +177,13 @@ footer{flex-shrink:0}
 
 /* ============ PRODUCT DETAIL ============ */
 .pd{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin:26px 0 40px}
-.pd-img{position:relative;border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1}
-.pd-img img{width:100%;height:100%;object-fit:cover}
+.pd-img{position:relative;border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1;touch-action:pan-y;cursor:grab;user-select:none}
+.pd-img img{width:100%;height:100%;object-fit:cover;pointer-events:none}
 .pd-img-tag{position:absolute;bottom:12px;background:rgba(11,22,51,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;backdrop-filter:blur(2px)}
 .pd-img-tag.tag-color{left:12px}
 .pd-img-tag.tag-qty{right:12px}
 .pd-img-tag.tag-qty.low{background:rgba(229,72,77,.85)}
+.pd-img-hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(11,22,51,.55);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;pointer-events:none;white-space:nowrap}
 .pd-info h1{font-size:24px;font-weight:800;display:block;color:#fff;padding:14px 24px;border-radius:10px;margin-bottom:14px;background:linear-gradient(90deg,var(--navy-900) 0%,var(--navy-800) 55%,transparent 100%)}
 .pd-meta{display:flex;gap:14px;align-items:center;margin:8px 0 14px;font-size:12.5px;color:var(--muted)}
 .pd-meta b{color:var(--accent-600)}
@@ -978,8 +979,9 @@ function renderProduct(){
  const curDispSt = hasVar?((!curOff&&s.size)?stokFor(p,curColorObj.n,s.size):curTot):0;
  $('pdWrap').innerHTML=
  '<div class="crumb">Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b></div>'+
- '<div class="pd"><div class="pd-img"><img id="pdImgTag" src="'+curImg+'" alt="">'+
+ '<div class="pd"><div class="pd-img" id="pdImgBox"><img id="pdImgTag" src="'+curImg+'" alt="">'+
  (hasVar?('<div class="pd-img-tag tag-color">'+esc(curColorObj.n)+'</div>'+'<div class="pd-img-tag tag-qty'+(curOff?' low':'')+'">'+(curOff?'Habis':curDispSt+' pcs')+'</div>'):'')+
+ (hasVar&&p.colors.length>1?'<div class="pd-img-hint">↔ Geser untuk ganti warna</div>':'')+
  '</div>'+
  '<div class="pd-info"><div class="p-brand">'+esc(p.brand)+'</div><h1>'+esc(p.name)+'</h1>'+
  (hasVar?(
@@ -1013,6 +1015,28 @@ function chgQty(d){
  if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Stok varian ini habis');return}nv=Math.min(nv,Math.max(p.min,maxStok))}
  s.qty=nv;renderProduct();
 }
+function pdSwipeColor(dir){
+ const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
+ const n=p.colors.length;
+ for(let i=1;i<=n;i++){
+  const idx=((s.color+dir*i)%n+n)%n;
+  if(stokForColor(p,p.colors[idx].n)>0){s.color=idx;s.size='';s.qty=p.min;renderProduct();return}
+ }
+}
+let _pdSwipeX=null,_pdSwipeY=null;
+document.addEventListener('pointerdown',e=>{
+ const box=e.target.closest('#pdImgBox');if(!box)return;
+ _pdSwipeX=e.clientX;_pdSwipeY=e.clientY;
+},{passive:true});
+document.addEventListener('pointerup',e=>{
+ if(_pdSwipeX===null)return;
+ const box=e.target.closest('#pdImgBox');
+ const dx=e.clientX-_pdSwipeX,dy=e.clientY-(_pdSwipeY||0);
+ _pdSwipeX=null;_pdSwipeY=null;
+ if(!box)return;
+ if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy))return;
+ pdSwipeColor(dx<0?1:-1);
+},{passive:true});
 function setQty(v){
  const s=state.sel,p=P(s.pid);if(!p)return;
  let nv=parseInt(v,10);
