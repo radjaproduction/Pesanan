@@ -362,10 +362,14 @@ footer{flex-shrink:0}
 .a-side button{display:flex;width:100%;text-align:left;color:#B9C4E0;font-size:13px;font-weight:600;padding:11px 13px;border-radius:10px;gap:10px;margin-bottom:2px}
 .a-side button:hover{background:var(--navy-700);color:#fff}
 .a-side button.on{background:var(--accent);color:var(--navy-900);font-weight:800}
-.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px 17px}
-.stat b{font-size:21px;color:var(--navy-800);display:block}
-.stat span{font-size:11px;color:var(--muted);font-weight:700}
+.stat-row{position:relative;overflow:hidden;background:linear-gradient(120deg,var(--navy-950) 0%,var(--navy-800) 55%,var(--navy-700) 100%);border-radius:18px;color:#fff;padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow-lg);display:flex;gap:0;flex-wrap:wrap}
+.stat-row::before{content:'';position:absolute;top:-40px;right:-40px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(255,159,28,.22),transparent 70%);pointer-events:none}
+.stat-row::after{content:'';position:absolute;bottom:-60px;left:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);pointer-events:none}
+.stat{position:relative;flex:1;min-width:100px;padding:0 18px;box-sizing:border-box}
+.stat:first-child{padding-left:0}
+.stat+.stat{border-left:1px solid rgba(255,255,255,.14)}
+.stat b{font-size:22px;color:#fff;display:block;font-weight:800;line-height:1.2}
+.stat span{font-size:10.5px;color:#8FA1CC;font-weight:700;letter-spacing:.5px;margin-top:3px;display:block}
 .a-order{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:13px}
 .a-order .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
 .a-order .meta{font-size:12px;color:var(--muted);margin:6px 0 10px}
@@ -430,7 +434,10 @@ body.hide-footer footer{display:none}
   .admin-wrap{grid-template-columns:1fr}
   .a-side{position:static;display:flex;overflow-x:auto}
   .a-side button{width:auto;white-space:nowrap}
-  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .stat-row{justify-content:space-between}
+  .stat{flex:0 0 calc(50% - 9px);min-width:0}
+  .stat:nth-child(2n+1){padding-left:0;border-left:none}
+  .stat:nth-child(n+3){margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
   .f-grid{grid-template-columns:1fr 1fr}
   .step .lbl{font-size:8.5px}
 }
