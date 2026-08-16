@@ -1,5 +1,5 @@
 /* RADJA Production — Service Worker */
-const CACHE_VERSION = 'radja-pwa-v1';
+const CACHE_VERSION = 'radja-pwa-v2';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
   // Halaman utama (navigasi): network-first, fallback ke cache saat offline.
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-store' })
         .then((res) => {
           const clone = res.clone();
           caches.open(CACHE_VERSION).then((cache) => cache.put('./index.html', clone));
