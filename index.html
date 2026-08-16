@@ -1086,7 +1086,7 @@ function renderProduct(){
  '<div class="opt-lbl">Warna — <span>'+esc(p.colors[s.color].n)+'</span></div>'+
  '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct();renderBuyModal()"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
- '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty='+p.min+';renderProduct();renderBuyModal()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
+ '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty=0;renderProduct();renderBuyModal()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
  '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'+
  '<div class="pd-tap-hint" onclick="openBuyModal()">👆 <b>Ketuk foto produk</b> untuk isi jumlah &amp; pesan</div>'
  ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p><div class="pd-cta"><button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button></div>')+
@@ -1242,7 +1242,7 @@ function numpadKey(k){
  }
  const el=$('qtyInput');if(el)el.value=numpadBuf;
 }
-function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;if(numpadOpen)numpadBuf=String(p.min);renderProduct();renderBuyModal()}
+function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=0;if(numpadOpen)numpadBuf='0';renderProduct();renderBuyModal()}
 function pdSwipeColor(dir){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
  const order=sortedColorIdxs(p);
