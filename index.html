@@ -177,8 +177,12 @@ footer{flex-shrink:0}
 
 /* ============ PRODUCT DETAIL ============ */
 .pd{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin:26px 0 40px}
-.pd-img{border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1}
+.pd-img{position:relative;border-radius:16px;overflow:hidden;background:#fff;border:1px solid var(--line);aspect-ratio:1/1}
 .pd-img img{width:100%;height:100%;object-fit:cover}
+.pd-img-tag{position:absolute;bottom:12px;background:rgba(11,22,51,.72);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;backdrop-filter:blur(2px)}
+.pd-img-tag.tag-color{left:12px}
+.pd-img-tag.tag-qty{right:12px}
+.pd-img-tag.tag-qty.low{background:rgba(229,72,77,.85)}
 .pd-info h1{font-size:24px;font-weight:800;display:block;color:#fff;padding:14px 24px;border-radius:10px;margin-bottom:14px;background:linear-gradient(90deg,var(--navy-900) 0%,var(--navy-800) 55%,transparent 100%)}
 .pd-meta{display:flex;gap:14px;align-items:center;margin:8px 0 14px;font-size:12.5px;color:var(--muted)}
 .pd-meta b{color:var(--accent-600)}
@@ -188,13 +192,10 @@ footer{flex-shrink:0}
 .opt-lbl{font-size:12px;font-weight:800;color:var(--navy-800);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.6px}
 .opt-lbl span{color:var(--navy-500);font-weight:600;text-transform:none;letter-spacing:0}
 .swatches{display:flex;gap:11px;flex-wrap:wrap}
-.sw{display:flex;flex-direction:column;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:700;transition:.15s;min-width:84px}
-.sw i{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.12)}
-.sw.on{border-color:var(--navy-700);background:var(--navy-50);color:var(--navy-800)}
-.sw .sw-stok{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}
-.sw.on .sw-stok{color:var(--navy-500)}
-.sw.off{opacity:.4;cursor:not-allowed}
-.sw.off .sw-stok{color:var(--danger)}
+.sw{display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;padding:3px}
+.sw i{width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,.12);display:block}
+.sw.on i{outline:2.5px solid var(--navy-700);outline-offset:2px}
+.sw.off{opacity:.35;cursor:not-allowed}
 .sizes{display:flex;gap:8px;flex-wrap:wrap}
 .sz{min-width:44px;text-align:center;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;transition:.15s}
 .sz.on{background:var(--navy-800);border-color:var(--navy-800);color:#fff}
@@ -441,7 +442,7 @@ body.hide-footer footer{display:none}
     <div class="overlay"></div>
     <div class="container">
       <h1>RADJA Production,<br>Spesialis <em>Kaos Anak.</em></h1>
-      <p>Pilih model, pilih warna & ukuran, lalu checkout  — pantau progres pengiriman pesananmu.</p>
+      <p>Pilih model, pilih warna & ukuran, lalu checkout —<br>pantau progres pengiriman pesananmu.</p>
       <div class="hero-cta">
         <button class="btn btn-accent" onclick="go('catalog')">🛍️ Pesan Sekarang</button>
         <button class="btn btn-ghost" onclick="go('track')">🧾 Invoice</button>
@@ -972,14 +973,18 @@ function renderProduct(){
  }else{
   curImg = explicitImg || p.img;
  }
+ const curTot = hasVar?stokForColor(p,curColorObj.n):0;
+ const curOff = hasVar?(curTot<=0):false;
+ const curDispSt = hasVar?((!curOff&&s.size)?stokFor(p,curColorObj.n,s.size):curTot):0;
  $('pdWrap').innerHTML=
  '<div class="crumb">Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b></div>'+
- '<div class="pd"><div class="pd-img"><img id="pdImgTag" src="'+curImg+'" alt=""></div>'+
+ '<div class="pd"><div class="pd-img"><img id="pdImgTag" src="'+curImg+'" alt="">'+
+ (hasVar?('<div class="pd-img-tag tag-color">'+esc(curColorObj.n)+'</div>'+'<div class="pd-img-tag tag-qty'+(curOff?' low':'')+'">'+(curOff?'Habis':curDispSt+' pcs')+'</div>'):'')+
+ '</div>'+
  '<div class="pd-info"><div class="p-brand">'+esc(p.brand)+'</div><h1>'+esc(p.name)+'</h1>'+
- '<div class="pd-price"><b>'+priceLabel(p)+'</b><span>Harga per pcs — total final dikonfirmasi admin setelah checkout.</span></div>'+
  (hasVar?(
  '<div class="opt-lbl">Warna — <span>'+esc(p.colors[s.color].n)+'</span></div>'+
- '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;const dispSt=(!off&&s.size)?stokFor(p,c.n,s.size):tot;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct()"')+'><i style="background:'+c.h+'"></i>'+esc(c.n)+'<span class="sw-stok">'+(off?'Habis':dispSt+' pcs')+'</span></div>'}).join('')+'</div>'+
+ '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" '+(off?'':'onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct()"')+'><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
  '<div class="sizes">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty='+p.min+';renderProduct()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
  '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'
