@@ -417,9 +417,10 @@ body.hide-footer footer{display:none}
 }
 #backBar{display:none;background:transparent}
 #backBar.show{display:block}
-#backBar .container{display:flex;justify-content:flex-end}
+#backBar .container{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#backBar .crumb{margin:0}
 #backBtn{display:inline-flex;align-items:center;gap:6px;background:var(--navy-900);border:none;padding:10px 18px;
-  margin:14px 0 0;border-radius:20px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:var(--shadow)}
+  margin:14px 0 0;border-radius:20px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:var(--shadow);flex-shrink:0}
 #backBtn:hover{background:var(--navy-800)}
 </style>
 </head>
@@ -448,7 +449,7 @@ body.hide-footer footer{display:none}
   </div>
 </header>
 
-<div id="backBar"><div class="container"><button id="backBtn" onclick="goBack()">← Kembali</button></div></div>
+<div id="backBar"><div class="container"><div class="crumb" id="backCrumb"></div><button id="backBtn" onclick="goBack()">← Kembali</button></div></div>
 
 <main>
 <!-- ================= HOME ================= -->
@@ -475,7 +476,7 @@ body.hide-footer footer{display:none}
 <!-- ================= CATALOG ================= -->
 <section class="view" id="view-catalog">
   <div class="container">
-    <div class="crumb">Beranda / <b>Katalog</b> <span id="crumbQ"></span></div>
+    <div class="crumb hidden">Beranda / <b>Katalog</b> <span id="crumbQ"></span></div>
     <div class="cat-bar">
       <div class="csel" id="brandSel"></div>
       <div class="csel" id="sortSel"></div>
@@ -628,6 +629,7 @@ function cselToggle(id){
 }
 function cselCloseAll(){document.querySelectorAll('.csel.open').forEach(x=>x.classList.remove('open'))}
 document.addEventListener('click',()=>cselCloseAll());
+function setCrumb(html){const el=$('backCrumb');if(el)el.innerHTML=html}
 function go(v,fromBack){
  const cur=document.querySelector('.view.on')?.id?.replace('view-','');
  if(!fromBack && cur && cur!==v){
@@ -982,6 +984,7 @@ function renderCatalog(){
  if(state.q)list=list.filter(p=>(p.name+' '+p.brand).toLowerCase().includes(state.q.toLowerCase()));
  list.sort((a,b)=>b.sold-a.sold);
  $('crumbQ').innerHTML=state.q?'• hasil untuk <b>"'+esc(state.q)+'"</b>':'';
+ setCrumb('Beranda / <b>Katalog</b> '+(state.q?'• hasil untuk <b>"'+esc(state.q)+'"</b>':''));
  if(!sb){$('catGrid').innerHTML='<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">🔌 Belum tersambung ke data Inventory. Hubungi admin untuk menyambungkan.</p>';return}
  $('catGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">😕 Tidak ada produk yang cocok.</p>';
 }
@@ -1038,8 +1041,8 @@ function renderProduct(){
    '<div class="pd-img-slide'+(nextPending?' pending':'')+'"><img data-cidx="'+nextIdx+'" src="'+esc(previewImgForColor(p,nextIdx))+'" alt="">'+(nextPending?dots:'')+'</div>'+
   '</div>'
  ):('<img id="pdImgTag" src="'+curImg+'" alt="">'+((!canCarousel&&curPending)?dots:''));
+ setCrumb('Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b>');
  $('pdWrap').innerHTML=
- '<div class="crumb">Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b></div>'+
  '<div class="pd"><div class="pd-img'+((!canCarousel&&curPending)?' pending':'')+'" id="pdImgBox">'+imgBody+
  (hasVar?('<div class="pd-img-tag tag-color">'+esc(curColorObj.n)+'</div>'+'<div class="pd-img-tag tag-qty'+(curOff?' low':'')+'">'+(curOff?'Habis':curDispSt+' pcs')+'</div>'):'')+
  (canCarousel?'<div class="pd-img-hint">↔ Geser atau pilih warna di bawah</div>':'')+
@@ -1185,6 +1188,7 @@ function addSel(buy){
 /* ================= CART ================= */
 function renderCart(){
  const w=$('cartWrap');
+ setCrumb('Beranda / <b>Keranjang</b>');
  const before=cart.length;
  cart=cart.filter(c=>!!P(c.pid));
  if(cart.length!==before)saveCart();
@@ -1200,7 +1204,7 @@ function renderCart(){
   '<button class="rm" onclick="cRm('+i+')">🗑 Hapus</button></div></div></div>'}).join('');
  const pcs=cart.reduce((a,c)=>a+c.qty,0);
  const total=cart.reduce((a,c)=>{const p=P(c.pid);return a+(p?c.qty*p.est[0]:0)},0);
- w.innerHTML='<div class="crumb">Beranda / <b>Keranjang</b></div><div class="two-col"><div class="panel"><h2> Keranjang Belanja ('+cart.length+' varian)</h2>'+rows+'</div>'+
+ w.innerHTML='<div class="two-col"><div class="panel"><h2> Keranjang Belanja ('+cart.length+' varian)</h2>'+rows+'</div>'+
  '<div class="panel"><h2>Ringkasan</h2>'+
  '<div class="sum-row"><span>Total Varian</span><b>'+cart.length+'</b></div>'+
  '<div class="sum-row"><span>Total Pieces</span><b>'+pcs+' pcs</b></div>'+
@@ -1244,6 +1248,7 @@ function cRm(i){cart.splice(i,1);saveCart();renderCart();toast('Item dihapus dar
 function setShipMethod(v){state.ship=v;renderCheckout()}
 function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}if(!state.draftCode)state.draftCode='TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0');renderCheckout();go('checkout')}
 function renderCheckout(){
+ setCrumb('Beranda / Keranjang / <b>Checkout</b>');
  const pcs=cart.reduce((a,c)=>a+c.qty,0);
  const now=new Date();
  const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
@@ -1251,7 +1256,7 @@ function renderCheckout(){
  const grandTotal=cart.reduce((a,c)=>{const p=P(c.pid);return a+(p?c.qty*p.est[0]:0)},0);
  const rows=cart.map(c=>{const p=P(c.pid);const sub=p?c.qty*p.est[0]:0;return '<tr><td><b>'+esc(p?.name||'')+'</b><div class="var">'+esc(c.color)+' • '+esc(c.size)+'</div></td>'+
   '<td class="r">'+c.qty+'</td><td class="r">'+(p?fmt(p.est[0]):'-')+'</td><td class="r">'+fmt(sub)+'</td></tr>'}).join('');
- $('coWrap').innerHTML='<div class="crumb">Beranda / Keranjang / <b>Checkout</b></div><div style="max-width:520px;margin:26px auto 44px">'+
+ $('coWrap').innerHTML='<div style="max-width:520px;margin:26px auto 44px">'+
  '<div class="panel"><h2>Ringkasan Pesanan</h2>'+
  '<div class="inv-wrap">'+
   '<div class="inv-head"><div><div class="inv-brand">RADJA PRODUCTION</div></div>'+
@@ -1455,10 +1460,11 @@ function closeModal(){$('orderModal').classList.remove('show');$('omBox').classN
 /* ================= ADMIN ================= */
 function renderAdmin(){
  const w=$('adminWrap');
+ setCrumb('Beranda / <b>Admin Dashboard</b>');
  if(!state.unlocked){w.innerHTML='<div class="gate"><div class="lock">🔒</div><h2 style="color:var(--navy-900)">Admin / Owner</h2><p style="color:var(--muted);font-size:12.5px;margin-top:6px">Masukkan PIN untuk membuka dashboard.</p><input id="pinIn" type="password" maxlength="6" inputmode="numeric" placeholder="••••" oninput="checkPin()"><button class="btn btn-navy btn-block" onclick="unlock()">Buka Dashboard</button><p style="font-size:11px;color:var(--muted);margin-top:12px">PIN default: 1234</p></div>';return}
  const t=state.adminTab;
  const inProd=orders.filter(o=>o.stage>=2&&o.stage<7).length,done=orders.filter(o=>o.stage>=7).length,pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
- w.innerHTML='<div class="crumb">Beranda / <b>Admin Dashboard</b></div><div class="admin-wrap">'+
+ w.innerHTML='<div class="admin-wrap">'+
  '<div class="a-side"><div class="who">🛡️ <span class="who-txt">ADMIN PANEL</span></div>'+
  [['pesanan','📦','Pesanan'],['produk','📷','Produk'],['pengaturan','⚙️','Pengaturan']].map(x=>'<button title="'+x[2]+'" class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()"><span class="ico">'+x[1]+'</span><span class="lbl">'+x[2]+'</span></button>').join('')+
  '<button title="Keluar" onclick="state.unlocked=false;go(\'home\')"><span class="ico">🚪</span><span class="lbl">Keluar</span></button></div>'+
