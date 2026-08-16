@@ -25,7 +25,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;display:flex;flex-direction:column;min-height:100vh}
 img{display:block;max-width:100%}
 button{font-family:inherit;cursor:pointer;border:none;background:none}
 input,select,textarea{font-family:inherit;font-size:14px}
@@ -55,10 +55,10 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* ============ HERO ============ */
-.hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden}
+.hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden;flex:1;display:flex;flex-direction:column}
+.hero .container{position:relative;padding:74px 18px;margin:auto 0;width:100%}
 .hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.95}
 .hero .overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,15,38,1) 0%,rgba(8,15,38,1) 38%,rgba(8,15,38,0) 58%,rgba(8,15,38,0) 100%)}
-.hero .container{position:relative;padding:74px 18px}
 .hero h1{color:#fff;font-size:clamp(26px,4vw,44px);font-weight:800;line-height:1.15;max-width:560px}
 .hero h1 em{color:var(--accent);font-style:normal}
 .hero p{color:#B9C4E0;max-width:520px;margin:16px 0 26px;font-size:15px;line-height:1.7}
@@ -146,6 +146,9 @@ body.bg-catalog::after{
              radial-gradient(ellipse 55% 40% at 90% 90%,rgba(16,31,69,.07),transparent 60%);
 }
 #backBar,main{position:relative;z-index:1}
+main{flex:1 0 auto;display:flex;flex-direction:column}
+.view.on{flex:1;display:flex;flex-direction:column}
+footer{flex-shrink:0}
 @keyframes shakePin{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
 #pinIn.shake{animation:shakePin .4s;border-color:var(--danger)!important}
 .cat-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 18px}
@@ -504,7 +507,7 @@ body.hide-footer footer{display:none}
 
 <footer>
   <div class="container">
-    <div class="f-grid">
+    <div class="f-grid" style="display:none">
       <div class="f-brand">
         <h4>RADJA KONVEKSI</h4>
         <p>Platform order & tracking produksi konveksi dengan pengalaman belanja ala marketplace modern. Kualitas premium, progres transparan.</p>
@@ -673,9 +676,20 @@ function buildProducts(){
   if(meta.gambar_warna&&typeof meta.gambar_warna==='object'){
    Object.keys(meta.gambar_warna).forEach(k=>{const v=(meta.gambar_warna[k]||'').trim();if(v)imgByColor[k]=v});
   }
+  const overlay = meta.overlay_url ? {
+   url: meta.overlay_url,
+   mode: meta.overlay_mode==='under'?'under':'over',
+   size: meta.overlay_size!=null?+meta.overlay_size:40,
+   x: meta.overlay_x!=null?+meta.overlay_x:50,
+   y: meta.overlay_y!=null?+meta.overlay_y:50,
+   invertAktif: meta.overlay_invert!==false,
+   // Daftar NAMA warna (huruf besar) yang akan di-invert kalau invertAktif true. null = admin belum pernah
+   // menyimpan pilihan warna -> invert SEMUA warna (kompatibel dengan perilaku lama sebelum fitur ini ada).
+   invertWarna: Array.isArray(meta.overlay_invert_warna) ? meta.overlay_invert_warna.map(w=>(w||'').trim().toUpperCase()) : null
+  } : null;
   return {
    id:'m'+m.id, modelId:m.id, brand:m.brandNama||'—', cat:meta.kategori||m.brandNama||'Produk',
-   name:m.nama, img:meta.gambar_url||PLACEHOLDER_IMG, imgByColor, autoTint:meta.auto_tint===true, est:[m.harga||0,m.harga||0],
+   name:m.nama, img:meta.gambar_url||PLACEHOLDER_IMG, imgByColor, autoTint:meta.auto_tint===true, overlay, est:[m.harga||0,m.harga||0],
    min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
    badge:meta.badge||'', desc:meta.deskripsi||'Belum ada deskripsi untuk produk ini.',
    specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
@@ -741,6 +755,109 @@ function tintImage(baseSrc,hex,cb){
  };
  img.src=baseSrc;
 }
+function applyTintToCanvas(ctx,cv,hex){
+ let h=(hex||'').replace('#','');
+ if(h.length===3)h=h.split('').map(c=>c+c).join('');
+ const hr=parseInt(h.substring(0,2),16)||0, hg=parseInt(h.substring(2,4),16)||0, hb=parseInt(h.substring(4,6),16)||0;
+ const imgData=ctx.getImageData(0,0,cv.width,cv.height);
+ const d=imgData.data;
+ for(let i=0;i<d.length;i+=4){
+  if(d[i+3]===0)continue;
+  const l=(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2])/255;
+  d[i]=l*hr; d[i+1]=l*hg; d[i+2]=l*hb;
+ }
+ ctx.putImageData(imgData,0,0);
+}
+function isDarkHex(hex){
+ let h=(hex||'').replace('#','');
+ if(h.length===3)h=h.split('').map(c=>c+c).join('');
+ const r=parseInt(h.substring(0,2),16)||0, g=parseInt(h.substring(2,4),16)||0, b=parseInt(h.substring(4,6),16)||0;
+ return (0.299*r+0.587*g+0.114*b)/255 < 0.5;
+}
+// Tentukan apakah overlay perlu di-invert UNTUK warna produk tertentu (dipilih manual oleh admin lewat
+// checklist warna di panel admin), bukan lagi otomatis dari gelap/terangnya warna.
+function shouldInvertForColor(ov,colorName){
+ if(!ov || ov.invertAktif===false)return false;
+ if(!Array.isArray(ov.invertWarna))return true; // belum pernah disimpan -> invert semua warna (default lama)
+ return ov.invertWarna.includes((colorName||'').trim().toUpperCase());
+}
+// Balik warna (invert) piksel gambar overlay — dipakai kalau mode="Di atas Tint" DAN warna produk yang
+// sedang dipilih ada di daftar "Warna yang Di-invert" pilihan admin, supaya gambar/teks gelap (mis. teks
+// hitam) tetap kebaca di kain gelap. Transparansi (alpha) tidak diubah.
+function invertedOverlayCanvas(ovImg){
+ const oc=document.createElement('canvas');
+ oc.width=ovImg.naturalWidth||ovImg.width;oc.height=ovImg.naturalHeight||ovImg.height;
+ const octx=oc.getContext('2d');
+ octx.drawImage(ovImg,0,0);
+ try{
+  const id=octx.getImageData(0,0,oc.width,oc.height);
+  const d=id.data;
+  for(let i=0;i<d.length;i+=4){
+   if(d[i+3]===0)continue;
+   d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2];
+  }
+  octx.putImageData(id,0,0);
+ }catch(e){}
+ return oc;
+}
+// ============ COMPOSE: gabungkan Gambar Utama + Gambar Tambahan (overlay/print), lalu terapkan Auto-Warna ============
+// ov = {url, mode:'under'|'over', size, x, y, invert} atau null/undefined kalau produk tidak punya Gambar Tambahan.
+// ov.invert di sini adalah keputusan invert yang SUDAH dihitung oleh pemanggil (renderProduct/renderCart)
+// lewat shouldInvertForColor() berdasarkan warna yang lagi dipilih — composeImage tidak menghitung ulang.
+// mode 'under'  -> overlay digambar SEBELUM tint, jadi ikut diwarnai sesuai warna produk yang dipilih.
+// mode 'over'   -> overlay digambar SETELAH tint, jadi warnanya tetap meski warna produk diganti-ganti.
+//                  Kalau ov.invert true, warna overlay dibalik (mis. teks hitam -> putih) supaya tetap
+//                  kontras/kebaca di kain gelap — sesuai pilihan admin di checklist "Warna yang Di-invert".
+let composeCache={};
+let composePending={};
+function composeImage(baseSrc,ov,hex,cb){
+ if(!baseSrc){cb(baseSrc);return}
+ const hasOv = ov && ov.url;
+ if(!hasOv && !hex){cb(baseSrc);return} // tidak ada overlay maupun tint -> pakai gambar asli, tak perlu proses
+ const key = baseSrc+'|'+(hasOv?(ov.url+'|'+ov.mode+'|'+ov.size+'|'+ov.x+'|'+ov.y+'|'+(ov.invert!==false?1:0)):'')+'|'+(hex||'');
+ if(composeCache[key]){cb(composeCache[key]);return}
+ if(composePending[key]){composePending[key].push(cb);return}
+ composePending[key]=[cb];
+ const done=(url)=>{composeCache[key]=url;const cbs=composePending[key]||[];delete composePending[key];cbs.forEach(f=>f(url))};
+ const baseImg=new Image();baseImg.crossOrigin='anonymous';
+ baseImg.onload=()=>{
+  try{
+   const cv=document.createElement('canvas');
+   cv.width=baseImg.naturalWidth||baseImg.width;cv.height=baseImg.naturalHeight||baseImg.height;
+   const ctx=cv.getContext('2d');
+   const finishNoOverlay=()=>{ ctx.drawImage(baseImg,0,0,cv.width,cv.height); if(hex)applyTintToCanvas(ctx,cv,hex); done(cv.toDataURL('image/png')) };
+   if(!hasOv){ finishNoOverlay(); return }
+   const ovImg=new Image();ovImg.crossOrigin='anonymous';
+   const drawOverlay=()=>{
+    const shouldInvert = ov.mode!=='under' && ov.invert===true;
+    const src = shouldInvert ? invertedOverlayCanvas(ovImg) : ovImg;
+    const ow=cv.width*(ov.size||40)/100;
+    const oh=ow*((ovImg.naturalHeight||1)/(ovImg.naturalWidth||1));
+    const ox=(cv.width*(ov.x!=null?ov.x:50)/100)-ow/2;
+    const oy=(cv.height*(ov.y!=null?ov.y:50)/100)-oh/2;
+    ctx.drawImage(src,ox,oy,ow,oh);
+   };
+   ovImg.onload=()=>{
+    try{
+     if(ov.mode==='under'){
+      ctx.drawImage(baseImg,0,0,cv.width,cv.height);
+      drawOverlay();
+      if(hex)applyTintToCanvas(ctx,cv,hex);
+     }else{
+      ctx.drawImage(baseImg,0,0,cv.width,cv.height);
+      if(hex)applyTintToCanvas(ctx,cv,hex);
+      drawOverlay();
+     }
+     done(cv.toDataURL('image/png'));
+    }catch(e){ finishNoOverlay() }
+   };
+   ovImg.onerror=()=>{ finishNoOverlay() };
+   ovImg.src=ov.url;
+  }catch(e){ done(baseSrc) }
+ };
+ baseImg.onerror=()=>{ done(baseSrc) };
+ baseImg.src=baseSrc;
+}
 // Ambil gambar produk untuk warna tertentu; fallback ke gambar utama kalau warna itu belum punya foto sendiri.
 function imgForColor(p,warnaName){
  if(!p)return PLACEHOLDER_IMG;
@@ -790,7 +907,7 @@ function doSearch(e){e.preventDefault();state.q=$('searchInput').value.trim();go
 
 /* ================= CATALOG ================= */
 function cardHTML(p){return '<div class="p-card" onclick="openProduct(\''+p.id+'\')">'+
- '<div class="ph"><img src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
+ '<div class="ph"><img src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(p.overlay&&p.overlay.url?'<img src="'+esc(p.overlay.url)+'" loading="lazy" style="position:absolute;left:'+p.overlay.x+'%;top:'+p.overlay.y+'%;width:'+p.overlay.size+'%;height:auto;max-width:none;max-height:none;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none">':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
  '<div class="p-body"><div class="p-brand">'+esc(p.brand)+'</div><div class="p-name">'+esc(p.name)+'</div>'+
  '<div class="p-rate">'+(p.totalStok>0?p.totalStok+' pcs':'stok habis')+'</div>'+
  '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs</small></div></div></div>'}
@@ -839,7 +956,22 @@ function renderProduct(){
  const curStok = s.size&&hasVar?stokFor(p,p.colors[s.color].n,s.size):null;
  const curColorObj = hasVar?p.colors[s.color]:null;
  const explicitImg = curColorObj ? (p.imgByColor[(curColorObj.n||'').trim().toUpperCase()]||'') : '';
- const curImg = explicitImg || p.img;
+ const tintHex = (p.autoTint && curColorObj && curColorObj.h) ? curColorObj.h : null;
+ const hasOverlay = !!(p.overlay && p.overlay.url);
+ const invertNow = hasOverlay ? shouldInvertForColor(p.overlay, curColorObj?curColorObj.n:'') : false;
+ const ovNow = hasOverlay ? Object.assign({},p.overlay,{invert:invertNow}) : null;
+ const willProcess = hasVar && !explicitImg && p.img && p.img!==PLACEHOLDER_IMG && (tintHex || hasOverlay);
+ const composeKey = willProcess ? (p.img+'|'+(hasOverlay?(p.overlay.url+'|'+p.overlay.mode+'|'+p.overlay.size+'|'+p.overlay.x+'|'+p.overlay.y+'|'+(invertNow?1:0)):'')+'|'+(tintHex||'')) : null;
+ // Simpan gambar yang lagi tampil SEBELUM pdWrap ditimpa — dipakai sebagai gambar sementara kalau warna baru
+ // butuh proses (tint/overlay) tapi belum ada di cache, supaya tidak flash balik ke foto dasar yang belum diproses.
+ const prevImgTag = $('pdImgTag');
+ const prevImgSrc = prevImgTag ? prevImgTag.src : '';
+ let curImg;
+ if(willProcess){
+  curImg = composeCache[composeKey] || prevImgSrc || p.img;
+ }else{
+  curImg = explicitImg || p.img;
+ }
  $('pdWrap').innerHTML=
  '<div class="crumb">Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b></div>'+
  '<div class="pd"><div class="pd-img"><img id="pdImgTag" src="'+curImg+'" alt=""></div>'+
@@ -859,9 +991,9 @@ function renderProduct(){
  '<div class="pd-desc"><h3>Deskripsi Produk</h3><p>'+esc(p.desc)+'</p><div class="spec">'+
  p.specs.map(x=>'<div><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></div>').join('')+
  '<div><span>Estimasi Produksi</span><span>'+esc(p.days)+'</span></div></div></div></div>';
- if(hasVar && !explicitImg && p.autoTint && p.img && p.img!==PLACEHOLDER_IMG && curColorObj && curColorObj.h){
+ if(willProcess){
   const pid=s.pid,cIdx=s.color;
-  tintImage(p.img,curColorObj.h,function(url){
+  composeImage(p.img,ovNow,tintHex,function(url){
    if(state.sel && state.sel.pid===pid && state.sel.color===cIdx){
     const tag=$('pdImgTag');if(tag)tag.src=url;
    }
@@ -929,11 +1061,15 @@ function renderCart(){
  '<button class="btn btn-accent btn-block" onclick="goCheckout()">Checkout / Pesan →</button>'+
  '<button class="btn btn-ghost btn-block" style="color:var(--navy-700);border-color:var(--line);margin-top:8px" onclick="go(\'catalog\')">← Lanjut Belanja</button></div></div>';
  cart.forEach((c,i)=>{
-  const p=P(c.pid);if(!p||!p.autoTint)return;
+  const p=P(c.pid);if(!p)return;
   const cObj=colorObjByName(p,c.color);
   const explicitImg=cObj?(p.imgByColor[(cObj.n||'').trim().toUpperCase()]||''):'';
-  if(explicitImg||!cObj||!cObj.h||!p.img||p.img===PLACEHOLDER_IMG)return;
-  tintImage(p.img,cObj.h,function(url){
+  const hasOverlay=!!(p.overlay&&p.overlay.url);
+  const tintHex=(p.autoTint&&cObj&&cObj.h)?cObj.h:null;
+  if(explicitImg||!p.img||p.img===PLACEHOLDER_IMG||(!tintHex&&!hasOverlay))return;
+  const invertNow=hasOverlay?shouldInvertForColor(p.overlay,c.color):false;
+  const ovNow=hasOverlay?Object.assign({},p.overlay,{invert:invertNow}):null;
+  composeImage(p.img,ovNow,tintHex,function(url){
    const tag=document.getElementById('cart-img-'+i);if(tag)tag.src=url;
   });
  });
@@ -1240,28 +1376,65 @@ function adminProduk(){
    '<img id="pm-bigpreview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:76px;height:76px;border-radius:10px;object-fit:cover;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0">'+
    '<div style="flex:1;min-width:200px">'+
    '<input type="file" accept="image/*" id="pm-file-'+m.id+'" onchange="handleImgUpload('+m.id+',this)" style="font-size:12px;width:100%">'+
-   '<p style="font-size:11px;color:var(--muted);margin:6px 0 4px">Atau tempel link gambar:</p>'+
-   '<input id="pm-imgurl-'+m.id+'" placeholder="https://..." value="'+esc(meta.gambar_url||'')+'" onchange="setImgFromUrl('+m.id+',this.value)">'+
+   '<input type="hidden" id="pm-imgurl-'+m.id+'" value="'+esc(meta.gambar_url||'')+'">'+
    '<input type="hidden" id="pm-img-'+m.id+'" value="'+esc(meta.gambar_url||'')+'">'+
    '</div></div></div>'+
-   (modelColors.length?(
-   '<div style="grid-column:1/-1;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)">'+
-   '<label>Gambar per Warna (opsional — dipakai saat customer pilih warna ini; kalau kosong pakai Gambar Utama di atas)</label>'+
-   '<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">'+
-   modelColors.map((c,i)=>{
-    const cUp=(c.n||'').trim().toUpperCase();
-    const curUrl=(meta.gambar_warna&&meta.gambar_warna[cUp])||'';
-    return '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;padding:10px;border:1px solid var(--line);border-radius:10px">'+
-     '<img id="pm-cprev-'+m.id+'-'+i+'" src="'+esc(curUrl||PLACEHOLDER_IMG)+'" style="width:52px;height:52px;border-radius:8px;object-fit:cover;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0">'+
-     '<div style="flex:1;min-width:180px">'+
-     '<div style="font-size:12px;font-weight:800;color:var(--navy-800);margin-bottom:6px;display:flex;align-items:center;gap:6px"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:'+c.h+';border:1px solid rgba(0,0,0,.12)"></i>'+esc(c.n)+'</div>'+
-     '<input type="file" accept="image/*" id="pm-cfile-'+m.id+'-'+i+'" onchange="handleColorImgUpload('+m.id+','+i+',this)" style="font-size:12px;width:100%">'+
-     '<input id="pm-curl-'+m.id+'-'+i+'" placeholder="atau tempel link gambar https://..." value="'+esc(curUrl)+'" onchange="setColorImgFromUrl('+m.id+','+i+',this.value)" style="margin-top:6px">'+
-     '<input type="hidden" id="pm-cimg-'+m.id+'-'+i+'" value="'+esc(curUrl)+'">'+
-     '</div></div>';
-   }).join('')+
-   '</div></div>'
-   ):'<p style="grid-column:1/-1;font-size:11px;color:var(--muted);margin-top:10px">ℹ️ Belum ada data warna untuk model ini di Inventory — tambahkan stok per warna dulu supaya bisa upload foto per warna di sini.</p>')+
+   '<div style="grid-column:1/-1;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)">'+
+   '<label>Gambar Tambahan (Overlay/Print di atas Gambar Utama — opsional, untuk sablon/logo dsb.)</label>'+
+   '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">'+
+   '<div id="pm-ovpreview-'+m.id+'" style="position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0">'+
+   '<img src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:100%;height:100%;object-fit:cover">'+
+   '<img id="pm-ovimg-'+m.id+'" src="'+esc(meta.overlay_url||'')+'" style="display:'+(meta.overlay_url?'block':'none')+';position:absolute;left:'+(meta.overlay_x!=null?meta.overlay_x:50)+'%;top:'+(meta.overlay_y!=null?meta.overlay_y:50)+'%;width:'+(meta.overlay_size!=null?meta.overlay_size:40)+'%;height:auto;max-width:none;max-height:none;object-fit:contain;transform:translate(-50%,-50%)">'+
+   '</div>'+
+   '<div style="flex:1;min-width:220px">'+
+   '<input type="file" accept="image/*" id="pm-ovfile-'+m.id+'" onchange="handleOverlayUpload('+m.id+',this)" style="font-size:12px;width:100%">'+
+   '<input type="hidden" id="pm-ovurl-'+m.id+'" value="'+esc(meta.overlay_url||'')+'">'+
+   '<input type="hidden" id="pm-ov-'+m.id+'" value="'+esc(meta.overlay_url||'')+'">'+
+   '<button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;font-size:11px;padding:4px 10px" onclick="clearOverlay('+m.id+')">🗑 Hapus Gambar Tambahan</button>'+
+   '<div style="margin-top:10px"><label style="font-size:11px">Posisi Layer</label>'+
+   '<input type="hidden" id="pm-ovmode-'+m.id+'" value="'+esc(meta.overlay_mode==='under'?'under':'over')+'">'+
+   '<div style="display:flex;gap:8px">'+
+   '<button type="button" class="btn btn-sm '+((meta.overlay_mode||'over')==='over'?'btn-navy':'btn-outline')+'" id="pm-ovmode-over-'+m.id+'" title="Di atas Tint — warna gambar ini TETAP, tidak ikut berubah saat warna produk diganti" onclick="setOverlayMode('+m.id+',\'over\')" style="flex:1;font-size:11px;font-weight:700;padding:8px 6px">🔒<br>Warna Tetap</button>'+
+   '<button type="button" class="btn btn-sm '+(meta.overlay_mode==='under'?'btn-navy':'btn-outline')+'" id="pm-ovmode-under-'+m.id+'" title="Di bawah Tint — gambar ikut diwarnai sesuai warna produk yang dipilih" onclick="setOverlayMode('+m.id+',\'under\')" style="flex:1;font-size:11px;font-weight:700;padding:8px 6px">🎨<br>Ikut Warna</button>'+
+   '</div></div>'+
+   '<div style="margin-top:10px"><label>Invert Warna Gambar Tambahan</label>'+
+   '<div style="display:flex;gap:10px;align-items:flex-start">'+
+   '<label style="display:flex;align-items:center;gap:6px;flex-shrink:0;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--navy-800);white-space:nowrap">'+
+   '<input type="checkbox" id="pm-ovinvert-'+m.id+'" onchange="updateOverlayInvertVisibility('+m.id+')" '+(meta.overlay_invert!==false?'checked':'')+' style="width:16px;height:16px">Aktif'+
+   '</label>'+
+   (function(){
+    const invSaved=Array.isArray(meta.overlay_invert_warna)?meta.overlay_invert_warna:null;
+    const isChecked=(ck)=>invSaved?invSaved.includes(ck):true;
+    const checkedCount=modelColors.length?modelColors.filter(c=>isChecked((c.n||'').trim().toUpperCase())).length:0;
+    const labelTxt=!modelColors.length?'Belum ada warna':(checkedCount===modelColors.length?'✅ Semua warna ('+checkedCount+')':(checkedCount===0?'Tidak ada warna dipilih':checkedCount+' dari '+modelColors.length+' warna'));
+    return '<div class="csel csel-full" id="pm-ovinvwrap-'+m.id+'" style="flex:1;display:'+(meta.overlay_invert!==false?'block':'none')+'">'+
+     '<button type="button" class="csel-trigger" onclick="event.stopPropagation();cselToggle(\'pm-ovinvwrap-'+m.id+'\')"><span id="pm-ovinvwarna-label-'+m.id+'">'+esc(labelTxt)+'</span><span class="csel-arrow">▾</span></button>'+
+     '<div class="csel-menu">'+
+      (modelColors.length?(
+       '<div class="csel-opt" style="display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:4px;padding-bottom:8px" onclick="event.stopPropagation()">'+
+       '<span style="cursor:pointer;font-weight:700;color:var(--navy-700)" onclick="toggleAllOverlayInvertWarna('+m.id+',true)">✅ Pilih Semua</span>'+
+       '<span style="cursor:pointer;font-weight:700;color:var(--danger)" onclick="toggleAllOverlayInvertWarna('+m.id+',false)">❌ Kosongkan</span>'+
+       '</div>'+
+       modelColors.map((c,i)=>{
+        const ck=(c.n||'').trim().toUpperCase();
+        return '<label class="csel-opt" style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="event.stopPropagation()">'+
+         '<input type="checkbox" id="pm-ovinvwarna-'+m.id+'-'+i+'" data-color="'+esc(ck)+'" onchange="updateOverlayInvertWarnaLabel('+m.id+')" '+(isChecked(ck)?'checked':'')+' style="width:15px;height:15px;flex-shrink:0">'+
+         '<i style="width:14px;height:14px;border-radius:4px;border:1px solid var(--line);background:'+esc(c.h||'#CBD3E3')+';flex-shrink:0"></i>'+
+         '<span>'+esc(c.n)+'</span></label>';
+       }).join('')
+      ):'<div class="csel-opt" style="color:var(--muted)">Model ini belum punya data warna di Inventory</div>')+
+     '</div>'+
+     '</div>';
+   })()+
+   '</div>'+
+   '<p style="font-size:11px;color:var(--muted);margin:6px 0 0">Hanya berlaku untuk mode "Di atas Tint". Centang warna produk yang gambar tambahannya perlu dibalik (invert) — misalnya teks/logo hitam supaya kebaca di kain warna itu. Warna yang tidak dicentang, gambar tambahannya tetap apa adanya.</p>'+
+   '</div>'+
+   '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">'+
+   '<div style="flex:1;min-width:100px"><label style="font-size:11px">Ukuran (<span id="pm-ovsizeval-'+m.id+'">'+(meta.overlay_size!=null?meta.overlay_size:40)+'</span>%)</label><input type="range" min="5" max="100" id="pm-ovsize-'+m.id+'" value="'+(meta.overlay_size!=null?meta.overlay_size:40)+'" oninput="updateOverlayPreview('+m.id+')" style="width:100%"></div>'+
+   '<div style="flex:1;min-width:100px"><label style="font-size:11px">Posisi X (<span id="pm-ovxval-'+m.id+'">'+(meta.overlay_x!=null?meta.overlay_x:50)+'</span>%)</label><input type="range" min="0" max="100" id="pm-ovx-'+m.id+'" value="'+(meta.overlay_x!=null?meta.overlay_x:50)+'" oninput="updateOverlayPreview('+m.id+')" style="width:100%"></div>'+
+   '<div style="flex:1;min-width:100px"><label style="font-size:11px">Posisi Y (<span id="pm-ovyval-'+m.id+'">'+(meta.overlay_y!=null?meta.overlay_y:50)+'</span>%)</label><input type="range" min="0" max="100" id="pm-ovy-'+m.id+'" value="'+(meta.overlay_y!=null?meta.overlay_y:50)+'" oninput="updateOverlayPreview('+m.id+')" style="width:100%"></div>'+
+   '</div>'+
+   '</div></div></div>'+
    '</div>'+
    '<button class="btn btn-navy btn-sm" style="margin-top:10px" onclick="saveProdukMeta('+m.id+')">💾 Simpan</button>'+
    '</div>';
@@ -1283,6 +1456,10 @@ async function handleImgUpload(modelId,inputEl){
  }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
 }
 function compressImage(file,maxDim,quality){
+ // PNG (apalagi kalau ada transparansi) diekspor tetap sebagai PNG supaya alpha/background transparan
+ // tidak hilang — JPEG tidak punya kanal alpha, area transparan otomatis jadi hitam solid kalau dipaksa JPEG.
+ // Selain PNG (JPG/WEBP/dll — biasanya tanpa transparansi) tetap dikompres sebagai JPEG spy hemat ukuran.
+ const isPng=(file.type||'').toLowerCase()==='image/png';
  return new Promise((resolve,reject)=>{
   const reader=new FileReader();
   reader.onerror=()=>reject(new Error('read fail'));
@@ -1294,7 +1471,7 @@ function compressImage(file,maxDim,quality){
     if(w>h){if(w>maxDim){h=Math.round(h*maxDim/w);w=maxDim}}else{if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim}}
     const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
     const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,w,h);
-    resolve(canvas.toDataURL('image/jpeg',quality));
+    resolve(isPng?canvas.toDataURL('image/png'):canvas.toDataURL('image/jpeg',quality));
    };
    img.src=reader.result;
   };
@@ -1307,6 +1484,68 @@ function setImgFromUrl(modelId,url){
  $('pm-img-'+modelId).value=url;
  const bp=$('pm-bigpreview-'+modelId);if(bp)bp.src=url;
  const sp=$('pm-preview-'+modelId);if(sp)sp.src=url;
+}
+function updateOverlayInvertVisibility(modelId){
+ const wrap=$('pm-ovinvwrap-'+modelId);if(!wrap)return;
+ wrap.style.display=$('pm-ovinvert-'+modelId)?.checked?'block':'none';
+}
+function toggleAllOverlayInvertWarna(modelId,checked){
+ document.querySelectorAll('#pm-ovinvwrap-'+modelId+' input[type=checkbox]').forEach(cb=>{cb.checked=checked});
+ updateOverlayInvertWarnaLabel(modelId);
+}
+function updateOverlayInvertWarnaLabel(modelId){
+ const boxes=[...document.querySelectorAll('#pm-ovinvwrap-'+modelId+' input[type=checkbox]')];
+ const lbl=$('pm-ovinvwarna-label-'+modelId);if(!lbl)return;
+ if(!boxes.length){lbl.textContent='Belum ada warna';return}
+ const n=boxes.filter(b=>b.checked).length;
+ lbl.textContent = n===boxes.length ? ('✅ Semua warna ('+n+')') : (n===0?'Tidak ada warna dipilih':(n+' dari '+boxes.length+' warna'));
+}
+function setOverlayMode(modelId,mode){
+ const hid=$('pm-ovmode-'+modelId);if(hid)hid.value=mode;
+ const bo=$('pm-ovmode-over-'+modelId),bu=$('pm-ovmode-under-'+modelId);
+ if(bo)bo.className='btn btn-sm '+(mode==='over'?'btn-navy':'btn-outline');
+ if(bu)bu.className='btn btn-sm '+(mode==='under'?'btn-navy':'btn-outline');
+ updateOverlayPreview(modelId);
+}
+async function handleOverlayUpload(modelId,inputEl){
+ const file=inputEl.files&&inputEl.files[0];
+ if(!file)return;
+ if(!file.type.startsWith('image/')){toast('⚠️ File harus berupa gambar');inputEl.value='';return}
+ if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
+ toast('⏳ Memproses gambar...');
+ try{
+  const dataUrl=await compressImage(file,900,0.82);
+  $('pm-ov-'+modelId).value=dataUrl;
+  const uf=$('pm-ovurl-'+modelId);if(uf)uf.value='';
+  updateOverlayPreview(modelId);
+  toast('✅ Gambar tambahan siap — klik Simpan untuk menyimpan');
+ }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+}
+function setOverlayFromUrl(modelId,url){
+ url=(url||'').trim();
+ $('pm-ov-'+modelId).value=url;
+ updateOverlayPreview(modelId);
+}
+function clearOverlay(modelId){
+ const uv=$('pm-ov-'+modelId);if(uv)uv.value='';
+ const uf=$('pm-ovurl-'+modelId);if(uf)uf.value='';
+ const ufile=$('pm-ovfile-'+modelId);if(ufile)ufile.value='';
+ updateOverlayPreview(modelId);
+ toast('🗑 Gambar tambahan dihapus — klik Simpan untuk menyimpan');
+}
+function updateOverlayPreview(modelId){
+ const url=($('pm-ov-'+modelId)?.value)||'';
+ const size=+(($('pm-ovsize-'+modelId)?.value)||40);
+ const x=+(($('pm-ovx-'+modelId)?.value)||50);
+ const y=+(($('pm-ovy-'+modelId)?.value)||50);
+ const sv=$('pm-ovsizeval-'+modelId);if(sv)sv.textContent=size;
+ const xv=$('pm-ovxval-'+modelId);if(xv)xv.textContent=x;
+ const yv=$('pm-ovyval-'+modelId);if(yv)yv.textContent=y;
+ const img=$('pm-ovimg-'+modelId);
+ if(img){
+  if(url){img.src=url;img.style.display='block';img.style.left=x+'%';img.style.top=y+'%';img.style.width=size+'%'}
+  else{img.style.display='none'}
+ }
 }
 async function handleColorImgUpload(modelId,colorIdx,inputEl){
  const file=inputEl.files&&inputEl.files[0];
@@ -1333,9 +1572,13 @@ async function saveProdukMeta(modelId){
  const colorKeys=adminProdukColors[modelId]||[];
  const gambar_warna={};
  colorKeys.forEach((ck,i)=>{const el=$('pm-cimg-'+modelId+'-'+i);const v=el?el.value.trim():'';if(v)gambar_warna[ck]=v});
- const row={model_id:modelId,gambar_url:$('pm-img-'+modelId).value.trim(),gambar_warna,auto_tint:cur.auto_tint===true,kategori:cur.kategori||'',min_order:cur.min_order||1,estimasi_hari:cur.estimasi_hari||'',badge:cur.badge||'',deskripsi:cur.deskripsi||'',aktif:cur.aktif!==false};
+ const overlay_url=($('pm-ov-'+modelId)?.value||'').trim();
+ const overlay_invert_warna=[...document.querySelectorAll('#pm-ovinvwrap-'+modelId+' input[type=checkbox]:checked')].map(cb=>cb.dataset.color);
+ const row={model_id:modelId,gambar_url:$('pm-img-'+modelId).value.trim(),gambar_warna,auto_tint:cur.auto_tint===true,
+  overlay_url,overlay_mode:$('pm-ovmode-'+modelId)?.value||'over',overlay_size:+($('pm-ovsize-'+modelId)?.value||40),overlay_x:+($('pm-ovx-'+modelId)?.value||50),overlay_y:+($('pm-ovy-'+modelId)?.value||50),overlay_invert:$('pm-ovinvert-'+modelId)?.checked!==false,overlay_invert_warna,
+  kategori:cur.kategori||'',min_order:cur.min_order||1,estimasi_hari:cur.estimasi_hari||'',badge:cur.badge||'',deskripsi:cur.deskripsi||'',aktif:cur.aktif!==false};
  const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
- if(error){console.error(error);toast('❌ Gagal simpan: cek apakah kolom gambar_warna sudah ada di tabel pesanan_produk_meta (lihat SQL di tab Pengaturan)');return}
+ if(error){console.error(error);toast('❌ Gagal simpan: cek apakah kolom gambar_warna/overlay_* sudah ada di tabel pesanan_produk_meta (lihat SQL di tab Pengaturan)');return}
  produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();toast('💾 Produk disimpan');renderAdmin();
 }
 async function toggleProdukAktif(modelId){
@@ -1355,7 +1598,7 @@ async function toggleAutoTint(modelId){
  produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();renderAdmin();toast(!cur?'✅ Auto-Warna diaktifkan':'Auto-Warna dinonaktifkan');
 }
 function adminSettings(){
- const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  customer_name text, whatsapp text, address text, note text,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  gambar_warna jsonb default '{}'::jsonb,\n  auto_tint boolean default false,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n-- Jaga-jaga kalau tabel pesanan_produk_meta sudah ada sebelumnya (dibuat sebelum fitur gambar per-warna & auto-warna ini):\nalter table public.pesanan_produk_meta add column if not exists gambar_warna jsonb default '{}'::jsonb;\nalter table public.pesanan_produk_meta add column if not exists auto_tint boolean default false;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\n-- PENTING: semua tabel Inventory yang dipantau di setupRealtimeStok() harus\n-- didaftarkan ke publication ini juga, kalau tidak event realtime tidak akan pernah terkirim\n-- (transaksi baru dari app Inventory tidak akan muncul otomatis di Pesanan sampai di-refresh manual).\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table brand; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table model; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table warna; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table ukuran; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input_item; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi_item; exception when duplicate_object then null; end;\nend $$;";
+ const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  customer_name text, whatsapp text, address text, note text,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\ndrop policy if exists \"ord insert\" on public.produksi_orders;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ndrop policy if exists \"ord read\" on public.produksi_orders;\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ndrop policy if exists \"ord update\" on public.produksi_orders;\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ndrop policy if exists \"ord delete\" on public.produksi_orders;\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  gambar_warna jsonb default '{}'::jsonb,\n  auto_tint boolean default false,\n  overlay_url text,\n  overlay_mode text default 'over',\n  overlay_size numeric default 40,\n  overlay_x numeric default 50,\n  overlay_y numeric default 50,\n  overlay_invert boolean default true,\n  overlay_invert_warna jsonb,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n-- Jaga-jaga kalau tabel pesanan_produk_meta sudah ada sebelumnya (dibuat sebelum fitur gambar per-warna & auto-warna ini):\nalter table public.pesanan_produk_meta add column if not exists gambar_warna jsonb default '{}'::jsonb;\nalter table public.pesanan_produk_meta add column if not exists auto_tint boolean default false;\n-- Gambar Tambahan (overlay/print) di atas Gambar Utama — posisi layer, ukuran & letak diatur admin:\nalter table public.pesanan_produk_meta add column if not exists overlay_url text;\nalter table public.pesanan_produk_meta add column if not exists overlay_mode text default 'over';\nalter table public.pesanan_produk_meta add column if not exists overlay_size numeric default 40;\nalter table public.pesanan_produk_meta add column if not exists overlay_x numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_y numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_invert boolean default true;\n-- Daftar nama warna (array JSON) yang gambar tambahannya di-invert — dipilih manual oleh admin lewat checklist,\n-- menggantikan deteksi otomatis gelap/terang. NULL (belum pernah disimpan/produk lama) = invert SEMUA warna\n-- (kompatibel dengan perilaku lama) sampai admin menyimpan pilihannya sendiri lewat panel admin.\nalter table public.pesanan_produk_meta add column if not exists overlay_invert_warna jsonb;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\n-- PENTING: semua tabel Inventory yang dipantau di setupRealtimeStok() harus\n-- didaftarkan ke publication ini juga, kalau tidak event realtime tidak akan pernah terkirim\n-- (transaksi baru dari app Inventory tidak akan muncul otomatis di Pesanan sampai di-refresh manual).\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table brand; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table model; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table warna; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table ukuran; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input_item; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi_item; exception when duplicate_object then null; end;\nend $$;";
  return '<div class="panel" style="margin-bottom:14px"><h2>🔗 Koneksi Supabase</h2>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:6px">'+(sb?'🟢 <b style="color:var(--ok)">Tersambung</b> — pesanan tersinkron & katalog stok mengikuti data Inventory secara realtime.':'🔴 <b style="color:var(--danger)">Belum tersambung</b>.')+'</p>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:14px">URL & Anon Key project Supabase sudah tertanam otomatis di aplikasi ini (sama dengan aplikasi Inventory) — tidak perlu diisi manual. Katalog produk & stok mengikuti data Brand/Model/Warna/Ukuran di sana (read-only); Inventory tidak pernah ditulis dari sini. Jalankan SQL di bawah sekali di Supabase SQL Editor untuk menyiapkan tabel pesanan & view stok.</p>'+
