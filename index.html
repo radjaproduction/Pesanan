@@ -973,16 +973,32 @@ async function loadInventoryData(){
  }catch(e){console.error('Gagal memuat data Inventory:',e)}
 }
 function scheduleReload(){clearTimeout(_rtTimer);_rtTimer=setTimeout(loadInventoryData,400)}
+// Tarik ulang data Invoice (halaman "track") TANPA reset filter tanggal yang lagi dipakai
+// user — dipanggil otomatis saat status_bayar berubah (mis. dilunasi dari app Inventory)
+// supaya badge LUNAS/BELUM LUNAS di halaman Invoice ikut update tanpa perlu refresh manual.
+async function refreshTrackData(){
+ if(!sb)return;
+ try{
+  const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30);
+  if(error)throw error;
+  window._history=data.map(rowToOrder);
+  filterByDate();
+ }catch(e){console.error('Gagal refresh Invoice:',e)}
+}
 // Dipanggil saat tabel produksi_orders berubah (mis. status_bayar di-update otomatis dari
 // app Inventory saat owner melakukan pelunasan). Refresh daftar pesanan lokal, lalu render
-// ulang view yang sedang aktif (Admin/Pesanan atau Riwayat Transaksi customer) kalau relevan.
+// ulang view yang sedang aktif (Admin/Pesanan ATAU halaman Invoice customer) kalau relevan.
 function scheduleOrdersReload(){clearTimeout(_rtOrdersTimer);_rtOrdersTimer=setTimeout(async()=>{
  const ok=await syncOrdersFromCloud();
  if(!ok)return;
  const activeView=document.querySelector('.view.on')?.id;
  if(activeView==='view-admin'&&state.unlocked&&state.adminTab==='pesanan')renderAdmin();
+ // PERBAIKAN: sebelumnya halaman Invoice (view-track) tidak pernah ikut di-refresh di sini,
+ // jadi status LUNAS/BELUM LUNAS di situ nyangkut sampai user refresh manual.
+ if(activeView==='view-track')refreshTrackData();
 },400)}
 let _rtOrdersTimer=null;
+let _rtReconnectTimer=null;
 function setupRealtimeStok(){
  if(!sb)return;
  if(rtChannel){try{sb.removeChannel(rtChannel)}catch(e){}rtChannel=null}
@@ -991,8 +1007,35 @@ function setupRealtimeStok(){
   rtChannel = rtChannel.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload);
  });
  rtChannel = rtChannel.on('postgres_changes',{event:'*',schema:'public',table:'produksi_orders'},scheduleOrdersReload);
- rtChannel.subscribe();
+ rtChannel.subscribe((status)=>{
+  if(status==='SUBSCRIBED'){
+   clearTimeout(_rtReconnectTimer);
+   // Begitu (re)konek, tarik ulang data sebagai jaring pengaman kalau ada
+   // perubahan yang terjadi selagi koneksi realtime tadi putus/belum nyambung.
+   scheduleReload();scheduleOrdersReload();
+  }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+   // PERBAIKAN: sebelumnya kalau koneksi realtime putus (tab lama tidak aktif,
+   // HP hemat baterai, WiFi sempat drop, dsb), channel mati begitu saja tanpa
+   // reconnect — akibatnya perubahan dari app Inventory (stok/pelunasan) tidak
+   // pernah muncul otomatis sampai user refresh manual. Sekarang: sambung ulang
+   // otomatis setelah jeda singkat.
+   console.warn('⚠️ Realtime Pesanan gagal terhubung:',status);
+   rtChannel=null;
+   clearTimeout(_rtReconnectTimer);
+   _rtReconnectTimer=setTimeout(setupRealtimeStok,3000);
+  }
+ });
 }
+// PERBAIKAN: browser sering menahan/memutus WebSocket saat tab di-background (layar
+// dikunci, pindah app, dsb). Saat tab aktif lagi, pastikan channel masih tersambung
+// (reconnect kalau perlu) dan tarik ulang data sebagai jaring pengaman.
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState!=='visible'||!sb)return;
+ const st=rtChannel&&rtChannel.state;
+ if(st!=='joined'&&st!=='joining'){rtChannel=null;setupRealtimeStok()}
+ else{scheduleReload();scheduleOrdersReload()}
+});
+window.addEventListener('online',()=>{if(sb){rtChannel=null;setupRealtimeStok()}});
 
 /* ================= HEADER / NAV ================= */
 function doSearch(e){e.preventDefault();state.q=$('searchInput').value.trim();go('catalog')}
