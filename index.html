@@ -214,6 +214,11 @@ footer{flex-shrink:0}
 .sz{min-width:44px;text-align:center;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;transition:.15s}
 .sz.on{background:var(--navy-800);border-color:var(--navy-800);color:#fff}
 .sz.off{opacity:.35;text-decoration:line-through;cursor:not-allowed;pointer-events:none}
+.sizes-lg{gap:10px}
+.sz-lg{min-width:58px;padding:14px 16px;font-size:15px;border-radius:11px;border-width:2px}
+.pd-tap-hint{display:flex;align-items:center;gap:8px;margin-top:18px;padding:13px 15px;background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:12px;font-size:12.5px;font-weight:700;color:#8A5A00;cursor:pointer;transition:.15s}
+.pd-tap-hint:hover{background:#FFEBC7}
+.pd-tap-hint b{color:var(--navy-800)}
 .qty-row{display:flex;align-items:center;gap:14px}
 .stepper-qty{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
 .stepper-qty button{width:38px;height:38px;font-size:17px;font-weight:800;color:var(--navy-700);background:#fff}
@@ -388,6 +393,21 @@ body.hide-footer footer{display:none}
 .om-box.wide{max-width:640px;text-align:left}
 .om-box.wide .btn{margin-top:6px}
 
+/* product buy modal (popup dari foto: warna, ukuran, qty) */
+#pdBuyModal{position:fixed;inset:0;background:rgba(8,15,38,.6);display:none;align-items:flex-end;justify-content:center;z-index:1000;padding:0}
+#pdBuyModal.show{display:flex}
+.pbm-box{position:relative;background:#fff;border-radius:20px 20px 0 0;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:22px 20px 26px;box-shadow:var(--shadow-lg);animation:pbmUp .28s cubic-bezier(.22,.61,.36,1)}
+@keyframes pbmUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pbm-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--navy-50);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--navy-800);cursor:pointer;z-index:2}
+.pbm-handle{width:40px;height:4px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+.pbm-head{display:flex;gap:12px;align-items:center;margin-bottom:4px;padding-right:36px}
+.pbm-head img{width:60px;height:60px;border-radius:12px;object-fit:cover;border:1px solid var(--line);flex-shrink:0}
+.pbm-head h3{font-size:15.5px;font-weight:800;color:var(--ink);line-height:1.3}
+@media(min-width:641px){
+  #pdBuyModal{align-items:center;padding:20px}
+  .pbm-box{border-radius:18px;max-height:85vh}
+}
+
 /* responsive */
 @media(max-width:960px){
   .usp .container{grid-template-columns:repeat(2,1fr)}
@@ -551,6 +571,7 @@ body.hide-footer footer{display:none}
 
 <div id="toast"></div>
 <div id="orderModal"><div class="om-box" id="omBox"></div></div>
+<div id="pdBuyModal"><div class="pbm-box" id="pbmBox"></div></div>
 
 <script>
 /* ================= DATA ================= */
@@ -1043,22 +1064,20 @@ function renderProduct(){
  ):('<img id="pdImgTag" src="'+curImg+'" alt="">'+((!canCarousel&&curPending)?dots:''));
  setCrumb('Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b>');
  $('pdWrap').innerHTML=
- '<div class="pd"><div class="pd-img'+((!canCarousel&&curPending)?' pending':'')+'" id="pdImgBox">'+imgBody+
+ '<div class="pd"><div class="pd-img'+((!canCarousel&&curPending)?' pending':'')+'" id="pdImgBox"'+(hasVar?' style="cursor:pointer"':'')+'>'+imgBody+
  (hasVar?('<div class="pd-img-tag tag-color">'+esc(curColorObj.n)+'</div>'+'<div class="pd-img-tag tag-qty'+(curOff?' low':'')+'">'+(curOff?'Habis':curDispSt+' pcs')+'</div>'):'')+
  (canCarousel?'<div class="pd-img-hint">↔ Geser atau pilih warna di bawah</div>':'')+
  '</div>'+
  '<div class="pd-info"><div class="p-brand">'+esc(p.brand)+'</div><h1>'+esc(p.name)+'</h1>'+
  (hasVar?(
  '<div class="opt-lbl">Warna — <span>'+esc(p.colors[s.color].n)+'</span></div>'+
- '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct()"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
+ '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct();renderBuyModal()"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
- '<div class="sizes">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty='+p.min+';renderProduct()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
- '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'
- ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p>')+
- '<div class="opt-lbl">Jumlah</div><div class="qty-row"><div class="stepper-qty">'+
- '<button onclick="chgQty(-1)">−</button><input id="qtyInput" value="'+s.qty+'" type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')" onchange="setQty(this.value)" onblur="setQty(this.value)"><button onclick="chgQty(1)">+</button></div>'+
- '<span class="qty-note">Min. order '+p.min+' pcs</span></div>'+
- '<div class="pd-cta">'+(hasVar?'<button class="btn btn-outline" onclick="addSel(false)">🛒 Keranjang</button><button class="btn btn-accent" onclick="addSel(true)">⚡ Pesan Sekarang</button>':'<button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button>')+'</div></div>'+
+ '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty='+p.min+';renderProduct();renderBuyModal()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
+ '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'+
+ '<div class="pd-tap-hint" onclick="openBuyModal()">👆 <b>Ketuk foto produk</b> untuk isi jumlah &amp; pesan</div>'
+ ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p><div class="pd-cta"><button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button></div>')+
+ '</div>'+
  '<div class="pd-desc"><h3>Deskripsi Produk</h3><p>'+esc(p.desc)+'</p><div class="spec">'+
  p.specs.map(x=>'<div><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></div>').join('')+
  '<div><span>Estimasi Produksi</span><span>'+esc(p.days)+'</span></div></div></div></div>';
@@ -1104,14 +1123,51 @@ function chgQty(d){
  if(s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
  let nv=Math.max(p.min,s.qty+d);
  if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Stok varian ini habis');return}nv=Math.min(nv,Math.max(p.min,maxStok))}
- s.qty=nv;renderProduct();
+ s.qty=nv;renderProduct();renderBuyModal();
 }
+/* ================= POPUP BELI (dari klik foto) ================= */
+let buyModalOpen=false;
+function openBuyModal(){
+ const s=state.sel,p=P(s.pid);if(!p||!p.colors.length)return;
+ buyModalOpen=true;
+ renderBuyModal();
+ $('pdBuyModal').classList.add('show');
+}
+function closeBuyModal(){
+ buyModalOpen=false;
+ $('pdBuyModal').classList.remove('show');
+}
+function renderBuyModal(){
+ if(!buyModalOpen)return;
+ const s=state.sel,p=P(s.pid);if(!p){closeBuyModal();return}
+ if(!p.colors.length){closeBuyModal();return}
+ const curColorObj=p.colors[s.color];
+ const curStok=s.size?stokFor(p,curColorObj.n,s.size):0;
+ const explicitImg=(p.imgByColor[(curColorObj.n||'').trim().toUpperCase()]||'');
+ const liveTag=$('pdImgTag');
+ const curImgSrc=explicitImg||(liveTag?liveTag.src:p.img);
+ $('pbmBox').innerHTML=
+ '<button class="pbm-close" onclick="closeBuyModal()">✕</button>'+
+ '<div class="pbm-handle"></div>'+
+ '<div class="pbm-head"><img src="'+curImgSrc+'" alt=""><div><div class="p-brand">'+esc(p.brand)+'</div><h3>'+esc(p.name)+'</h3></div></div>'+
+ '<div class="opt-lbl">Warna — <span>'+esc(curColorObj.n)+'</span></div>'+
+ '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="selectModalColor('+i+')"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
+ '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
+ '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,curColorObj.n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="selectModalSize(\''+z.replace(/'/g,"\\'")+'\')"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
+ '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Pilih ukuran untuk melihat stok')+'</div>'+
+ '<div class="opt-lbl">Jumlah</div><div class="qty-row"><div class="stepper-qty">'+
+ '<button onclick="chgQty(-1)">−</button><input id="qtyInput" value="'+s.qty+'" type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')" onchange="setQty(this.value)" onblur="setQty(this.value)"><button onclick="chgQty(1)">+</button></div>'+
+ '<span class="qty-note">Min. order '+p.min+' pcs</span></div>'+
+ '<div class="pd-cta" style="margin-top:18px"><button class="btn btn-outline" onclick="addSel(false)">🛒 Keranjang</button><button class="btn btn-accent" onclick="addSel(true)">⚡ Pesan Sekarang</button></div>';
+}
+function selectModalColor(i){const p=P(state.sel.pid);if(!p)return;state.sel.color=i;state.sel.size='';state.sel.qty=p.min;renderProduct();renderBuyModal()}
+function selectModalSize(z){const p=P(state.sel.pid);if(!p)return;state.sel.size=z;state.sel.qty=p.min;renderProduct();renderBuyModal()}
 function pdSwipeColor(dir){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors||p.colors.length<2)return;
  const n=p.colors.length;
  s.color=((s.color+dir)%n+n)%n;s.size='';s.qty=p.min;renderProduct();
 }
-let _pdDragging=false,_pdDragX=0,_pdDragY=0,_pdContW=0,_pdPtrId=null;
+let _pdDragging=false,_pdDragX=0,_pdDragY=0,_pdContW=0,_pdPtrId=null,_pdSuppressClick=false;
 document.addEventListener('pointerdown',e=>{
  const box=e.target.closest('#pdImgBox');if(!box)return;
  const track=$('pdImgTrack');if(!track)return;
@@ -1119,6 +1175,12 @@ document.addEventListener('pointerdown',e=>{
  _pdContW=box.getBoundingClientRect().width||1;
  track.classList.add('dragging');
  try{box.setPointerCapture(e.pointerId)}catch(err){}
+});
+document.addEventListener('click',e=>{
+ const box=e.target.closest('#pdImgBox');if(!box)return;
+ if(_pdSuppressClick){_pdSuppressClick=false;return}
+ const s=state.sel,p=s?P(s.pid):null;
+ if(p&&p.colors&&p.colors.length)openBuyModal();
 });
 document.addEventListener('pointermove',e=>{
  if(!_pdDragging||e.pointerId!==_pdPtrId)return;
@@ -1143,9 +1205,11 @@ document.addEventListener('pointerup',e=>{
  track.classList.remove('dragging');
  const threshold=Math.max(44,_pdContW*0.16);
  if(dx>threshold){
+  _pdSuppressClick=true;
   track.style.transform='translateX(0%)';
   setTimeout(()=>pdSwipeColor(-1),240);
  }else if(dx<-threshold){
+  _pdSuppressClick=true;
   track.style.transform='translateX(-66.6668%)';
   setTimeout(()=>pdSwipeColor(1),240);
  }else{
@@ -1169,7 +1233,7 @@ function setQty(v){
  s.qty=nv;
  // render ditunda 1 tick supaya klik tombol (Keranjang/Pesan Sekarang) yang memicu blur ini
  // sempat "landing" dulu sebelum tombolnya diganti oleh render ulang — mencegah harus klik 2x
- setTimeout(renderProduct,0);
+ setTimeout(()=>{renderProduct();renderBuyModal()},0);
 }
 function addSel(buy){
  const s=state.sel,p=P(s.pid);if(!p)return;
@@ -1182,6 +1246,7 @@ function addSel(buy){
  const ex=cart.find(c=>c.key===key);
  if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
  saveCart();toast('✅ '+p.name+' masuk keranjang');
+ closeBuyModal();
  if(buy){go('cart')}else{s.qty=p.min;renderProduct()}
 }
 
