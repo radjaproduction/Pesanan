@@ -1318,7 +1318,20 @@ function setQty(v){
  // sempat "landing" dulu sebelum tombolnya diganti oleh render ulang — mencegah harus klik 2x
  setTimeout(()=>{renderProduct();renderBuyModal()},0);
 }
+function commitNumpadIfOpen(){
+ if(!numpadOpen)return;
+ const s=state.sel,p=P(s.pid);if(!p)return;
+ let nv=parseInt(numpadBuf,10);
+ if(isNaN(nv)||nv<1)nv=p.min;
+ let maxStok=Infinity;
+ if(s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
+ nv=Math.max(p.min,nv);
+ if(isFinite(maxStok)){if(maxStok<=0)nv=p.min;else if(nv>maxStok)nv=maxStok}
+ s.qty=nv;
+ numpadBuf=String(nv);
+}
 function addSel(buy){
+ commitNumpadIfOpen();
  const s=state.sel,p=P(s.pid);if(!p)return;
  if(!p.colors.length){toast('⚠️ Produk belum memiliki stok');return}
  if(!s.size){toast('⚠️ Pilih ukuran terlebih dahulu');return}
