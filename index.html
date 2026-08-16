@@ -209,7 +209,7 @@ footer{flex-shrink:0}
 .sw{display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;padding:3px}
 .sw i{width:32px;height:32px;border-radius:50%;border:1px solid rgba(0,0,0,.12);display:block}
 .sw.on i{outline:2.5px solid var(--navy-700);outline-offset:2px}
-.sw.off{opacity:.35;cursor:not-allowed}
+.sw.off{opacity:.55}
 .sizes{display:flex;gap:8px;flex-wrap:wrap}
 .sz{min-width:44px;text-align:center;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;transition:.15s}
 .sz.on{background:var(--navy-800);border-color:var(--navy-800);color:#fff}
@@ -1045,7 +1045,7 @@ function renderProduct(){
  '<div class="pd-info"><div class="p-brand">'+esc(p.brand)+'</div><h1>'+esc(p.name)+'</h1>'+
  (hasVar?(
  '<div class="opt-lbl">Warna — <span>'+esc(p.colors[s.color].n)+'</span></div>'+
- '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" '+(off?'':'onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct()"')+'><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
+ '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct()"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
  '<div class="sizes">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty='+p.min+';renderProduct()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
  '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'
