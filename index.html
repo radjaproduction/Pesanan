@@ -291,8 +291,8 @@ footer{flex-shrink:0}
 
 /* ============ TRACK / STEPPER ============ */
 .track-box{max-width:860px;margin:30px auto 50px}
-.track-input{display:flex;gap:10px;margin:18px 0;flex-wrap:wrap}
-.track-input input{flex:1;min-width:160px;padding:13px 16px;border:1.5px solid var(--line);border-radius:11px;font-weight:700;outline:none}
+.track-input{display:flex;gap:6px;margin:18px 0;flex-wrap:wrap;align-items:center}
+.track-input input{flex:1 1 100px;min-width:100px;padding:9px 8px;border:1.5px solid var(--line);border-radius:10px;font-weight:700;outline:none;font-size:12px}
 .track-input input:focus{border-color:var(--navy-500)}
 
 /* ============ PERIOD SUMMARY CARD ============ */
@@ -536,8 +536,8 @@ body.hide-footer footer{display:none}
       <input id="trackDateFrom" type="date">
       <span style="align-self:center;color:var(--muted);font-weight:700;font-size:12.5px">s/d</span>
       <input id="trackDateTo" type="date">
-      <button class="btn btn-navy" onclick="filterByDate()">🔎 Cari</button>
-      <button class="btn btn-outline" onclick="resetDateFilter()">✕ Reset</button>
+      <button class="btn btn-navy btn-sm" onclick="filterByDate()">🔎 Cari</button>
+      <button class="btn btn-outline btn-sm" onclick="resetDateFilter()">✕ Reset</button>
     </div>
     <div id="periodSummary"></div>
     <div style="margin-top:30px">
@@ -586,7 +586,7 @@ body.hide-footer footer{display:none}
 /* ================= DATA ================= */
 const IMG = {hero:'hero.jpg',custom:'custom.jpg'};
 const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="%23EEF1F7"/><text x="50%" y="50%" font-family="sans-serif" font-size="15" fill="%235B6478" text-anchor="middle" dy=".3em">Belum ada foto</text></svg>'.replace(/%23/g,'#'));
-const STAGES = [['📥','Pesanan Diterima'],['💬','Konfirmasi & DP'],['🎨','Desain & Approval'],['✂️','Pemotongan'],['🧵','Penjahitan'],['🖨️','Sablon / Bordir'],['✅','Quality Control'],['🚚','Dikirim']];
+const STAGES = [['⏳','Menunggu'],['📥','Pesanan Diterima']];
 
 /* Katalog produk sekarang diambil LANGSUNG & REALTIME dari data brand/model/stok
    aplikasi Inventory (INDEX) via Supabase — bukan lagi data statis. Lihat
@@ -628,9 +628,9 @@ async function syncOrdersFromCloud(){
  catch(e){console.error(e);return false}
 }
 function seedOrders(){const n=Date.now(),D=86400000;return[
- {code:'RJA-10241',ts:n-6*D,stage:6,mine:false,name:'TK Tunas Bangsa',wa:'081227001122',addr:'Jl. Parasamya No.1, Sleman, DIY',note:'Kaos anak untuk acara perpisahan TK, sablon DTF depan-belakang.',items:[]},
- {code:'RJA-10257',ts:n-3*D,stage:3,mine:false,name:'Budi Santoso',wa:'085743320091',addr:'Jl. Kaliurang KM 8, Yogyakarta',note:'Kaos anak polos untuk merchandise komunitas.',items:[]},
- {code:'RJA-10263',ts:n-1*D,stage:1,mine:false,name:'SD Negeri 2 Yogyakarta',wa:'081904455667',addr:'Jl. Prawirotaman No.4, Yogyakarta',note:'Kaos raglan olahraga anak, dua warna kontras.',items:[]}];}
+ {code:'RJA-10241',ts:n-6*D,stage:1,mine:false,name:'TK Tunas Bangsa',wa:'081227001122',addr:'Jl. Parasamya No.1, Sleman, DIY',note:'Kaos anak untuk acara perpisahan TK, sablon DTF depan-belakang.',items:[]},
+ {code:'RJA-10257',ts:n-3*D,stage:1,mine:false,name:'Budi Santoso',wa:'085743320091',addr:'Jl. Kaliurang KM 8, Yogyakarta',note:'Kaos anak polos untuk merchandise komunitas.',items:[]},
+ {code:'RJA-10263',ts:n-1*D,stage:0,mine:false,name:'SD Negeri 2 Yogyakarta',wa:'081904455667',addr:'Jl. Prawirotaman No.4, Yogyakarta',note:'Kaos raglan olahraga anak, dua warna kontras.',items:[]}];}
 
 /* ================= HELPERS ================= */
 const $=id=>document.getElementById(id);
@@ -1565,7 +1565,7 @@ function renderHistoryList(list){
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
-  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>'+
+  '<span class="stage-pill '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>'+
   '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
   '</div></div>'+
   '<div style="font-size:12px;color:var(--muted);margin:8px 0 0">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div></div>';
@@ -1643,14 +1643,14 @@ function renderAdmin(){
  setCrumb('Beranda / <b>Admin Dashboard</b>');
  if(!state.unlocked){w.innerHTML='<div class="gate"><div class="lock">🔒</div><h2 style="color:var(--navy-900)">Admin / Owner</h2><p style="color:var(--muted);font-size:12.5px;margin-top:6px">Masukkan PIN untuk membuka dashboard.</p><input id="pinIn" type="password" maxlength="6" inputmode="numeric" placeholder="••••" oninput="checkPin()"><button class="btn btn-navy btn-block" onclick="unlock()">Buka Dashboard</button><p style="font-size:11px;color:var(--muted);margin-top:12px">PIN default: 1234</p></div>';return}
  const t=state.adminTab;
- const inProd=orders.filter(o=>o.stage>=2&&o.stage<7).length,done=orders.filter(o=>o.stage>=7).length,pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
+ const menunggu=orders.filter(o=>o.stage===0).length,diterima=orders.filter(o=>o.stage>=1).length,pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
  w.innerHTML='<div class="admin-wrap">'+
  '<div class="a-side"><div class="who">🛡️ <span class="who-txt">ADMIN PANEL</span></div>'+
  [['pesanan','📦','Pesanan'],['produk','📷','Produk'],['pengaturan','⚙️','Pengaturan']].map(x=>'<button title="'+x[2]+'" class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()"><span class="ico">'+x[1]+'</span><span class="lbl">'+x[2]+'</span></button>').join('')+
  '<button title="Keluar" onclick="state.unlocked=false;go(\'home\')"><span class="ico">🚪</span><span class="lbl">Keluar</span></button></div>'+
  '<div><div class="stat-row">'+
- (t!=='pengaturan'?('<div class="stat"><b>'+orders.length+'</b><span>TOTAL PESANAN</span></div><div class="stat"><b>'+inProd+'</b><span>DALAM PRODUKSI</span></div>'+
- '<div class="stat"><b>'+done+'</b><span>SELESAI / DIKIRIM</span></div><div class="stat"><b>'+pcs.toLocaleString('id-ID')+'</b><span>TOTAL PCS</span></div>'):'')+'</div>'+
+ (t!=='pengaturan'?('<div class="stat"><b>'+orders.length+'</b><span>TOTAL PESANAN</span></div><div class="stat"><b>'+menunggu+'</b><span>MENUNGGU</span></div>'+
+ '<div class="stat"><b>'+diterima+'</b><span>DITERIMA</span></div><div class="stat"><b>'+pcs.toLocaleString('id-ID')+'</b><span>TOTAL PCS</span></div>'):'')+'</div>'+
  (t==='pesanan'?adminOrders():t==='produk'?adminProduk():adminSettings())+'</div></div>';
 }
 function unlock(){if($('pinIn').value===settings.pin){state.unlocked=true;renderAdmin();toast('👋 Selamat datang, Admin!')}else toast('❌ PIN salah')}
@@ -1664,14 +1664,14 @@ function checkPin(){
 function orderBody(o,showPill){
  if(showPill===undefined)showPill=true;
  return '<div class="top"><span class="code">'+o.code+'</span>'+
- (showPill?'<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>':'')+'</div>'+
+ (showPill?'<span class="stage-pill '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>':'')+'</div>'+
  '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+(o.note?' • 📝 '+esc(o.note):'')+'</div>'+
  '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>';
 }
 function adminOrders(){
  if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
  return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+'<div class="acts">'+
- (o.stage===0?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>':'<span style="color:var(--muted);font-size:13px">✅ Sudah dikonfirmasi</span>')+
+ (o.stage===0?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>':'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>')+
  '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
 }
 function setStage(i,v){
