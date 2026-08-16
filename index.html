@@ -146,6 +146,8 @@ body.bg-catalog::after{
              radial-gradient(ellipse 55% 40% at 90% 90%,rgba(16,31,69,.07),transparent 60%);
 }
 #backBar,main{position:relative;z-index:1}
+@keyframes shakePin{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px)}40%,60%{transform:translateX(8px)}}
+#pinIn.shake{animation:shakePin .4s;border-color:var(--danger)!important}
 .cat-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 18px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{padding:8px 15px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s}
@@ -344,6 +346,7 @@ body.bg-catalog::after{
 
 /* ============ FOOTER ============ */
 footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px solid rgba(255,255,255,.12)}
+body.hide-footer footer{display:none}
 .f-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.4fr;gap:30px;padding:46px 0 34px}
 .f-grid h4{color:#fff;font-size:13px;margin-bottom:14px;letter-spacing:.5px}
 .f-grid p,.f-grid a{font-size:12.5px;line-height:2;color:#8FA1CC;text-decoration:none;display:block}
@@ -387,6 +390,11 @@ footer{background:var(--navy-950);color:#8FA1CC;margin-top:0;border-top:1px soli
   .grid{grid-template-columns:repeat(2,1fr)}
   .f-grid{grid-template-columns:1fr 1fr;gap:26px 18px}
   .f-grid .f-brand{grid-column:1/-1}
+  .a-side{justify-content:space-between;padding:10px 8px;gap:2px}
+  .a-side .who{display:none}
+  .a-side button{flex:1;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 4px;text-align:center}
+  .a-side button .ico{font-size:18px;line-height:1}
+  .a-side button .lbl{display:none}
 }
 #backBar{display:none;background:transparent}
 #backBar.show{display:block}
@@ -606,6 +614,7 @@ function go(v,fromBack){
  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('view-'+v).classList.add('on');window.scrollTo({top:0,behavior:'smooth'});
  $('backBar').classList.toggle('show', v!=='home');
  document.body.classList.toggle('bg-catalog', v==='catalog');
+ document.body.classList.toggle('hide-footer', v==='admin');
  if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();
  if(v==='admin'&&sb){syncOrdersFromCloud().then(ok=>{if(ok)renderAdmin()})}
 }
@@ -1062,19 +1071,26 @@ function closeModal(){$('orderModal').classList.remove('show');$('omBox').classN
 /* ================= ADMIN ================= */
 function renderAdmin(){
  const w=$('adminWrap');
- if(!state.unlocked){w.innerHTML='<div class="gate"><div class="lock">🔒</div><h2 style="color:var(--navy-900)">Admin / Owner</h2><p style="color:var(--muted);font-size:12.5px;margin-top:6px">Masukkan PIN untuk membuka dashboard.</p><input id="pinIn" type="password" maxlength="6" inputmode="numeric" placeholder="••••"><button class="btn btn-navy btn-block" onclick="unlock()">Buka Dashboard</button><p style="font-size:11px;color:var(--muted);margin-top:12px">PIN default: 1234</p></div>';return}
+ if(!state.unlocked){w.innerHTML='<div class="gate"><div class="lock">🔒</div><h2 style="color:var(--navy-900)">Admin / Owner</h2><p style="color:var(--muted);font-size:12.5px;margin-top:6px">Masukkan PIN untuk membuka dashboard.</p><input id="pinIn" type="password" maxlength="6" inputmode="numeric" placeholder="••••" oninput="checkPin()"><button class="btn btn-navy btn-block" onclick="unlock()">Buka Dashboard</button><p style="font-size:11px;color:var(--muted);margin-top:12px">PIN default: 1234</p></div>';return}
  const t=state.adminTab;
  const inProd=orders.filter(o=>o.stage>=2&&o.stage<7).length,done=orders.filter(o=>o.stage>=7).length,pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
- w.innerHTML='<div class="crumb">Beranda / <b>Admin Dashboard</b> <span style="margin-left:8px;font-size:11px;font-weight:700;color:'+(sb?'var(--ok)':'var(--danger)')+'">'+(sb?'🟢 Tersambung':'🔴 Belum Tersambung')+'</span></div><div class="admin-wrap">'+
- '<div class="a-side"><div class="who">🛡️ ADMIN PANEL</div>'+
- [['pesanan','📦 Pesanan'],['produksi','🏭 Produksi'],['produk','📷 Produk'],['pengaturan','⚙️ Pengaturan']].map(x=>'<button class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()">'+x[1]+'</button>').join('')+
- '<button onclick="state.unlocked=false;go(\'home\')">🚪 Keluar</button></div>'+
+ w.innerHTML='<div class="crumb">Beranda / <b>Admin Dashboard</b></div><div class="admin-wrap">'+
+ '<div class="a-side"><div class="who">🛡️ <span class="who-txt">ADMIN PANEL</span></div>'+
+ [['pesanan','📦','Pesanan'],['produksi','🏭','Produksi'],['produk','📷','Produk'],['pengaturan','⚙️','Pengaturan']].map(x=>'<button title="'+x[2]+'" class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()"><span class="ico">'+x[1]+'</span><span class="lbl">'+x[2]+'</span></button>').join('')+
+ '<button title="Keluar" onclick="state.unlocked=false;go(\'home\')"><span class="ico">🚪</span><span class="lbl">Keluar</span></button></div>'+
  '<div><div class="stat-row">'+
  '<div class="stat"><b>'+orders.length+'</b><span>TOTAL PESANAN</span></div><div class="stat"><b>'+inProd+'</b><span>DALAM PRODUKSI</span></div>'+
  '<div class="stat"><b>'+done+'</b><span>SELESAI / DIKIRIM</span></div><div class="stat"><b>'+pcs.toLocaleString('id-ID')+'</b><span>TOTAL PCS</span></div></div>'+
  (t==='pesanan'?adminOrders():t==='produksi'?adminProd():t==='produk'?adminProduk():adminSettings())+'</div></div>';
 }
 function unlock(){if($('pinIn').value===settings.pin){state.unlocked=true;renderAdmin();toast('👋 Selamat datang, Admin!')}else toast('❌ PIN salah')}
+function checkPin(){
+ const el=$('pinIn');if(!el)return;
+ if(el.value.length>=settings.pin.length){
+  if(el.value===settings.pin){state.unlocked=true;renderAdmin();toast('👋 Selamat datang, Admin!')}
+  else{toast('❌ PIN salah');el.value='';el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400)}
+ }
+}
 function orderBody(o){
  return '<div class="top"><span class="code">'+o.code+'</span>'+
  '<span class="stage-pill '+(o.stage>=7?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span></div>'+
@@ -1084,8 +1100,7 @@ function orderBody(o){
 function adminOrders(){
  if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
  return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+'<div class="acts">'+
- cselHTML('stageSel'+i,STAGES.map((s,j)=>({value:j,label:s[0]+' '+s[1]})),o.stage,'setStage.bind(null,'+i+')')+
- (o.stage<7?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+','+(o.stage+1)+')">Tahap Berikutnya →</button>':'')+
+ (o.stage===0?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>':'<span style="color:var(--muted);font-size:13px">✅ Sudah dikonfirmasi</span>')+
  '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
 }
 function adminProd(){
@@ -1096,12 +1111,12 @@ function adminProd(){
 }
 function setStage(i,v){
  v=+v;const code=orders[i].code;orders[i].stage=v;LS.set('rj_orders',orders);renderAdmin();toast('🏭 '+code+' → '+STAGES[v][1]);
- if(sb)sb.from(ORDERS_TABLE).update({stage:v}).eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal sync status ke server')}});
+ if(sb)sb.from(ORDERS_TABLE).update({stage:v}).eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal sync: '+(error.message||error.code||'unknown error'))}});
 }
 function delOrder(i){
  if(!confirm('Hapus pesanan '+orders[i].code+'?'))return;
  const code=orders[i].code;orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();
- if(sb)sb.from(ORDERS_TABLE).delete().eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal hapus di server')}});
+ if(sb)sb.from(ORDERS_TABLE).delete().eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal hapus: '+(error.message||error.code||'unknown error'))}});
 }
 function adminProduk(){
  if(!sb)return '<p style="color:var(--muted)">🔌 Sambungkan ke Supabase dulu di tab Pengaturan.</p>';
