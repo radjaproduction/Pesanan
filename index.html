@@ -292,6 +292,16 @@ footer{flex-shrink:0}
 /* ============ TRACK / STEPPER ============ */
 .track-box{max-width:860px;margin:14px auto 50px;padding-left:2px;padding-right:2px}
 #view-admin .container{padding-left:2px;padding-right:2px}
+@media(max-width:960px){
+  /* Full-bleed fix: pastikan lebar stat-row & kartu pesanan di Admin Dashboard
+     sama seperti kartu di halaman Invoice (edge-to-edge, gutter kiri-kanan seragam),
+     terlepas dari padding leluhur yang mungkin membuatnya lebih sempit. */
+  #view-admin .stat-row,#view-admin .a-order{
+    margin-left:calc(50% - 50vw + 18px);
+    margin-right:calc(50% - 50vw + 18px);
+    width:auto;
+  }
+}
 .track-input{display:flex;gap:6px;margin:18px 0;flex-wrap:wrap;align-items:center}
 .track-input input{flex:1 1 100px;min-width:100px;padding:9px 8px;border:1.5px solid var(--line);border-radius:10px;font-weight:700;outline:none;font-size:12px}
 .track-input input:focus{border-color:var(--navy-500)}
