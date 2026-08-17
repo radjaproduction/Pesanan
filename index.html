@@ -250,7 +250,8 @@ footer{flex-shrink:0}
 .sizes{display:flex;gap:8px;flex-wrap:wrap}
 .sz{min-width:44px;text-align:center;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;transition:.15s}
 .sz.on{background:var(--navy-800);border-color:var(--navy-800);color:#fff}
-.sz.off{opacity:.35;text-decoration:line-through;cursor:not-allowed;pointer-events:none}
+.sz.off{background:#EEF0F5;border-color:#E3E8F2;color:#98A2B8;opacity:1;text-decoration:none;cursor:not-allowed;pointer-events:none;display:flex;align-items:center;justify-content:center}
+.sz-off-lbl{display:block;font-size:10px;font-weight:800;letter-spacing:.2px}
 .sizes-lg{gap:10px}
 .sz-lg{min-width:58px;padding:14px 16px;font-size:15px;border-radius:11px;border-width:2px}
 .pd-tap-hint{display:flex;align-items:center;gap:8px;margin-top:18px;padding:13px 15px;background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:12px;font-size:12.5px;font-weight:700;color:#8A5A00;cursor:pointer;transition:.15s}
@@ -1337,7 +1338,7 @@ function renderProduct(){
  '<div class="opt-lbl">Warna — <span>'+esc(p.colors[s.color].n)+'</span></div>'+
  '<div class="swatches">'+p.colors.map((c,i)=>({c,i,tot:stokForColor(p,c.n)})).sort((a,b)=>(a.tot<=0)-(b.tot<=0)).map(({c,i,tot})=>{const off=tot<=0;return '<div class="sw '+(i===s.color?'on':'')+(off?' off':'')+'" title="'+esc(c.n)+(off?' — Habis':'')+'" onclick="state.sel.color='+i+';state.sel.size=\'\';state.sel.qty='+p.min+';renderProduct();renderBuyModal()"><i style="background:'+c.h+'"></i></div>'}).join('')+'</div>'+
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
- '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty=0;renderProduct();renderBuyModal()"')+'>'+esc(z)+'</div>'}).join('')+'</div>'+
+ '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty=0;renderProduct();renderBuyModal()"')+'>'+(off?'<span class="sz-off-lbl">Habis</span>':esc(z))+'</div>'}).join('')+'</div>'+
  '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'+
  '<div class="pd-tap-hint" onclick="openBuyModal()">👆 <b>Ketuk foto produk</b> untuk isi jumlah &amp; pesan</div>'
  ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p><div class="pd-cta"><button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button></div>')+
