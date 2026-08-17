@@ -546,6 +546,54 @@ body.boot-lock{overflow:hidden}
  #boot-overlay .boot-weave,#boot-overlay .boot-glow,#boot-overlay .boot-ring{animation:none}
  #boot-overlay .boot-word{animation:none;opacity:1;transform:none}
 }
+/* ===== Surat Tagihan (clone format dari app Inventory) ===== */
+.th-wrap{background:#fff;border-radius:12px;width:100%;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10)}
+.th-header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:3px solid var(--accent)}
+.th-badge{background:var(--accent);color:#1a1200;font-size:12px;font-weight:900;padding:5px 12px;border-radius:8px;letter-spacing:1px;white-space:nowrap}
+.th-no{font-size:9px;color:#000;margin-top:3px;text-align:right}
+.th-infobox{background:#e9ecf3;border:1px solid #d6dbe8;border-radius:8px;margin:12px 18px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.th-inforow{font-size:10px;display:flex;flex-direction:column;gap:2px}
+.th-inforow:nth-child(even){align-items:flex-end;text-align:right}
+.th-infolabel{color:#000;font-size:9px}
+.th-infoval{font-weight:700;color:#111}
+.th-tablewrap{padding:0 18px 12px}
+.th-tablewrap table{width:100%;border-collapse:collapse}
+.th-tablewrap thead tr{background:var(--accent)}
+.th-tablewrap thead th{padding:7px 10px;text-align:center;font-size:10px;font-weight:900;color:#1a1200;white-space:nowrap}
+.th-tablewrap thead th:nth-child(4){background:rgba(0,0,0,.15)}
+.th-tablewrap tbody tr:nth-child(even){background:#e9ecf3}
+.th-tablewrap tbody td{text-align:center;padding:6px 10px;font-size:10px;color:#111;white-space:nowrap}
+.th-tablewrap tbody td:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;font-weight:700}
+.th-totalrow{border-top:2px solid var(--accent)}
+.th-totalrow td{padding:8px 10px;font-size:11px;white-space:nowrap}
+.th-statusbox{margin:0 18px 12px;background:#e9ecf3;border:1px solid #d6dbe8;border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:center;gap:10px}
+.th-statuslabel{font-size:11px;font-weight:900;color:#000;letter-spacing:1px;white-space:nowrap}
+.th-statusbadge{padding:5px 14px;border-radius:8px;font-weight:900;font-size:12px;letter-spacing:1px;white-space:nowrap}
+.th-signarea{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 18px 16px;margin-top:6px}
+.th-signbox{text-align:center}
+.th-signline{border-top:1px solid #ccc;margin-top:32px;padding-top:5px;font-size:9px;color:#000}
+.th-signname{font-weight:900;color:var(--accent-600);font-size:10px;margin-top:2px}
+.th-footer{text-align:center;font-size:8px;color:#000;padding:10px 18px 14px;border-top:1px solid #e5e7eb;letter-spacing:1px;text-transform:uppercase}
+#print-overlay{display:none;position:fixed;inset:0;z-index:99990;background:#f3f4f6;flex-direction:column}
+#print-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:2px solid var(--accent);flex-shrink:0}
+#print-overlay-title{font-weight:900;font-size:12px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#print-overlay-sub{font-size:9px;color:var(--accent-600);margin-top:1px}
+#print-content-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#print-doc-wrapper{padding:24px;padding-bottom:140px;min-height:100%;background:#f3f4f6;display:flex;align-items:flex-start;justify-content:center}
+#print-doc-inner{width:100%;max-width:740px}
+#print-bottom-bar{display:flex;align-items:center;gap:10px;padding:14px 16px;padding-bottom:calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:2px solid var(--accent);flex-shrink:0}
+#print-btn-download{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;background:var(--accent);border:none;border-radius:14px;color:#1a1200;font-weight:900;font-size:14px;cursor:pointer;white-space:nowrap}
+#print-btn-back{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;background:#fff;border:2px solid var(--navy-900);border-radius:14px;color:var(--navy-900);font-weight:900;font-size:14px;cursor:pointer;white-space:nowrap}
+@media print{
+ @page{size:A5 portrait;margin:8mm 10mm 10mm 10mm}
+ body>*{display:none!important}
+ #print-overlay{display:block!important;position:static!important;background:#fff!important;width:100%!important;margin:0!important}
+ #print-toolbar,#print-bottom-bar{display:none!important}
+ #print-content-scroll{display:block!important;overflow:visible!important;height:auto!important}
+ #print-doc-wrapper{display:block!important;padding:0!important;margin:0!important;background:#fff!important;width:100%!important;max-width:100%!important}
+ #print-doc-inner{display:block!important;background:#fff!important;margin:0!important;padding:0!important;width:100%!important;max-width:100%!important}
+ .th-wrap{border-radius:0!important;box-shadow:none!important;border:none!important}
+}
 </style>
 </head>
 <body onclick="" class="boot-lock">
@@ -718,6 +766,21 @@ body.boot-lock{overflow:hidden}
 
 <div id="toast"></div>
 <div id="orderModal"><div class="om-box" id="omBox"></div></div>
+<div id="print-overlay">
+    <div id="print-toolbar">
+        <div style="flex:1;min-width:0">
+            <div id="print-overlay-title"></div>
+            <div id="print-overlay-sub"></div>
+        </div>
+    </div>
+    <div id="print-content-scroll">
+        <div id="print-doc-wrapper"><div id="print-doc-inner"></div></div>
+    </div>
+    <div id="print-bottom-bar">
+        <button id="print-btn-download" onclick="printOverlayDownload()">⬇️ DOWNLOAD</button>
+        <button id="print-btn-back" onclick="closePrintOverlay()">⬅️ TUTUP</button>
+    </div>
+</div>
 <div id="pdBuyModal"><div class="pbm-box" id="pbmBox"></div></div>
 
 <script>
@@ -1717,7 +1780,35 @@ function cSetQty(i,v){
 function cRm(i){cart.splice(i,1);saveCart();renderCart();toast('Item dihapus dari keranjang')}
 
 /* ================= CHECKOUT ================= */
-function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}if(!state.draftCode)state.draftCode='TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0');renderCheckout();go('checkout')}
+// PERBAIKAN: sebelumnya kode pesanan ("TRX-xxxxx") digenerate ACAK begitu saja tanpa
+// dicek ke database — kombinasinya cuma 90.000 kemungkinan (10000-99999), jadi kalau
+// jumlah pesanan sudah cukup banyak, risiko 2 pesanan dapat kode sama jadi nyata
+// (birthday paradox). Kalau itu terjadi, previewInvoice() yang mencari pesanan lewat
+// .find(x=>x.code===code) bisa salah menampilkan invoice pesanan lain yang kodenya kebetulan
+// sama. Sekarang kode dicek dulu ke tabel produksi_orders, diulang kalau ternyata sudah
+// dipakai, sampai dapat kode yang benar-benar belum ada.
+async function ensureUniqueOrderCode(){
+ for(let i=0;i<8;i++){
+  const candidate='TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0');
+  if(!sb)return candidate; // offline / belum tersambung server: tidak bisa dicek, tetap pakai (best-effort)
+  try{
+   const {data,error}=await sb.from(ORDERS_TABLE).select('order_code').eq('order_code',candidate).limit(1);
+   if(error){console.error('Gagal cek keunikan kode pesanan:',error);return candidate}
+   if(!data||data.length===0)return candidate;
+  }catch(e){console.error('Gagal cek keunikan kode pesanan:',e);return candidate}
+ }
+ // Fallback kalau 8x percobaan tetap bentrok (harusnya nyaris mustahil) — tambahkan
+ // sisa timestamp supaya dijamin unik walau tidak sempat dicek ulang ke server.
+ return 'TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0')+'-'+Date.now().toString().slice(-4);
+}
+async function goCheckout(){
+ if(!cart.length){toast('Keranjang kosong');return}
+ if(!state.draftCode){
+  toast('⏳ Menyiapkan nomor pesanan...');
+  state.draftCode=await ensureUniqueOrderCode();
+ }
+ renderCheckout();go('checkout')
+}
 function renderCheckout(){
  setCrumb('Beranda / Keranjang / <b>Checkout</b>');
  const pcs=cart.reduce((a,c)=>a+c.qty,0);
@@ -1875,11 +1966,11 @@ async function renderTrack(){
 function orderTotal(o){return o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0)}
 function renderHistoryList(list){
  const box=$('historyList');
- box.innerHTML = list.length ? list.map(o=>{
+ box.innerHTML = list.length ? list.map((o,idx)=>{
   const pcs=o.items.reduce((a,i)=>a+i.qty,0);
   const total=orderTotal(o);
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-  return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
+  return '<div class="order-card"><div class="hd"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:7px;background:var(--navy-100);color:var(--navy-700);font-size:11.5px;font-weight:800;margin-right:8px">'+(idx+1)+'</span><span class="code">'+o.code+'</span>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
   (o.fromInventory?'<span class="stage-pill" style="background:var(--navy-100);color:var(--navy-700)">🏭 Input Inventory</span>':'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>')+
   payBadge(o)+
@@ -1937,31 +2028,129 @@ function resetDateFilter(){
  if($('trackDateTo'))$('trackDateTo').value=def.to;
  filterByDate();
 }
+/* ===== Overlay Surat Tagihan (clone dari app Inventory) ===== */
+let _printFilename='tagihan.jpg';
+function showPrintOverlay(innerHtml,title,sub,filename){
+ _printFilename=filename||'dokumen.jpg';
+ $('print-overlay-title').textContent=title||'DOKUMEN';
+ $('print-overlay-sub').textContent=sub||'';
+ $('print-doc-inner').innerHTML=innerHtml;
+ $('print-overlay').style.display='flex';
+ $('print-content-scroll').scrollTop=0;
+}
+function closePrintOverlay(){
+ $('print-overlay').style.display='none';
+ $('print-doc-inner').innerHTML='';
+}
+function printOverlayDownload(){
+ const btn=$('print-btn-download'),toolbar=$('print-toolbar'),inner=$('print-doc-inner'),scrollContainer=$('print-content-scroll');
+ btn.innerHTML='⏳ Memproses...';btn.disabled=true;toolbar.style.display='none';
+ if(scrollContainer)scrollContainer.scrollTop=0;
+ function doCapture(){
+  let docEl=null;
+  for(let i=0;i<inner.children.length;i++){if(inner.children[i].tagName!=='STYLE'){docEl=inner.children[i];break}}
+  if(!docEl)docEl=inner;
+  const docWidth=docEl.scrollWidth||docEl.offsetWidth;
+  const docHeight=docEl.scrollHeight||docEl.offsetHeight;
+  const offscreen=document.createElement('div');
+  offscreen.style.cssText=['position:fixed','top:0','left:0','width:'+docWidth+'px','background:#ffffff','z-index:-9999','pointer-events:none','overflow:visible','opacity:0'].join(';');
+  const clone=docEl.cloneNode(true);
+  clone.style.cssText=(clone.getAttribute('style')||'')+';position:static!important;transform:none!important;margin:0!important;';
+  offscreen.appendChild(clone);
+  document.body.appendChild(offscreen);
+  setTimeout(function(){
+   html2canvas(clone,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0,x:0,y:0,width:docWidth,height:clone.scrollHeight||docHeight,windowWidth:docWidth,windowHeight:clone.scrollHeight||docHeight}).then(function(canvas){
+    document.body.removeChild(offscreen);
+    toolbar.style.display='flex';btn.innerHTML='⬇️ DOWNLOAD';btn.disabled=false;
+    canvas.toBlob(function(blob){
+     if(!blob||blob.size<100){toast('❌ Gagal: file kosong. Coba lagi.');return}
+     const url=URL.createObjectURL(blob);
+     const link=document.createElement('a');
+     link.href=url;link.download=_printFilename.replace('.jpg','.png');link.style.display='none';
+     document.body.appendChild(link);link.click();
+     setTimeout(function(){URL.revokeObjectURL(url);document.body.removeChild(link)},200);
+     toast('✅ File berhasil disimpan!');
+    },'image/png');
+   }).catch(function(err){
+    console.error('html2canvas error:',err);
+    document.body.removeChild(offscreen);
+    toolbar.style.display='flex';btn.innerHTML='⬇️ DOWNLOAD';btn.disabled=false;
+    toast('❌ Gagal membuat gambar: '+err.message);
+   });
+  },100);
+ }
+ if(!window.html2canvas){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload=function(){setTimeout(doCapture,400)};
+  document.head.appendChild(s);
+ }else{
+  setTimeout(doCapture,200);
+ }
+}
+const _thLogoSvg=`<!-- Creator: CorelDRAW --> <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="200" height="46" version="1.1" style="shape-rendering:geometricPrecision; text-rendering:geometricPrecision; image-rendering:optimizeQuality; fill-rule:evenodd; clip-rule:evenodd" viewBox="0 0 805.08 185.33" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xodm="http://www.corel.com/coreldraw/odm/2003"> <defs> <style type="text/css"> <![CDATA[ .fil0 {fill:url(#id0)} ]]> </style> <linearGradient id="id0" gradientUnits="userSpaceOnUse" x1="-0" y1="92.66" x2="805.08" y2="92.66"> <stop offset="0" style="stop-opacity:1; stop-color:#F5871D"/> <stop offset="1" style="stop-opacity:1; stop-color:#FFB246"/> </linearGradient> </defs> <g id="Layer_x0020_1"> <metadata id="CorelCorpID_0Corel-Layer"/> <path class="fil0" d="M94.18 141.86l-23.19 -30.74 -54.43 0 55.97 74.2 25.23 0 29.2 0 53.16 0c50.97,0 92.66,-41.7 92.66,-92.66 0,-50.96 -41.7,-92.66 -92.66,-92.66l-46.79 0c16.58,8.68 28.81,24.56 32.52,43.46l14.27 0c27.06,0 49.2,22.14 49.2,49.2 0,27.06 -22.14,49.2 -49.2,49.2l-85.94 0zm199.26 -13.77l511.64 0 0 8.98 -511.64 0 0 -8.98zm14.76 36.03l0 -6.45 18.02 0c0.87,0 1.63,0.31 2.25,0.95 0.65,0.63 0.96,1.39 0.96,2.29 0,0.87 -0.31,1.63 -0.96,2.28 -0.61,0.61 -1.38,0.93 -2.25,0.93l-18.02 0zm-14.76 -17.52l0 37.85 14.76 0 0 -9.24 21.71 0c7.79,0.12 14.42,-6.51 14.3,-14.3 0.11,-7.84 -6.51,-14.39 -14.3,-14.31l-36.47 0zm54.77 -0.03l0 37.85 14.75 0 0 -9.24 13.18 0 7.13 9.24 15.71 0 -8.26 -10.61c2.48,-1.16 4.48,-2.9 5.98,-5.19 1.52,-2.31 2.28,-4.89 2.28,-7.74 0.11,-7.83 -6.51,-14.39 -14.3,-14.31l-36.47 0zm32.75 11.07c1.79,0 3.24,1.44 3.24,3.24 0,0.87 -0.31,1.63 -0.96,2.28 -0.61,0.62 -1.38,0.93 -2.28,0.93l-18 0 0 -6.45 18 0zm47.34 -12.03c-14.24,0.03 -25.91,4.14 -25.85,18.48l0 2.76c-0.06,14.3 11.6,18.45 25.85,18.47 14.23,-0.03 25.88,-4.17 25.83,-18.47l0 -2.76c0,-14.31 -11.58,-18.48 -25.83,-18.48zm11.07 20.3c0.09,6.2 -5.04,7.32 -11.07,7.41 -6.05,-0.09 -11.18,-1.21 -11.09,-7.41l0 -0.92c-0.09,-6.17 5.04,-7.3 11.09,-7.38 6.03,0.08 11.15,1.21 11.07,7.38l0 0.92zm56.04 -0.39c0,3.81 -2.16,6.93 -6,6.93l-16.16 0 0 -13.86 16.16 0c3.84,0 6,3.1 6,6.93zm-36.91 -18.93l0 37.85 33.68 0c10.39,0.14 18.1,-8.64 18.02,-18.93 0.08,-10.34 -7.63,-19.07 -18.02,-18.93l-33.68 0zm92.76 19.35c0.09,6.23 -5.04,7.3 -11.06,7.39 -6.06,-0.09 -11.15,-1.15 -11.09,-7.39l0 -19.4 -14.76 0 0 20.33c-0.06,14.31 11.65,18.42 25.85,18.45 14.2,-0.03 25.9,-4.14 25.85,-18.45l0 -20.33 -14.79 0 0 19.4zm55.92 2.76c-1.35,3.72 -5.58,4.62 -10.64,4.62 -6.03,-0.09 -11.15,-1.21 -11.07,-7.39l0 -0.93c-0.09,-6.22 5.04,-7.29 11.07,-7.38 5.06,0 9.26,0.88 10.64,4.59l15.13 0c-0.94,-12.75 -12.14,-16.58 -25.77,-16.61 -14.2,0.06 -25.91,4.16 -25.85,18.48l0 2.76c-0.05,14.33 11.65,18.45 25.85,18.47 13.63,0 24.84,-3.84 25.77,-16.62l-15.13 0zm48.55 15.75l0 -25.86 17.54 0 0 -12 -49.84 0 0 12 17.54 0 0 25.86 14.75 0zm22.47 -37.91l0 37.85 14.75 0 0 -37.85 -14.75 0zm44.94 -0.93c-14.25,0.03 -25.91,4.14 -25.85,18.48l0 2.76c-0.06,14.3 11.6,18.45 25.85,18.47 14.23,-0.03 25.88,-4.17 25.83,-18.47l0 -2.76c0,-14.31 -11.58,-18.48 -25.83,-18.48zm11.07 20.3c0.08,6.2 -5.04,7.32 -11.07,7.41 -6.06,-0.09 -11.18,-1.21 -11.09,-7.41l0 -0.92c-0.09,-6.17 5.04,-7.3 11.09,-7.38 6.03,0.08 11.15,1.21 11.07,7.38l0 0.92zm56.04 0.68l-16.61 -20.05 -20.3 0 0 37.85 14.75 0 0 -23.12 20.33 23.12 16.62 0 0 -37.85 -14.79 0 0 20.05zm-496.81 -117.74l0 70.69 27.55 0 0 -17.25 24.61 0 13.3 17.25 29.35 0 -15.42 -19.82c4.63,-2.17 8.37,-5.42 11.17,-9.69 2.84,-4.31 4.25,-9.14 4.25,-14.45 0.22,-14.63 -12.15,-26.87 -26.71,-26.73l-68.1 0zm61.16 20.68c3.35,0 6.05,2.67 6.05,6.04 0,1.64 -0.57,3.05 -1.79,4.26 -1.15,1.17 -2.57,1.74 -4.25,1.74l-33.6 0 0 -12.04 33.6 0zm90.07 -0.16l9.67 20.88 -19.4 0 9.73 -20.88zm-54.32 50.22l31.02 0 5.58 -12.1 35.38 0 5.58 12.1 31.02 0 -37.91 -70.69 -32.76 0 -37.91 70.69zm179.62 -35.34c0,7.11 -4.04,12.94 -11.2,12.94l-30.17 0 0 -25.88 30.17 0c7.16,0 11.2,5.8 11.2,12.94zm-68.93 -35.35l0 70.69 62.9 0c19.4,0.27 33.8,-16.14 33.66,-35.34 0.14,-19.3 -14.25,-35.6 -33.66,-35.35l-62.9 0zm172.32 36.13c0.16,11.63 -9.41,13.63 -20.71,13.79 -11.26,-0.16 -20.82,-2.16 -20.66,-13.79l0 -6.89 -27.55 0 0 8.63c-0.11,26.71 21.66,34.39 48.21,34.44 26.71,0 48.29,-7.79 48.29,-34.44l0 -37.93 -27.57 0 0 36.19zm77.42 -15.67l9.67 20.88 -19.4 0 9.73 -20.88zm-54.32 50.22l31.02 0 5.58 -12.1 35.38 0 5.58 12.1 31.02 0 -37.91 -70.69 -32.76 0 -37.91 70.69zm-540.4 15.14l-17.82 -23.63 -0 0 -5.77 -7.65c16.41,-9.67 27.45,-27.52 27.45,-47.91 0,-30.64 -24.92,-55.56 -55.56,-55.56l-104.35 0 32.78 43.46 71.57 0c6.65,0 12.1,5.44 12.1,12.1 0,6.66 -5.45,12.1 -12.1,12.1l-53.32 0 50.6 67.09 54.43 0z"/> </g> </svg>`;
 function previewInvoice(code){
+ // Format Surat Tagihan di-clone identik dari app Inventory (buatSuratTagihan) —
+ // header+badge+logo, info box, tabel item digabung per produk+harga, status
+ // pembayaran, area tanda tangan, footer — supaya dokumen yang dilihat customer
+ // sama persis dengan yang dicetak admin di Inventory.
  const o=(window._history||[]).find(x=>x.code===code)||orders.find(x=>x.code===code);if(!o)return;
  const pcs=o.items.reduce((a,i)=>a+i.qty,0);
- const total=o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0);
- const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
- const jam=new Date(o.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
- const rows=o.items.map(i=>'<tr><td><b>'+esc(i.name)+'</b><div class="var">'+esc(i.color)+' • '+esc(i.size)+'</div></td>'+
-  '<td class="r">'+i.qty+'</td><td class="r">'+(i.est?fmt(i.est[0]):'-')+'</td><td class="r">'+fmt(i.qty*(i.est?i.est[0]:0))+'</td></tr>').join('');
- $('omBox').className='om-box wide';
- $('omBox').innerHTML='<button onclick="closeModal()" aria-label="Tutup" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--navy-100);color:var(--navy-900);font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:5">✕</button>'+
-  '<div class="inv-wrap">'+
-  '<div class="inv-head"><div><div class="inv-brand">RADJA PRODUCTION</div></div>'+
-   '<div><div class="inv-badge">TAGIHAN</div><div class="inv-no">'+esc(o.code)+'</div></div></div>'+
-  '<div class="inv-infobox">'+
-   '<div class="inv-inforow"><span class="inv-infolabel">No. Tagihan</span><span class="inv-infoval">'+esc(o.code)+'</span></div>'+
-   '<div class="inv-inforow"><span class="inv-infolabel">Tanggal</span><span class="inv-infoval">'+tgl+', '+jam+'</span></div>'+
-   '<div class="inv-inforow"><span class="inv-infolabel">Jumlah Varian</span><span class="inv-infoval">'+o.items.length+' varian</span></div>'+
-   '<div class="inv-inforow"><span class="inv-infolabel">Total Pieces</span><span class="inv-infoval">'+pcs+' pcs</span></div>'+
-  '</div>'+
-  '<table class="inv-table"><thead><tr><th>Produk</th><th class="r">Qty</th><th class="r">Harga</th><th class="r">Subtotal</th></tr></thead>'+
-  '<tbody>'+rows+'</tbody>'+
-  '<tr class="inv-totalrow"><td colspan="3" class="lbl">TOTAL TAGIHAN (estimasi)</td><td class="val">'+fmt(total)+'</td></tr>'+
-  '</table></div>'+
-  '<button class="btn btn-accent" onclick="closeModal()">Tutup</button>';
- $('orderModal').classList.add('show');
+ const tgl=new Date(o.ts).toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+ // Gabungkan item dengan nama produk + harga yang sama (persis logika mergeMap di Inventory),
+ // supaya varian warna/ukuran berbeda dari produk & harga sama jadi satu baris.
+ const mergeMap={};
+ o.items.forEach(i=>{
+  const harga=i.est?i.est[0]:0;
+  const key=i.name+'||'+harga;
+  if(mergeMap[key])mergeMap[key].qty+=i.qty;
+  else mergeMap[key]={model:i.name,harga,qty:i.qty};
+ });
+ let grandTotal=0,grandTotalQty=0;
+ const tableRows=Object.values(mergeMap).map(row=>{
+  const totalNominal=row.qty*row.harga;
+  grandTotal+=totalNominal;grandTotalQty+=row.qty;
+  return '<tr style="border-bottom:1px solid #e5e7eb;">'+
+   '<td style="padding:8px 12px;font-weight:700;color:#111;text-align:center;">'+esc(row.model)+'</td>'+
+   '<td style="padding:8px 12px;text-align:center;color:#111;">'+row.qty+'</td>'+
+   '<td style="padding:8px 12px;text-align:center;color:#111;">'+fmt(row.harga)+'</td>'+
+   '<td style="padding:8px 12px;text-align:center;font-weight:900;color:var(--accent-600);">'+fmt(totalNominal)+'</td></tr>';
+ }).join('');
+
+ const lunas=o.statusBayar==='lunas';
+ const statusText=lunas?'LUNAS':'BELUM LUNAS';
+ const statusColor=lunas?'#16a34a':'#dc2626';
+ const statusBg=lunas?'#dcfce7':'#fee2e2';
+
+ const docHtml=
+  '<div class="th-wrap">'+
+   '<div class="th-header"><div>'+_thLogoSvg+'</div>'+
+    '<div style="text-align:right;"><div class="th-badge">SURAT TAGIHAN</div><div class="th-no">'+esc(o.code)+'</div></div></div>'+
+   '<div class="th-infobox">'+
+    '<div class="th-inforow"><span class="th-infolabel">No. Tagihan</span><span class="th-infoval">'+esc(o.code)+'</span></div>'+
+    '<div class="th-inforow"><span class="th-infolabel">Tanggal Pesanan</span><span class="th-infoval">'+tgl+'</span></div>'+
+    '<div class="th-inforow"><span class="th-infolabel">Jumlah Varian</span><span class="th-infoval">'+o.items.length+' varian</span></div>'+
+    '<div class="th-inforow"><span class="th-infolabel">Total Pieces</span><span class="th-infoval">'+pcs+' pcs</span></div>'+
+   '</div>'+
+   '<div class="th-tablewrap"><table>'+
+    '<thead><tr><th>PRODUK</th><th>QTY</th><th>HARGA</th><th style="background:rgba(0,0,0,.18);">TOTAL</th></tr></thead>'+
+    '<tbody>'+tableRows+'</tbody>'+
+    '<tr class="th-totalrow"><td></td>'+
+     '<td style="text-align:center;font-weight:900;color:#111;font-size:11px;">( '+grandTotalQty+' )</td>'+
+     '<td style="text-align:center;font-weight:900;color:#111;font-size:11px;">TOTAL TAGIHAN</td>'+
+     '<td style="text-align:center;font-weight:900;color:var(--accent-600);font-size:12px;">'+fmt(grandTotal)+'</td></tr>'+
+   '</table></div>'+
+   '<div class="th-statusbox"><span class="th-statuslabel">STATUS PEMBAYARAN:</span>'+
+    '<span class="th-statusbadge" style="background:'+statusBg+';color:'+statusColor+';border:1.5px solid '+statusColor+';">'+statusText+'</span></div>'+
+   '<div class="th-signarea">'+
+    '<div class="th-signbox"><div class="th-signline">Dibuat Oleh</div><div class="th-signname">RADJA PRODUCTION</div></div>'+
+    '<div class="th-signbox"><div class="th-signline">Disetujui Oleh</div><div class="th-signname">Pemesan</div></div>'+
+   '</div>'+
+   '<div class="th-footer">Dokumen Resmi Sistem Tagihan RADJA PRODUCTION</div>'+
+  '</div>';
+
+ showPrintOverlay(docHtml,'SURAT TAGIHAN',o.code,o.code+'.jpg');
 }
 function closeModal(){$('orderModal').classList.remove('show');$('omBox').className='om-box'}
 
@@ -2019,19 +2208,21 @@ function setStage(i,v){
 }
 async function delOrder(i){
  const o=orders[i];
- const willRestock=!!o.synced;
- if(!confirm('Hapus pesanan '+o.code+'?'+(willRestock?'\n\nStok yang sudah dipotong untuk pesanan ini akan dikembalikan otomatis.':'')))return;
+ if(!confirm('Hapus pesanan '+o.code+'?\n\nStok yang sudah dipotong untuk pesanan ini (jika ada) akan dikembalikan otomatis.'))return;
  const code=o.code;orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();
  if(!sb)return;
  const {error:orderErr}=await sb.from(ORDERS_TABLE).delete().eq('order_code',code);
  if(orderErr){console.error(orderErr);toast('⚠️ Gagal hapus: '+(orderErr.message||orderErr.code||'unknown error'));return}
- if(!willRestock)return;
- // Order ini sudah sempat memotong stok (lihat syncStokKeluarPesanan) lewat baris transaksi+transaksi_item
- // di Inventory yang ditandai order_code. Hapus baris transaksi itu supaya stoknya kembali normal —
+ // PERBAIKAN: sebelumnya baris transaksi di Inventory hanya dihapus kalau o.synced true —
+ // celahnya, kalau proses sinkron stok sempat berhenti di tengah jalan (jaringan putus pas
+ // insert transaksi_item, atau delOrder ditekan tepat saat retryOrderSync masih berjalan),
+ // baris transaksi bisa "nyangkut" di Inventory tanpa pernah ikut terhapus. Sekarang SELALU
+ // dicoba dihapus berdasarkan order_code, terlepas dari status sync — query ini aman
+ // dijalankan walau tidak ada baris yang cocok (tidak melakukan apa-apa kalau memang tidak ada).
  // transaksi_item ikut terhapus otomatis lewat FK ON DELETE CASCADE ke transaksi.
  const {error:trxErr}=await sb.from('transaksi').delete().eq('order_code',code);
- if(trxErr){console.error(trxErr);toast('⚠️ Pesanan terhapus, tapi gagal mengembalikan stok Inventory: '+(trxErr.message||trxErr.code||'unknown error'));return}
- toast('🗑 Pesanan '+code+' dihapus & stok dikembalikan');
+ if(trxErr){console.error(trxErr);toast('⚠️ Pesanan terhapus, tapi gagal membersihkan data Inventory: '+(trxErr.message||trxErr.code||'unknown error'));return}
+ toast('🗑 Pesanan '+code+' & data terkait di Inventory sudah dihapus');
 }
 // Coba ulang sinkron pesanan yang gagal tersimpan ke server saat dibuat (lihat PERBAIKAN di placeOrder()).
 // Kalau berhasil, BARU potong stok Inventory (supaya tidak ada pesanan yang stoknya kepotong dua kali
@@ -2044,8 +2235,11 @@ async function retryOrderSync(i){
  try{
   const {error}=await sb.from(ORDERS_TABLE).insert({order_code:o.code,items:o.items,stage:o.stage||0,note:o.note||''});
   if(error)throw error;
-  o.synced=true;LS.set('rj_orders',orders);
   await syncStokKeluarPesanan(o.code,o.items);
+  // PERBAIKAN: o.synced baru ditandai true SETELAH sinkron stok Inventory selesai (bukan
+  // sebelumnya) — supaya kalau admin sempat menekan Hapus tepat di tengah proses ini,
+  // delOrder() tidak keliru menganggap prosesnya sudah selesai.
+  o.synced=true;LS.set('rj_orders',orders);
   toast('✅ Pesanan '+o.code+' berhasil disinkron & stok dipotong');
   renderAdmin();
  }catch(e){console.error(e);toast('❌ Gagal sinkron ulang: '+(e.message||e.code||'unknown error'))}
