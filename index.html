@@ -156,6 +156,9 @@ section.block{padding:44px 0}
 .p-card .ph img{width:100%;height:100%;object-fit:cover;transition:.4s}
 .p-card:hover .ph img{transform:scale(1.05)}
 .p-badge{position:absolute;top:10px;left:10px;background:var(--accent);color:var(--navy-900);font-size:10px;font-weight:800;padding:4px 9px;border-radius:6px;letter-spacing:.3px}
+.ph.stok-off img,.pd-img.stok-off img,.pd-img-slide.stok-off img{filter:grayscale(1) brightness(.8);transition:filter .25s}
+.stok-off-mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(11,22,51,.78);color:#fff;font-size:13px;font-weight:800;letter-spacing:1.5px;padding:7px 18px;border-radius:8px;z-index:3;pointer-events:none;text-transform:uppercase}
+.p-card .ph.stok-off .stok-off-mark{font-size:12px;padding:6px 14px}
 .p-body{padding:13px 14px 15px;position:relative;overflow:hidden}
 .p-body::after{
   content:'';position:absolute;right:-26px;bottom:-22px;width:150px;height:102px;
@@ -1087,6 +1090,8 @@ function previewImgForColor(p,idx){
  const c=p.colors[idx];
  const explicitImg=(p.imgByColor[(c.n||'').trim().toUpperCase()]||'');
  if(explicitImg)return explicitImg;
+ const off=stokForColor(p,c.n)<=0;
+ if(off)return p.img; // habis: foto dasar polos tanpa tint, efek abu-abu ditumpuk via CSS
  const tintHex=(p.autoTint&&c.h)?c.h:null;
  const hasOverlay=!!(p.overlay&&p.overlay.url);
  if(p.img && p.img!==PLACEHOLDER_IMG && (tintHex||hasOverlay)){
@@ -1103,6 +1108,7 @@ function colorTintPending(p,idx){
  const c=p.colors[idx];
  const explicitImg=(p.imgByColor[(c.n||'').trim().toUpperCase()]||'');
  if(explicitImg)return false;
+ if(stokForColor(p,c.n)<=0)return false; // habis: tidak perlu proses tint, langsung pakai foto dasar
  const tintHex=(p.autoTint&&c.h)?c.h:null;
  const hasOverlay=!!(p.overlay&&p.overlay.url);
  if(!(p.img&&p.img!==PLACEHOLDER_IMG&&(tintHex||hasOverlay)))return false;
@@ -1205,8 +1211,8 @@ window.addEventListener('online',()=>{if(sb){rtChannel=null;setupRealtimeStok()}
 function doSearch(e){e.preventDefault();state.q=$('searchInput').value.trim();go('catalog')}
 
 /* ================= CATALOG ================= */
-function cardHTML(p){return '<div class="p-card" onclick="openProduct(\''+p.id+'\')">'+
- '<div class="ph"><img id="catimg-'+p.id+'" src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
+function cardHTML(p){const habis=p.totalStok<=0;return '<div class="p-card" onclick="openProduct(\''+p.id+'\')">'+
+ '<div class="ph'+(habis?' stok-off':'')+'"><img id="catimg-'+p.id+'" src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(habis?'<span class="stok-off-mark">Habis</span>':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
  '<div class="p-body"><div class="p-brand">'+esc(p.brand)+'</div><div class="p-name">'+esc(p.name)+'</div>'+
  '<div class="p-rate">'+(p.totalStok>0?p.totalStok+' pcs':'stok habis')+'</div>'+
  '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs</small></div></div></div>'}
@@ -1219,6 +1225,7 @@ function applyCatalogBestColorImgs(list){
   const colorName=p.bestColor?p.bestColor.n:'';
   const cUp=colorName.trim().toUpperCase();
   if(p.imgByColor && p.imgByColor[cUp])return; // sudah pakai foto manual warna itu, tak perlu proses
+  if(p.totalStok<=0)return; // produk habis: pakai foto dasar polos, tak perlu tint
   const tintHex=(p.autoTint&&p.bestColor&&p.bestColor.h)?p.bestColor.h:null;
   const hasOverlay=!!(p.overlay&&p.overlay.url);
   if(!tintHex&&!hasOverlay)return; // tak ada yang perlu diproses
@@ -1290,8 +1297,11 @@ function renderProduct(){
  }
  const curStok = s.size&&hasVar?stokFor(p,p.colors[s.color].n,s.size):null;
  const curColorObj = hasVar?p.colors[s.color]:null;
+ const curTot = hasVar?stokForColor(p,curColorObj.n):0;
+ const curOff = hasVar?(curTot<=0):false;
  const explicitImg = curColorObj ? (p.imgByColor[(curColorObj.n||'').trim().toUpperCase()]||'') : '';
- const tintHex = (p.autoTint && curColorObj && curColorObj.h) ? curColorObj.h : null;
+ // Kalau warna ini stoknya habis, jangan proses tint warna (biar foto dasar polos, lalu ditumpuk efek abu-abu/grayscale via CSS).
+ const tintHex = (p.autoTint && curColorObj && curColorObj.h && !curOff) ? curColorObj.h : null;
  const hasOverlay = !!(p.overlay && p.overlay.url);
  const invertNow = hasOverlay ? shouldInvertForColor(p.overlay, curColorObj?curColorObj.n:'') : false;
  const ovNow = hasOverlay ? Object.assign({},p.overlay,{invert:invertNow}) : null;
@@ -1302,13 +1312,13 @@ function renderProduct(){
  const prevImgTag = $('pdImgTag');
  const prevImgSrc = prevImgTag ? prevImgTag.src : '';
  let curImg;
- if(willProcess){
+ if(curOff && !explicitImg){
+  curImg = p.img; // habis: pakai foto dasar polos (tanpa tint) supaya efek abu-abu bersih
+ }else if(willProcess){
   curImg = composeCache[composeKey] || prevImgSrc || p.img;
  }else{
   curImg = explicitImg || p.img;
  }
- const curTot = hasVar?stokForColor(p,curColorObj.n):0;
- const curOff = hasVar?(curTot<=0):false;
  const curDispSt = hasVar?((!curOff&&s.size)?stokFor(p,curColorObj.n,s.size):curTot):0;
  const nColors = hasVar?p.colors.length:0;
  const canCarousel = nColors>1;
@@ -1319,17 +1329,20 @@ function renderProduct(){
  const curPending = willProcess && !composeCache[composeKey];
  const prevPending = canCarousel && colorTintPending(p,prevIdx);
  const nextPending = canCarousel && colorTintPending(p,nextIdx);
+ const prevOff = canCarousel && stokForColor(p,p.colors[prevIdx].n)<=0;
+ const nextOff = canCarousel && stokForColor(p,p.colors[nextIdx].n)<=0;
+ const offMark='<span class="stok-off-mark">Habis</span>';
  const dots='<div class="pd-loading"><span></span><span></span><span></span></div>';
  const imgBody = canCarousel?(
   '<div class="pd-img-track" id="pdImgTrack" style="transform:translateX(-33.3334%)">'+
-   '<div class="pd-img-slide'+(prevPending?' pending':'')+'"><img data-cidx="'+prevIdx+'" src="'+esc(previewImgForColor(p,prevIdx))+'" alt="">'+(prevPending?dots:'')+'</div>'+
-   '<div class="pd-img-slide'+(curPending?' pending':'')+'"><img id="pdImgTag" data-cidx="'+s.color+'" src="'+curImg+'" alt="">'+(curPending?dots:'')+'</div>'+
-   '<div class="pd-img-slide'+(nextPending?' pending':'')+'"><img data-cidx="'+nextIdx+'" src="'+esc(previewImgForColor(p,nextIdx))+'" alt="">'+(nextPending?dots:'')+'</div>'+
+   '<div class="pd-img-slide'+(prevPending?' pending':'')+(prevOff?' stok-off':'')+'"><img data-cidx="'+prevIdx+'" src="'+esc(previewImgForColor(p,prevIdx))+'" alt="">'+(prevOff?offMark:'')+(prevPending?dots:'')+'</div>'+
+   '<div class="pd-img-slide'+(curPending?' pending':'')+(curOff?' stok-off':'')+'"><img id="pdImgTag" data-cidx="'+s.color+'" src="'+curImg+'" alt="">'+(curOff?offMark:'')+(curPending?dots:'')+'</div>'+
+   '<div class="pd-img-slide'+(nextPending?' pending':'')+(nextOff?' stok-off':'')+'"><img data-cidx="'+nextIdx+'" src="'+esc(previewImgForColor(p,nextIdx))+'" alt="">'+(nextOff?offMark:'')+(nextPending?dots:'')+'</div>'+
   '</div>'
- ):('<img id="pdImgTag" src="'+curImg+'" alt="">'+((!canCarousel&&curPending)?dots:''));
+ ):('<img id="pdImgTag" src="'+curImg+'" alt="">'+(curOff?offMark:'')+((!canCarousel&&curPending)?dots:''));
  setCrumb('Beranda / '+esc(p.cat)+' / <b>'+esc(p.name)+'</b>');
  $('pdWrap').innerHTML=
- '<div class="pd"><div class="pd-img'+((!canCarousel&&curPending)?' pending':'')+'" id="pdImgBox"'+(hasVar?' style="cursor:pointer"':'')+'>'+imgBody+
+ '<div class="pd"><div class="pd-img'+((!canCarousel&&curPending)?' pending':'')+(( !canCarousel&&curOff)?' stok-off':'')+'" id="pdImgBox"'+(hasVar?(' style="cursor:'+(curOff?'not-allowed':'pointer')+'"'):'')+'>'+imgBody+
  (hasVar?('<div class="pd-img-tag tag-color">'+esc(curColorObj.n)+'</div>'+'<div class="pd-img-tag tag-qty'+(curOff?' low':'')+'">'+(curOff?'Habis':curDispSt+' pcs')+'</div>'):'')+
  (canCarousel?'<div class="pd-img-hint">↔ Geser atau pilih warna di bawah</div>':'')+
  '</div>'+
@@ -1340,7 +1353,7 @@ function renderProduct(){
  '<div class="opt-lbl">Ukuran — <span>'+(s.size?esc(s.size):'pilih ukuran')+'</span></div>'+
  '<div class="sizes sizes-lg">'+p.sizes.map(z=>{const st=stokFor(p,p.colors[s.color].n,z),off=st<=0;return '<div class="sz sz-lg '+(s.size===z?'on':'')+(off?' off':'')+'" '+(off?'':'onclick="state.sel.size=\''+z.replace(/'/g,"\\'")+'\';state.sel.qty=0;renderProduct();renderBuyModal()"')+'>'+(off?'<span class="sz-off-lbl">Habis</span>':esc(z))+'</div>'}).join('')+'</div>'+
  '<div class="qty-note" style="margin:6px 0 0">'+(s.size?('📦 Stok tersedia: <b>'+curStok+' pcs</b>'):'⚠️ Stok habis untuk semua ukuran warna ini')+'</div>'+
- '<div class="pd-tap-hint" onclick="openBuyModal()">👆 <b>Ketuk foto produk</b> untuk isi jumlah &amp; pesan</div>'
+ (curOff?'':'<div class="pd-tap-hint" onclick="openBuyModal()">👆 <b>Ketuk foto produk</b> untuk isi jumlah &amp; pesan</div>')
  ):'<p style="color:var(--danger);font-weight:700;margin:14px 0">⚠️ Produk ini belum memiliki data stok di Inventory.</p><div class="pd-cta"><button class="btn btn-outline" disabled style="opacity:.5;cursor:not-allowed">Stok Belum Tersedia</button></div>')+
  '</div>'+
  '<div class="pd-desc"><h3>Deskripsi Produk</h3>'+(p.desc?('<p>'+esc(p.desc)+'</p>'):'')+'<div class="spec">'+
@@ -1369,6 +1382,7 @@ function preloadColorVariants(p,pid){
  p.colors.forEach((c,idx)=>{
   const explicitImg=(p.imgByColor[(c.n||'').trim().toUpperCase()]||'');
   if(explicitImg)return;
+  if(stokForColor(p,c.n)<=0)return; // habis: tak perlu proses tint, biarkan foto dasar polos
   const tintHex=(p.autoTint&&c.h)?c.h:null;
   if(!tintHex&&!hasOverlay)return;
   const invertNow=hasOverlay?shouldInvertForColor(p.overlay,c.n):false;
@@ -1416,6 +1430,8 @@ function unlockBodyScroll(){
 }
 function openBuyModal(){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors.length)return;
+ const curColorObj=p.colors[s.color];
+ if(curColorObj && stokForColor(p,curColorObj.n)<=0){toast('⚠️ Warna ini stoknya habis');return}
  buyModalOpen=true;
  // Langsung tampilkan numpad begitu popup beli terbuka (misal karena gambar produk/katalog
  // diketuk) — tidak perlu lagi ketuk kolom Jumlah dulu untuk memunculkan numpad.
