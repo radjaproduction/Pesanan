@@ -2135,8 +2135,6 @@ function selectPeriod(from,to){
  $('trackDateFrom').value=from;
  $('trackDateTo').value=to;
  filterByDate();
- setTrackTab('transaksi');
- window.scrollTo({top:0,behavior:'smooth'});
 }
 function filterByDate(){
  const from=$('trackDateFrom').value,to=$('trackDateTo').value;
