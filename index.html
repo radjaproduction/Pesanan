@@ -878,6 +878,19 @@ function buildProducts(){
   if(meta.gambar_warna&&typeof meta.gambar_warna==='object'){
    Object.keys(meta.gambar_warna).forEach(k=>{const v=(meta.gambar_warna[k]||'').trim();if(v)imgByColor[k]=v});
   }
+  // Gambar utama katalog: pakai foto warna dengan STOK TERBANYAK (kalau warna itu punya
+  // foto khusus di "Gambar per Warna"). Kalau tidak ada foto khusus warna sama sekali,
+  // tetap pakai gambar_url default seperti biasa.
+  let bestColorImg='';
+  if(colors.length){
+   let maxStok=-1;
+   colors.forEach(c=>{
+    const cUp=(c.n||'').trim().toUpperCase();
+    let tot=0;
+    Object.keys(stokIndex).forEach(k=>{if(k.split('|')[0]===cUp)tot+=Math.max(0,stokIndex[k].stok)});
+    if(tot>maxStok){maxStok=tot;bestColorImg=imgByColor[cUp]||''}
+   });
+  }
   const overlay = meta.overlay_url ? {
    url: meta.overlay_url,
    mode: meta.overlay_mode==='under'?'under':'over',
@@ -891,7 +904,7 @@ function buildProducts(){
   } : null;
   return {
    id:'m'+m.id, modelId:m.id, brand:m.brandNama||'—', cat:meta.kategori||m.brandNama||'Produk',
-   name:m.nama, img:meta.gambar_url||PLACEHOLDER_IMG, imgByColor, autoTint:meta.auto_tint===true, overlay, est:[m.harga||0,m.harga||0],
+   name:m.nama, img:bestColorImg||meta.gambar_url||PLACEHOLDER_IMG, imgByColor, autoTint:meta.auto_tint===true, overlay, est:[m.harga||0,m.harga||0],
    min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
    badge:meta.badge||'', desc:meta.deskripsi||'',
    specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
