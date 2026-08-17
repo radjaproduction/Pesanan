@@ -1267,7 +1267,19 @@ function renderHome(){
 }
 
 /* ================= PRODUCT DETAIL ================= */
-function openProduct(id){const p=P(id);if(!p)return;state.sel={pid:id,color:0,size:null,qty:p.min};renderProduct();go('product')}
+function openProduct(id){
+ const p=P(id);if(!p)return;
+ // Buka detail dengan warna yang SAMA seperti foto katalog (bestColor = stok terbanyak),
+ // bukan warna index-0 — supaya tidak sempat kelihatan foto warna lain (mis. putih) dulu
+ // sebelum "loncat" ke warna yang benar.
+ let initColor=0;
+ if(p.bestColor && p.colors.length){
+  const idx=p.colors.findIndex(c=>(c.n||'')===(p.bestColor.n||''));
+  if(idx>=0)initColor=idx;
+ }
+ state.sel={pid:id,color:initColor,size:null,qty:p.min};
+ renderProduct();go('product')
+}
 function renderProduct(){
  const s=state.sel,p=P(s.pid);if(!p)return;
  const hasVar=p.colors.length>0;
