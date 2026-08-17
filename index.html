@@ -874,7 +874,18 @@ async function syncOrdersFromCloud(){
  if(!sb)return false;
  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false});
   if(error)throw error;
-  orders=data.map(rowToOrder);LS.set('rj_orders',orders);return true}
+  const fresh=data.map(rowToOrder);
+  // PERBAIKAN: jangan timpa order yang masih menunggu sync lokal (order baru yang
+  // belum synced, ATAU perubahan stage yang belum stageSynced) — kalau tidak, hasil
+  // dari server (yang belum tahu perubahan lokal itu) akan menimpanya diam-diam
+  // dan admin akan melihat data "balik lagi" tanpa penjelasan.
+  const pending=orders.filter(o=>o.synced===false||o.stageSynced===false);
+  pending.forEach(p=>{
+   const idx=fresh.findIndex(f=>f.code===p.code);
+   if(idx>=0)fresh[idx]=p;          // pertahankan versi lokal yang belum tersinkron
+   else fresh.unshift(p);           // order lokal (belum pernah sampai ke server) tetap ditampilkan
+  });
+  orders=fresh;LS.set('rj_orders',orders);return true}
  catch(e){console.error(e);return false}
 }
 function seedOrders(){const n=Date.now(),D=86400000;return[
@@ -885,7 +896,7 @@ function seedOrders(){const n=Date.now(),D=86400000;return[
 /* ================= HELPERS ================= */
 const $=id=>document.getElementById(id);
 const fmt=n=>'Rp '+(n||0).toLocaleString('id-ID');
-const esc=s=>String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const esc=s=>String(s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 const P=id=>PRODUCTS.find(p=>p.id===id);
 function priceLabel(p){if(!p.est[0])return 'Hubungi Admin';return p.est[0]===p.est[1]?fmt(p.est[0]):fmt(p.est[0])+' – '+fmt(p.est[1])}
 function stokFor(p,warna,ukuran){if(!p)return 0;const row=p.stokIndex[(warna||'').trim().toUpperCase()+'|'+(ukuran||'').trim().toUpperCase()];return row?Math.max(0,row.stok):0}
@@ -922,7 +933,7 @@ function go(v,fromBack){
  $('backBar').classList.toggle('show', v!=='home');
  document.body.classList.toggle('bg-catalog', v==='catalog');
  document.body.classList.toggle('hide-footer', v==='admin');
- if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();
+ if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();if(v==='product')renderProduct();if(v==='checkout')renderCheckout();
  if(v==='admin'&&sb){syncOrdersFromCloud().then(ok=>{if(ok)renderAdmin()})}
 }
 let navStack=[];
@@ -1413,7 +1424,7 @@ function openProduct(id,colorName){
   if(idx>=0)initColor=idx;
  }
  state.sel={pid:id,color:initColor,size:null,qty:p.min};
- renderProduct();go('product')
+ go('product')
 }
 function renderProduct(){
  const s=state.sel,p=P(s.pid);if(!p)return;
@@ -1875,7 +1886,7 @@ async function goCheckout(){
   toast('⏳ Menyiapkan nomor pesanan...');
   state.draftCode=await ensureUniqueOrderCode();
  }
- renderCheckout();go('checkout')
+ go('checkout')
 }
 function renderCheckout(){
  setCrumb('Beranda / Keranjang / <b>Checkout</b>');
@@ -2327,14 +2338,38 @@ function adminOrders(){
  if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
  return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+
  (o.synced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Gagal tersinkron ke server — stok Inventory <u>belum dipotong</u> untuk pesanan ini.</div>':'')+
+ (o.stageSynced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Perubahan status ('+STAGES[o.stage][1]+') belum tersinkron ke server.</div>':'')+
  '<div class="acts">'+
- (o.stage===0?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>':'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>')+
+ (o.stage===0?(o.synced===false?'<button class="btn btn-accent btn-sm" disabled title="Sinkronkan pesanan ke server dulu sebelum konfirmasi">✅ Konfirmasi Pesanan</button>':'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>'):'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>')+
  (o.synced===false?'<button class="btn btn-outline btn-sm" onclick="retryOrderSync('+i+')">🔄 Sinkron Ulang</button>':'')+
+ (o.stageSynced===false?'<button class="btn btn-outline btn-sm" onclick="retryStageSync('+i+')">🔄 Sinkron Status</button>':'')+
  '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
 }
 function setStage(i,v){
- v=+v;const code=orders[i].code;orders[i].stage=v;LS.set('rj_orders',orders);renderAdmin();toast('🏭 '+code+' → '+STAGES[v][1]);
- if(sb)sb.from(ORDERS_TABLE).update({stage:v}).eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal sync: '+(error.message||error.code||'unknown error'))}});
+ v=+v;const o=orders[i];const code=o.code;
+ if(o.synced===false){toast('⚠️ Sinkronkan pesanan ini ke server dulu sebelum ubah status');return}
+ o.stage=v;
+ o.stageSynced=false; // PERBAIKAN: flag per order, sama seperti pola `synced`
+ LS.set('rj_orders',orders);renderAdmin();toast('🏭 '+code+' → '+STAGES[v][1]);
+ if(!sb)return;
+ sb.from(ORDERS_TABLE).update({stage:v}).eq('order_code',code).then(({error})=>{
+  const target=orders.find(x=>x.code===code);if(!target)return;
+  if(error){
+   console.error(error);
+   toast('⚠️ Gagal sync stage '+code+' — coba "Sinkron Ulang"');
+   // stageSynced tetap false → tombol retry muncul, dan syncOrdersFromCloud()
+   // tidak akan menimpa stage ini sampai berhasil tersinkron
+  }else{
+   target.stageSynced=true;
+  }
+  LS.set('rj_orders',orders);renderAdmin();
+ });
+}
+function retryStageSync(i){
+ const o=orders[i];
+ if(!o||o.stageSynced!==false)return;
+ if(o.synced===false){toast('⚠️ Sinkronkan pesanan ini ke server dulu');return}
+ setStage(i,o.stage); // coba kirim ulang stage yang sekarang berlaku
 }
 async function delOrder(i){
  const o=orders[i];
