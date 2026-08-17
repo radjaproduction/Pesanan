@@ -878,17 +878,15 @@ function buildProducts(){
   if(meta.gambar_warna&&typeof meta.gambar_warna==='object'){
    Object.keys(meta.gambar_warna).forEach(k=>{const v=(meta.gambar_warna[k]||'').trim();if(v)imgByColor[k]=v});
   }
-  // Gambar utama katalog: pakai foto warna dengan STOK TERBANYAK (kalau warna itu punya
-  // foto khusus di "Gambar per Warna"). Kalau tidak ada foto khusus warna sama sekali,
-  // tetap pakai gambar_url default seperti biasa.
-  let bestColorImg='';
+  // Cari WARNA dengan STOK TERBANYAK — dipakai sebagai gambar utama katalog.
+  let bestColorObj=null,bestColorImg='';
   if(colors.length){
    let maxStok=-1;
    colors.forEach(c=>{
     const cUp=(c.n||'').trim().toUpperCase();
     let tot=0;
     Object.keys(stokIndex).forEach(k=>{if(k.split('|')[0]===cUp)tot+=Math.max(0,stokIndex[k].stok)});
-    if(tot>maxStok){maxStok=tot;bestColorImg=imgByColor[cUp]||''}
+    if(tot>maxStok){maxStok=tot;bestColorObj=c;bestColorImg=imgByColor[cUp]||''}
    });
   }
   const overlay = meta.overlay_url ? {
@@ -904,7 +902,7 @@ function buildProducts(){
   } : null;
   return {
    id:'m'+m.id, modelId:m.id, brand:m.brandNama||'—', cat:meta.kategori||m.brandNama||'Produk',
-   name:m.nama, img:bestColorImg||meta.gambar_url||PLACEHOLDER_IMG, imgByColor, autoTint:meta.auto_tint===true, overlay, est:[m.harga||0,m.harga||0],
+   name:m.nama, img:bestColorImg||meta.gambar_url||PLACEHOLDER_IMG, baseImg:meta.gambar_url||PLACEHOLDER_IMG, bestColor:bestColorObj, imgByColor, autoTint:meta.auto_tint===true, overlay, est:[m.harga||0,m.harga||0],
    min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
    badge:meta.badge||'', desc:meta.deskripsi||'',
    specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
@@ -1207,10 +1205,31 @@ function doSearch(e){e.preventDefault();state.q=$('searchInput').value.trim();go
 
 /* ================= CATALOG ================= */
 function cardHTML(p){return '<div class="p-card" onclick="openProduct(\''+p.id+'\')">'+
- '<div class="ph"><img src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(p.overlay&&p.overlay.url?'<img src="'+esc(p.overlay.url)+'" loading="lazy" style="position:absolute;left:'+p.overlay.x+'%;top:'+p.overlay.y+'%;width:'+p.overlay.size+'%;height:auto;max-width:none;max-height:none;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none">':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
+ '<div class="ph"><img id="catimg-'+p.id+'" src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
  '<div class="p-body"><div class="p-brand">'+esc(p.brand)+'</div><div class="p-name">'+esc(p.name)+'</div>'+
  '<div class="p-rate">'+(p.totalStok>0?p.totalStok+' pcs':'stok habis')+'</div>'+
  '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs</small></div></div></div>'}
+// Setelah kartu katalog dirender: kalau warna dengan stok terbanyak butuh proses Auto-Warna/overlay
+// (belum ada foto manual per-warna), susulkan versi foto ter-tint warna itu secara async lalu ganti <img> src.
+let _catImgGen=0;
+function applyCatalogBestColorImgs(list){
+ const gen=++_catImgGen; // token generasi — proses lama yang selesai belakangan tidak boleh menimpa hasil yang lebih baru
+ list.forEach(p=>{
+  const colorName=p.bestColor?p.bestColor.n:'';
+  const cUp=colorName.trim().toUpperCase();
+  if(p.imgByColor && p.imgByColor[cUp])return; // sudah pakai foto manual warna itu, tak perlu proses
+  const tintHex=(p.autoTint&&p.bestColor&&p.bestColor.h)?p.bestColor.h:null;
+  const hasOverlay=!!(p.overlay&&p.overlay.url);
+  if(!tintHex&&!hasOverlay)return; // tak ada yang perlu diproses
+  if(!p.baseImg||p.baseImg===PLACEHOLDER_IMG)return;
+  const invertNow=hasOverlay?shouldInvertForColor(p.overlay,colorName):false;
+  const ovNow=hasOverlay?Object.assign({},p.overlay,{invert:invertNow}):null;
+  composeImage(p.baseImg,ovNow,tintHex,function(url){
+   if(gen!==_catImgGen)return; // ada pemanggilan render katalog yang lebih baru, abaikan hasil basi ini
+   const tag=document.getElementById('catimg-'+p.id);if(tag)tag.src=url;
+  });
+ });
+}
 function populateBrandFilter(){
  const brandNames=[...new Set(PRODUCTS.map(p=>p.brand))].filter(Boolean).sort((a,b)=>a.localeCompare(b));
  if(state.brand && !brandNames.includes(state.brand))state.brand='';
@@ -1237,12 +1256,14 @@ function renderCatalog(){
  setCrumb('Beranda / <b>Katalog</b> '+(state.q?'• hasil untuk <b>"'+esc(state.q)+'"</b>':''));
  if(!sb){$('catGrid').innerHTML='<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">🔌 Belum tersambung ke data Inventory. Hubungi admin untuk menyambungkan.</p>';return}
  $('catGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">😕 Tidak ada produk yang cocok.</p>';
+ applyCatalogBestColorImgs(list);
 }
 function renderHome(){
  if(!$('homeGrid'))return;
  if(!sb){$('homeGrid').innerHTML='<p style="color:var(--muted)">🔌 Belum tersambung ke data Inventory.</p>';return}
  const list=PRODUCTS.filter(p=>p.aktif).sort((a,b)=>b.sold-a.sold).slice(0,4);
  $('homeGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted)">Belum ada produk aktif.</p>';
+ applyCatalogBestColorImgs(list);
 }
 
 /* ================= PRODUCT DETAIL ================= */
@@ -1383,6 +1404,10 @@ function unlockBodyScroll(){
 function openBuyModal(){
  const s=state.sel,p=P(s.pid);if(!p||!p.colors.length)return;
  buyModalOpen=true;
+ // Langsung tampilkan numpad begitu popup beli terbuka (misal karena gambar produk/katalog
+ // diketuk) — tidak perlu lagi ketuk kolom Jumlah dulu untuk memunculkan numpad.
+ numpadBuf='';
+ numpadOpen=true;
  renderBuyModal();
  $('pdBuyModal').classList.add('show');
  lockBodyScroll();
