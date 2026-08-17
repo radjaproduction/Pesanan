@@ -2396,7 +2396,7 @@ function adminProduk(){
    '<div class="form-grid" style="grid-template-columns:1fr 1fr;margin-top:10px">'+
    '<div style="grid-column:1/-1"><label>Gambar Utama (tampil di Katalog &amp; sebagai fallback bila warna belum punya foto sendiri)</label>'+
    '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">'+
-   '<img id="pm-bigpreview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:76px;height:76px;border-radius:10px;object-fit:cover;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0">'+
+   '<img id="pm-bigpreview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" onclick="openImgLightbox(this.src)" style="width:76px;height:76px;border-radius:10px;object-fit:cover;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0;cursor:zoom-in">'+
    '<div style="flex:1;min-width:200px">'+
    '<input type="file" accept="image/*" id="pm-file-'+m.id+'" onchange="handleImgUpload('+m.id+',this)" style="font-size:12px;width:100%">'+
    '<input type="hidden" id="pm-imgurl-'+m.id+'" value="'+esc(meta.gambar_url||'')+'">'+
@@ -2405,10 +2405,11 @@ function adminProduk(){
    '<div style="grid-column:1/-1;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)">'+
    '<label>Gambar Tambahan (Overlay/Print di atas Gambar Utama — opsional, untuk sablon/logo dsb.)</label>'+
    '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">'+
-   '<div id="pm-ovpreview-'+m.id+'" style="position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0">'+
+   '<div id="pm-ovpreview-'+m.id+'" onclick="toggleOvZoom('+m.id+')" style="position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0;cursor:zoom-in;transition:width .2s,height .2s">'+
    '<img src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:100%;height:100%;object-fit:cover">'+
    '<img id="pm-ovimg-'+m.id+'" src="'+esc(meta.overlay_url||'')+'" style="display:'+(meta.overlay_url?'block':'none')+';position:absolute;left:'+(meta.overlay_x!=null?meta.overlay_x:50)+'%;top:'+(meta.overlay_y!=null?meta.overlay_y:50)+'%;width:'+(meta.overlay_size!=null?meta.overlay_size:40)+'%;height:auto;max-width:none;max-height:none;object-fit:contain;transform:translate(-50%,-50%)">'+
    '</div>'+
+   '<div style="width:100%;font-size:10px;color:var(--muted);font-weight:600;margin-top:-6px">👆 Ketuk gambar untuk perbesar tampilan preview</div>'+
    '<div style="flex:1;min-width:220px">'+
    '<input type="file" accept="image/*" id="pm-ovfile-'+m.id+'" onchange="handleOverlayUpload('+m.id+',this)" style="font-size:12px;width:100%">'+
    '<input type="hidden" id="pm-ovurl-'+m.id+'" value="'+esc(meta.overlay_url||'')+'">'+
@@ -2536,6 +2537,37 @@ async function handleOverlayUpload(modelId,inputEl){
   updateOverlayPreview(modelId);
   toast('✅ Gambar tambahan siap — klik Simpan untuk menyimpan');
  }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+}
+function ensureImgLightbox(){
+ if($('imgLightboxModal'))return;
+ const div=document.createElement('div');
+ div.id='imgLightboxModal';
+ div.style.cssText='display:none;position:fixed;inset:0;background:rgba(11,22,51,.92);z-index:9999;align-items:center;justify-content:center;padding:24px';
+ div.innerHTML='<img id="imgLightboxImg" style="max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.4)">';
+ div.onclick=closeImgLightbox;
+ document.body.appendChild(div);
+}
+function openImgLightbox(url){
+ if(!url)return;
+ ensureImgLightbox();
+ $('imgLightboxImg').src=url;
+ $('imgLightboxModal').style.display='flex';
+}
+function closeImgLightbox(){
+ const m=$('imgLightboxModal');if(m)m.style.display='none';
+}
+function toggleOvZoom(modelId){
+ const box=$('pm-ovpreview-'+modelId);
+ if(!box)return;
+ const zoomed=box.dataset.zoomed==='1';
+ if(zoomed){
+  box.style.width='96px';box.style.height='96px';
+  box.dataset.zoomed='0';
+ }else{
+  const sz=Math.min(320,window.innerWidth-64);
+  box.style.width=sz+'px';box.style.height=sz+'px';
+  box.dataset.zoomed='1';
+ }
 }
 function clearOverlay(modelId){
  const uv=$('pm-ov-'+modelId);if(uv)uv.value='';
