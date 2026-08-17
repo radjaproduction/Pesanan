@@ -20,7 +20,7 @@
   --navy-950:#080F26; --navy-900:#0B1633; --navy-800:#101F45; --navy-700:#16295C;
   --navy-600:#1D3474; --navy-500:#2A459A; --navy-100:#E8EDF8; --navy-50:#F3F6FC;
   --accent:#FF9F1C; --accent-600:#F28C00; --accent-soft:#FFF4E3;
-  --ink:#101828; --muted:#5B6478; --line:#E3E8F2; --bg:#F3F5FA; --ok:#12B76A; --danger:#E5484D;
+  --ink:#101828; --muted:#5B6478; --line:#E3E8F2; --bg:#F3F5FA; --ok:#12B76A; --ok-soft:#E7F8F0; --warn:#B45309; --warn-soft:#FEF3C7; --danger:#E5484D;
   --radius:14px; --shadow:0 2px 10px rgba(11,22,51,.06); --shadow-lg:0 12px 32px rgba(11,22,51,.14);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -381,13 +381,12 @@ footer{flex-shrink:0}
 .inv-icon-btn:hover{background:var(--navy-600);transform:translateY(-1px)}
 .stage-pill{font-size:11px;font-weight:800;padding:5px 12px;border-radius:14px;background:var(--navy-100);color:var(--navy-700)}
 .stage-pill.ord-stage{display:inline-block;min-width:148px;text-align:center}
-.stage-pill.final{background:#E7F8F0;color:var(--ok)}
+.stage-pill.final{background:var(--ok-soft);color:var(--ok)}
 .o-items{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:12.5px;color:var(--muted)}
 .o-items div{padding:4px 0;display:flex;justify-content:space-between;gap:10px}
 
 /* ============ SUCCESS ============ */
 .success{max-width:640px;margin:44px auto 60px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:44px 34px}
-.success .big{width:74px;height:74px;border-radius:50%;background:#E7F8F0;color:var(--ok);font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
 .success h1{color:var(--navy-900);font-size:22px}
 .success p{color:var(--muted);margin:10px 0 20px;line-height:1.7}
 .code-big{background:var(--navy-50);border:1.5px dashed var(--navy-500);border-radius:12px;padding:14px;font-size:22px;font-weight:800;letter-spacing:2px;color:var(--navy-800);margin-bottom:22px}
@@ -452,7 +451,7 @@ body.hide-footer footer{display:none}
 #orderModal.show{display:flex}
 .om-box{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:34px 28px;text-align:center;box-shadow:var(--shadow-lg);animation:omPop .25s ease}
 @keyframes omPop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
-.om-box .big{width:64px;height:64px;border-radius:50%;background:#E7F8EE;color:#1a9e52;font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.om-box .big{width:64px;height:64px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
 .om-box h2{font-size:19px;margin-bottom:8px}
 .om-box p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
 .om-code{background:var(--navy-50);border:1.5px dashed var(--navy-300);border-radius:10px;padding:12px;font-size:18px;font-weight:800;color:var(--navy-900);letter-spacing:.5px;margin-bottom:18px}
@@ -667,7 +666,6 @@ body.boot-lock{overflow:hidden}
 <section class="view" id="view-checkout"><div class="container" id="coWrap"></div></section>
 
 <!-- ================= SUCCESS ================= -->
-<section class="view" id="view-success"><div class="container" id="okWrap"></div></section>
 
 <!-- ================= TRACK / RIWAYAT TRANSAKSI ================= -->
 <section class="view" id="view-track">
@@ -753,7 +751,6 @@ let stokRows = [];      // dari view v_stok_ringkas: {brand,model,warna,ukuran,s
 let produkMeta = {};    // dari tabel pesanan_produk_meta, keyed by model_id
 let PRODUCTS = [];      // hasil gabungan (dibangun oleh buildProducts())
 let invReady=false, invError=false; // status pemuatan data Inventory — dipakai renderCatalog() supaya tidak salah tampil "Tidak ada produk" saat data sebenarnya masih dimuat (koneksi lambat)
-let adminProdukColors = {}; // helper: modelId -> [namaWarna,...] urutan sesuai form admin (untuk saveProdukMeta)
 
 /* ================= STATE ================= */
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
@@ -764,8 +761,7 @@ const SUPABASE_URL='https://ehhyagqldsurkutabwsg.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoaHlhZ3FsZHN1cmt1dGFid3NnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDM1MTYsImV4cCI6MjEwMjM3OTUxNn0.o01HVxTcQvOi1js_rQAWellOOmoasMhFUGEJlDbcJKA';
 let settings=LS.get('rj_settings',{table:'inventory',pin:'1234'});
 settings.url=SUPABASE_URL;settings.key=SUPABASE_KEY;
-let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',ship:'Kurir Partner (JNE/JNT/SiCepat)'};
-const WA='6281234567890';
+let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',note:''};
 const ORDERS_TABLE='produksi_orders';
 let sb=null;
 let rtChannel=null;
@@ -775,7 +771,7 @@ function initSupabase(){
  else sb=null;
 }
 initSupabase();
-function rowToOrder(r){return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,statusBayar:r.status_bayar||'belum_lunas',mine:false,name:r.customer_name,wa:r.whatsapp,addr:r.address,note:r.note||'',items:r.items||[]};}
+function rowToOrder(r){return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,statusBayar:r.status_bayar||'belum_lunas',mine:false,synced:true,items:r.items||[],note:r.note||''};}
 async function syncOrdersFromCloud(){
  if(!sb)return false;
  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false});
@@ -784,9 +780,9 @@ async function syncOrdersFromCloud(){
  catch(e){console.error(e);return false}
 }
 function seedOrders(){const n=Date.now(),D=86400000;return[
- {code:'RJA-10241',ts:n-6*D,stage:1,mine:false,name:'TK Tunas Bangsa',wa:'081227001122',addr:'Jl. Parasamya No.1, Sleman, DIY',note:'Kaos anak untuk acara perpisahan TK, sablon DTF depan-belakang.',items:[]},
- {code:'RJA-10257',ts:n-3*D,stage:1,mine:false,name:'Budi Santoso',wa:'085743320091',addr:'Jl. Kaliurang KM 8, Yogyakarta',note:'Kaos anak polos untuk merchandise komunitas.',items:[]},
- {code:'RJA-10263',ts:n-1*D,stage:0,mine:false,name:'SD Negeri 2 Yogyakarta',wa:'081904455667',addr:'Jl. Prawirotaman No.4, Yogyakarta',note:'Kaos raglan olahraga anak, dua warna kontras.',items:[]}];}
+ {code:'RJA-10241',ts:n-6*D,stage:1,mine:false,synced:true,items:[]},
+ {code:'RJA-10257',ts:n-3*D,stage:1,mine:false,synced:true,items:[]},
+ {code:'RJA-10263',ts:n-1*D,stage:0,mine:false,synced:true,items:[]}];}
 
 /* ================= HELPERS ================= */
 const $=id=>document.getElementById(id);
@@ -920,58 +916,10 @@ function buildProducts(){
 // punya foto manual sendiri di "Gambar per Warna". Teknik: canvas blend-mode 'color' (mengambil hue/saturasi
 // dari warna target, tapi mempertahankan shading/lipatan kain dari foto asli) — paling akurat untuk foto
 // kaos POLOS dengan background putih bersih. Kurang akurat untuk foto dengan sablon/print banyak warna.
-let tintCache={};      // key "srcUrl|#hex" -> dataURL hasil tint (atau srcUrl asli kalau gagal)
-let tintPending={};    // key -> array callback yang menunggu hasil tint yg sedang diproses
 function colorObjByName(p,warnaName){
  if(!p)return null;
  const key=(warnaName||'').trim().toUpperCase();
  return (p.colors||[]).find(c=>(c.n||'').trim().toUpperCase()===key)||null;
-}
-function tintImage(baseSrc,hex,cb){
- if(!baseSrc||!hex){cb(baseSrc);return}
- const key=baseSrc+'|'+hex;
- if(tintCache[key]){cb(tintCache[key]);return}
- if(tintPending[key]){tintPending[key].push(cb);return}
- tintPending[key]=[cb];
- const img=new Image();
- img.crossOrigin='anonymous';
- img.onload=()=>{
-  let url=baseSrc;
-  try{
-   const cv=document.createElement('canvas');
-   cv.width=img.naturalWidth||img.width;cv.height=img.naturalHeight||img.height;
-   const ctx=cv.getContext('2d');
-   ctx.drawImage(img,0,0);
-   // Parse hex target jadi r,g,b (dukung format singkat #abc maupun panjang #aabbcc)
-   let h=(hex||'').replace('#','');
-   if(h.length===3)h=h.split('').map(c=>c+c).join('');
-   const hr=parseInt(h.substring(0,2),16)||0, hg=parseInt(h.substring(2,4),16)||0, hb=parseInt(h.substring(4,6),16)||0;
-   // Olah pixel manual (bukan pakai globalCompositeOperation) supaya alpha/transparansi background dijaga
-   // PERSIS seperti foto asli di semua browser — beberapa browser (terutama Safari) punya bug kompositing
-   // blend-mode ('multiply'/'color') yang bikin area transparan malah jadi hitam solid alih-alih tetap transparan.
-   const imgData=ctx.getImageData(0,0,cv.width,cv.height);
-   const d=imgData.data;
-   for(let i=0;i<d.length;i+=4){
-    if(d[i+3]===0)continue; // pixel transparan: lewati, biarkan tetap transparan
-    // Kecerahan (luminance) dari pixel asli, dipakai sebagai basis shading/lipatan kain
-    const l=(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2])/255;
-    // Multiply kecerahan itu dengan warna target — area terang mendekati warna aslinya, shadow tetap gelap proporsional
-    d[i]=l*hr; d[i+1]=l*hg; d[i+2]=l*hb;
-    // alpha (d[i+3]) dibiarkan sesuai foto asli
-   }
-   ctx.putImageData(imgData,0,0);
-   url=cv.toDataURL('image/png');
-  }catch(e){ url=baseSrc; /* CORS: foto dari URL luar tidak bisa dibaca kanvas, pakai foto asli */ }
-  tintCache[key]=url;
-  const cbs=tintPending[key]||[];delete tintPending[key];
-  cbs.forEach(f=>f(url));
- };
- img.onerror=()=>{
-  tintCache[key]=baseSrc;
-  const cbs=tintPending[key]||[];delete tintPending[key];
-  cbs.forEach(f=>f(baseSrc));
- };
- img.src=baseSrc;
 }
 function applyTintToCanvas(ctx,cv,hex){
  let h=(hex||'').replace('#','');
@@ -985,12 +933,6 @@ function applyTintToCanvas(ctx,cv,hex){
   d[i]=l*hr; d[i+1]=l*hg; d[i+2]=l*hb;
  }
  ctx.putImageData(imgData,0,0);
-}
-function isDarkHex(hex){
- let h=(hex||'').replace('#','');
- if(h.length===3)h=h.split('').map(c=>c+c).join('');
- const r=parseInt(h.substring(0,2),16)||0, g=parseInt(h.substring(2,4),16)||0, b=parseInt(h.substring(4,6),16)||0;
- return (0.299*r+0.587*g+0.114*b)/255 < 0.5;
 }
 // Tentukan apakah overlay perlu di-invert UNTUK warna produk tertentu (dipilih manual oleh admin lewat
 // checklist warna di panel admin), bukan lagi otomatis dari gelap/terangnya warna.
@@ -1076,13 +1018,6 @@ function composeImage(baseSrc,ov,hex,cb){
  baseImg.onerror=()=>{ done(baseSrc) };
  baseImg.src=baseSrc;
 }
-// Ambil gambar produk untuk warna tertentu; fallback ke gambar utama kalau warna itu belum punya foto sendiri.
-function imgForColor(p,warnaName){
- if(!p)return PLACEHOLDER_IMG;
- const key=(warnaName||'').trim().toUpperCase();
- if(p.imgByColor && p.imgByColor[key])return p.imgByColor[key];
- return p.img;
-}
 // Gambar preview cepat (sinkron) untuk slide carousel prev/next: pakai foto khusus warna kalau ada,
 // kalau butuh proses tint/overlay pakai versi yang sudah ke-cache (kalau belum ke-cache, fallback ke foto dasar
 // sementara — nanti otomatis jadi akurat begitu warna itu benar-benar dipilih lewat renderProduct).
@@ -1156,9 +1091,12 @@ function scheduleReload(){clearTimeout(_rtTimer);_rtTimer=setTimeout(loadInvento
 async function refreshTrackData(){
  if(!sb)return;
  try{
-  const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30);
-  if(error)throw error;
-  window._history=data.map(rowToOrder);
+  const [ordersRes,vendorTrx]=await Promise.all([
+   sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30),
+   loadVendorTrxHistory()
+  ]);
+  if(ordersRes.error)throw ordersRes.error;
+  window._history=ordersRes.data.map(rowToOrder).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
   filterByDate();
  }catch(e){console.error('Gagal refresh Invoice:',e)}
 }
@@ -1176,12 +1114,27 @@ function scheduleOrdersReload(){clearTimeout(_rtOrdersTimer);_rtOrdersTimer=setT
 },400)}
 let _rtOrdersTimer=null;
 let _rtReconnectTimer=null;
+let _rtTrxTimer=null;
+// transaksi & transaksi_item dipakai untuk 2 hal: (1) hitung stok (v_stok_ringkas) seperti
+// sebelumnya via scheduleReload, DAN (2) sumber Riwayat Transaksi Pesanan untuk transaksi
+// vendor BANG FARID yang diinput langsung di app Inventory (lihat loadVendorTrxHistory) —
+// jadi halaman Invoice yang sedang terbuka juga perlu ikut di-refresh saat keduanya berubah.
+function scheduleTrxReload(){
+ scheduleReload();
+ clearTimeout(_rtTrxTimer);_rtTrxTimer=setTimeout(()=>{
+  const activeView=document.querySelector('.view.on')?.id;
+  if(activeView==='view-track')refreshTrackData();
+ },400);
+}
 function setupRealtimeStok(){
  if(!sb)return;
  if(rtChannel){try{sb.removeChannel(rtChannel)}catch(e){}rtChannel=null}
  rtChannel = sb.channel('pesanan-stok-sync');
- ['brand','model','warna','ukuran','riwayat_input','riwayat_input_item','transaksi','transaksi_item','pesanan_produk_meta'].forEach(t=>{
+ ['brand','model','warna','ukuran','riwayat_input','riwayat_input_item','pesanan_produk_meta'].forEach(t=>{
   rtChannel = rtChannel.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleReload);
+ });
+ ['transaksi','transaksi_item'].forEach(t=>{
+  rtChannel = rtChannel.on('postgres_changes',{event:'*',schema:'public',table:t},scheduleTrxReload);
  });
  rtChannel = rtChannel.on('postgres_changes',{event:'*',schema:'public',table:'produksi_orders'},scheduleOrdersReload);
  rtChannel.subscribe((status)=>{
@@ -1189,7 +1142,7 @@ function setupRealtimeStok(){
    clearTimeout(_rtReconnectTimer);
    // Begitu (re)konek, tarik ulang data sebagai jaring pengaman kalau ada
    // perubahan yang terjadi selagi koneksi realtime tadi putus/belum nyambung.
-   scheduleReload();scheduleOrdersReload();
+   scheduleReload();scheduleOrdersReload();scheduleTrxReload();
   }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
    // PERBAIKAN: sebelumnya kalau koneksi realtime putus (tab lama tidak aktif,
    // HP hemat baterai, WiFi sempat drop, dsb), channel mati begitu saja tanpa
@@ -1226,23 +1179,50 @@ function cardHTML(p){const habis=p.totalStok<=0;return '<div class="p-card" oncl
 // Setelah kartu katalog dirender: kalau warna dengan stok terbanyak butuh proses Auto-Warna/overlay
 // (belum ada foto manual per-warna), susulkan versi foto ter-tint warna itu secara async lalu ganti <img> src.
 let _catImgGen=0;
+let _catImgObserver=null; // IntersectionObserver aktif untuk render katalog saat ini
+// Proses tint/overlay SATU produk (dipanggil saat kartunya masuk/mendekati viewport, bukan langsung semua)
+function _processCatalogBestColorImg(p,gen){
+ const colorName=p.bestColor?p.bestColor.n:'';
+ const cUp=colorName.trim().toUpperCase();
+ if(p.imgByColor && p.imgByColor[cUp])return; // sudah pakai foto manual warna itu, tak perlu proses
+ if(p.totalStok<=0)return; // produk habis: pakai foto dasar polos, tak perlu tint
+ const tintHex=(p.autoTint&&p.bestColor&&p.bestColor.h)?p.bestColor.h:null;
+ const hasOverlay=!!(p.overlay&&p.overlay.url);
+ if(!tintHex&&!hasOverlay)return; // tak ada yang perlu diproses
+ if(!p.baseImg||p.baseImg===PLACEHOLDER_IMG)return;
+ const invertNow=hasOverlay?shouldInvertForColor(p.overlay,colorName):false;
+ const ovNow=hasOverlay?Object.assign({},p.overlay,{invert:invertNow}):null;
+ composeImage(p.baseImg,ovNow,tintHex,function(url){
+  if(gen!==_catImgGen)return; // ada pemanggilan render katalog yang lebih baru, abaikan hasil basi ini
+  const tag=document.getElementById('catimg-'+p.id);if(tag)tag.src=url;
+ });
+}
+// PERBAIKAN PERFORMA: dulu fungsi ini memproses SEMUA produk di grid sekaligus (getImageData/putImageData
+// piksel-per-piksel per produk) begitu katalog dirender, walau kartunya belum kelihatan di layar — di HP
+// kelas menengah-bawah ini bikin thread nge-freeze sesaat kalau banyak produk butuh auto-tint/overlay.
+// Sekarang pakai IntersectionObserver: proses tint/overlay baru jalan saat kartu itu masuk (atau mendekati,
+// via rootMargin) area layar, jadi beban CPU tersebar mengikuti scroll, bukan numpuk di satu waktu.
 function applyCatalogBestColorImgs(list){
  const gen=++_catImgGen; // token generasi — proses lama yang selesai belakangan tidak boleh menimpa hasil yang lebih baru
- list.forEach(p=>{
-  const colorName=p.bestColor?p.bestColor.n:'';
-  const cUp=colorName.trim().toUpperCase();
-  if(p.imgByColor && p.imgByColor[cUp])return; // sudah pakai foto manual warna itu, tak perlu proses
-  if(p.totalStok<=0)return; // produk habis: pakai foto dasar polos, tak perlu tint
-  const tintHex=(p.autoTint&&p.bestColor&&p.bestColor.h)?p.bestColor.h:null;
-  const hasOverlay=!!(p.overlay&&p.overlay.url);
-  if(!tintHex&&!hasOverlay)return; // tak ada yang perlu diproses
-  if(!p.baseImg||p.baseImg===PLACEHOLDER_IMG)return;
-  const invertNow=hasOverlay?shouldInvertForColor(p.overlay,colorName):false;
-  const ovNow=hasOverlay?Object.assign({},p.overlay,{invert:invertNow}):null;
-  composeImage(p.baseImg,ovNow,tintHex,function(url){
-   if(gen!==_catImgGen)return; // ada pemanggilan render katalog yang lebih baru, abaikan hasil basi ini
-   const tag=document.getElementById('catimg-'+p.id);if(tag)tag.src=url;
+ if(_catImgObserver){_catImgObserver.disconnect();_catImgObserver=null}
+ const byId={};list.forEach(p=>{byId[p.id]=p});
+ if(!('IntersectionObserver' in window)){
+  // Fallback untuk browser sangat lama tanpa IntersectionObserver: perilaku lama (proses semua langsung)
+  list.forEach(p=>_processCatalogBestColorImg(p,gen));
+  return;
+ }
+ _catImgObserver=new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
+   if(!entry.isIntersecting)return;
+   _catImgObserver.unobserve(entry.target);
+   const id=entry.target.id.replace('catimg-','');
+   const p=byId[id];
+   if(p)_processCatalogBestColorImg(p,gen);
   });
+ },{root:null,rootMargin:'400px 0px',threshold:0.01}); // rootMargin 400px: mulai proses sebelum kartu benar2 kelihatan, biar tak "kosong sesaat" saat scroll
+ list.forEach(function(p){
+  const tag=document.getElementById('catimg-'+p.id);
+  if(tag)_catImgObserver.observe(tag);
  });
 }
 function populateBrandFilter(){
@@ -1624,33 +1604,6 @@ document.addEventListener('pointercancel',e=>{
  _pdDragging=false;_pdPtrId=null;
  if(track){track.classList.remove('dragging');track.style.transform='translateX(-33.3334%)'}
 });
-function setQty(v){
- const s=state.sel,p=P(s.pid);if(!p)return;
- let nv=parseInt(v,10);
- if(isNaN(nv)||nv<1)nv=p.min;
- let maxStok=Infinity,already=0,avail=Infinity;
- if(s.size&&p.colors.length){
-  avail=stokFor(p,p.colors[s.color].n,s.size);
-  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
-  const ex=cart.find(c=>c.key===key);
-  already=ex?ex.qty:0;
-  maxStok=avail-already;
- }
- nv=Math.max(p.min,nv);
- if(isFinite(maxStok)){
-  if(maxStok<=0){
-   toast(already>0?('⚠️ Sudah '+already+' pcs di keranjang, sisa stok habis'):'⚠️ Sisa stok sudah habis');
-   nv=p.min;
-  }else if(nv>maxStok){
-   nv=maxStok;
-   toast(already>0?('⚠️ Sisa stok tinggal '+maxStok+' pcs'):'⚠️ Jumlah disesuaikan dengan stok tersedia');
-  }
- }
- s.qty=nv;
- // render ditunda 1 tick supaya klik tombol (Keranjang/Pesan Sekarang) yang memicu blur ini
- // sempat "landing" dulu sebelum tombolnya diganti oleh render ulang — mencegah harus klik 2x
- setTimeout(()=>{renderProduct();renderBuyModal()},0);
-}
 function commitNumpadIfOpen(){
  if(!numpadOpen)return;
  const s=state.sel,p=P(s.pid);if(!p)return;
@@ -1764,7 +1717,6 @@ function cSetQty(i,v){
 function cRm(i){cart.splice(i,1);saveCart();renderCart();toast('Item dihapus dari keranjang')}
 
 /* ================= CHECKOUT ================= */
-function setShipMethod(v){state.ship=v;renderCheckout()}
 function goCheckout(){if(!cart.length){toast('Keranjang kosong');return}if(!state.draftCode)state.draftCode='TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0');renderCheckout();go('checkout')}
 function renderCheckout(){
  setCrumb('Beranda / Keranjang / <b>Checkout</b>');
@@ -1792,6 +1744,10 @@ function renderCheckout(){
   '</table>'+
  '</div>'+
  '<div class="note-box">✅ Total tagihan dan invoice per transaksi bisa dilihat di halaman Dashboard (menu awal).</div>'+
+ '<div style="margin:14px 0">'+
+  '<label style="display:block;font-size:12.5px;font-weight:700;color:var(--navy-900);margin-bottom:6px">📝 Catatan untuk Admin (opsional)</label>'+
+  '<textarea id="coNote" rows="3" placeholder="Contoh: request warna khusus, minta dikirim terpisah, dll." style="width:100%;border:1px solid #E3E7F0;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical" oninput="state.note=this.value">'+esc(state.note||'')+'</textarea>'+
+ '</div>'+
  '<button class="btn btn-accent btn-block" onclick="placeOrder()">✅ Buat Pesanan</button></div></div>';
 }
 // Kurangi stok Inventory otomatis: setiap grup brand+model di keranjang jadi satu baris
@@ -1800,7 +1756,7 @@ function renderCheckout(){
 // Semua transaksi yang masuk dari aplikasi Pesanan Online ini dicatat sebagai
 // vendor tetap "BANG FARID" (bukan label generik "PESANAN ONLINE — ...").
 const VENDOR_APP='BANG FARID';
-async function syncStokKeluarPesanan(code,name,cartSnapshot){
+async function syncStokKeluarPesanan(code,cartSnapshot){
  if(!sb)return;
  const groups={};
  cartSnapshot.forEach(c=>{
@@ -1828,34 +1784,33 @@ async function syncStokKeluarPesanan(code,name,cartSnapshot){
 async function placeOrder(){
  for(const c of cart){const p=P(c.pid);if(!p)continue;const avail=stokFor(p,c.color,c.size);if(avail<c.qty){toast('⚠️ Stok '+p.name+' ('+c.color+', '+c.size+') tidak mencukupi lagi');return}}
  const code=state.draftCode||('TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0'));
- const name='',wa='',addr='',note='';
  const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
- orders.unshift({code,ts:Date.now(),stage:0,statusBayar:'belum_lunas',mine:true,name,wa,addr,ship:state.ship,note,items});
- LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;cart=[];saveCart();
+ const note=(state.note||'').trim();
+ orders.unshift({code,ts:Date.now(),stage:0,statusBayar:'belum_lunas',mine:true,synced:false,items,note});
+ LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;state.note='';cart=[];saveCart();
  // Sinkron ke server (produksi_orders + potong stok Inventory) DIDULUKAN dan
  // dipisah dari urusan tampilan (popup), supaya kalau nanti ada error di UI
  // popup, sinkronisasi stok Inventory tetap sudah selesai duluan dan tidak ikut gagal.
  if(sb){
-  try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,customer_name:name,whatsapp:wa,address:addr,note,items,stage:0});
-   if(error)throw error}
-  catch(e){console.error(e);toast('⚠️ Pesanan tersimpan lokal, tapi gagal sync ke server')}
-  await syncStokKeluarPesanan(code,name,cartSnapshot);
+  let orderSynced=false;
+  try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,items,stage:0,note});
+   if(error)throw error;
+   orderSynced=true;
+  }catch(e){console.error(e);toast('⚠️ Pesanan tersimpan lokal, tapi gagal sync ke server — stok Inventory TIDAK dipotong. Coba "Sinkron Ulang" di Admin nanti.')}
+  // PERBAIKAN: stok Inventory hanya dipotong kalau pesanan BENAR-BENAR berhasil tersimpan
+  // di server (produksi_orders). Sebelumnya syncStokKeluarPesanan() selalu dipanggil di sini
+  // TANPA syarat, walau insert di atas gagal — akibatnya stok Inventory bisa berkurang padahal
+  // pesanannya sendiri tidak pernah tercatat di server (data jadi tidak konsisten/tidak terlacak).
+  if(orderSynced){
+   const o=orders.find(x=>x.code===code);if(o)o.synced=true;
+   LS.set('rj_orders',orders);
+   await syncStokKeluarPesanan(code,cartSnapshot);
+  }
  }
  try{showOrderModal(code)}
  catch(e){console.error('Gagal menampilkan popup konfirmasi:',e);toast('✅ Pesanan '+code+' berhasil dibuat');navStack=[];go('home')}
 }
-function renderSuccess(){
- const o=orders.find(x=>x.code===state.lastOrder);if(!o)return;
- const waMsg=encodeURIComponent('Halo RADJA Konveksi 👋 Saya sudah membuat pesanan '+o.code+'. Mohon konfirmasi total & ongkir. Terima kasih!');
- $('okWrap').innerHTML='<div class="success"><div class="big">✓</div><h1>Pesanan Berhasil Dibuat!</h1>'+
- '<p>Terima kasih. Simpan kode pesananmu di bawah ini untuk melacak progres produksi & konfirmasi admin via WhatsApp.</p>'+
- '<div class="code-big">'+o.code+'</div><div class="btns">'+
- '<button class="btn btn-navy" onclick="copyCode(\''+o.code+'\')">📋 Salin Kode</button>'+
- '<button class="btn btn-accent" onclick="window.open(\'https://wa.me/'+WA+'?text='+waMsg+'\')">💬 Konfirmasi via WhatsApp</button>'+
- '<button class="btn btn-outline" onclick="go(\'track\')">🧾 Invoice</button></div></div>';
-}
-function copyCode(c){navigator.clipboard&&navigator.clipboard.writeText(c);toast('📋 Kode '+c+' disalin')}
 function showOrderModal(code){
  $('omBox').className='om-box';
  $('omBox').innerHTML='<div class="big">✓</div><h2>Pesanan Berhasil Dibuat</h2>'+
@@ -1869,6 +1824,24 @@ function closeOrderModal(){
 }
 
 /* ================= TRACK / RIWAYAT TRANSAKSI ================= */
+// Transaksi yang diinput LANGSUNG di app Inventory untuk vendor tetap "BANG FARID" (bukan
+// lewat checkout Pesanan Online) tetap ditagihkan ke Bang Farid — jadi harus ikut muncul di
+// Riwayat Transaksi Pesanan supaya total tagihannya benar & lengkap. Baris `transaksi` yang
+// order_code-nya TERISI adalah hasil sinkron otomatis dari checkout online (lihat
+// syncStokKeluarPesanan) dan SUDAH terwakili lewat produksi_orders — sengaja difilter
+// order_code IS NULL di sini supaya tidak dobel hitung dengan pesanan online.
+function trxRowToOrder(t){
+ const items=(t.transaksi_item||[]).map(i=>({name:t.model,color:i.warna,size:i.ukuran,qty:i.qty,est:[t.harga||0,t.harga||0]}));
+ return {code:'INV-'+t.id,ts:new Date(t.created_at).getTime(),stage:null,statusBayar:t.status==='lunas'?'lunas':'belum_lunas',mine:false,synced:true,fromInventory:true,items,note:''};
+}
+async function loadVendorTrxHistory(){
+ if(!sb)return[];
+ try{
+  const {data,error}=await sb.from('transaksi').select('*, transaksi_item(*)').eq('vendor',VENDOR_APP).is('order_code',null).order('created_at',{ascending:false}).limit(50);
+  if(error)throw error;
+  return (data||[]).map(trxRowToOrder);
+ }catch(e){console.error('Gagal memuat transaksi vendor dari Inventory:',e);return[]}
+}
 function toISODate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function defaultPeriod(){
  // periode mingguan Sabtu s/d Jumat, berdasarkan tanggal hari ini
@@ -1889,9 +1862,12 @@ async function renderTrack(){
  if(!sb){box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Tidak terhubung ke server, riwayat transaksi tidak bisa dimuat.</p>';return}
  box.innerHTML='<p style="color:var(--muted);font-size:13px;margin-top:12px">Memuat riwayat transaksi…</p>';
  try{
-  const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30);
-  if(error)throw error;
-  const list=data.map(rowToOrder);
+  const [ordersRes,vendorTrx]=await Promise.all([
+   sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30),
+   loadVendorTrxHistory()
+  ]);
+  if(ordersRes.error)throw ordersRes.error;
+  const list=ordersRes.data.map(rowToOrder).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
   window._history=list;
   filterByDate();
  }catch(e){console.error(e);box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Gagal memuat riwayat transaksi.</p>'}
@@ -1905,7 +1881,7 @@ function renderHistoryList(list){
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   return '<div class="order-card"><div class="hd"><span class="code">'+o.code+'</span>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
-  '<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>'+
+  (o.fromInventory?'<span class="stage-pill" style="background:var(--navy-100);color:var(--navy-700)">🏭 Input Inventory</span>':'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>')+
   payBadge(o)+
   '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
   '</div></div>'+
@@ -1995,9 +1971,10 @@ function renderAdmin(){
  if(!state.unlocked){w.innerHTML='<div class="gate"><div class="lock">🔒</div><h2 style="color:var(--navy-900)">Admin / Owner</h2><p style="color:var(--muted);font-size:12.5px;margin-top:6px">Masukkan PIN untuk membuka dashboard.</p><input id="pinIn" type="password" maxlength="6" inputmode="numeric" placeholder="••••" oninput="checkPin()"><button class="btn btn-navy btn-block" onclick="unlock()">Buka Dashboard</button><p style="font-size:11px;color:var(--muted);margin-top:12px">PIN default: 1234</p></div>';return}
  const t=state.adminTab;
  const menunggu=orders.filter(o=>o.stage===0).length,diterima=orders.filter(o=>o.stage>=1).length,pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
+ const notesCount=orders.filter(o=>o.note&&o.note.trim()).length;
  w.innerHTML='<div class="admin-wrap">'+
  '<div class="a-side"><div class="who">🛡️ <span class="who-txt">ADMIN PANEL</span></div>'+
- [['pesanan','📦','Pesanan'],['produk','📷','Produk'],['pengaturan','⚙️','Pengaturan']].map(x=>'<button title="'+x[2]+'" class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()"><span class="ico">'+x[1]+'</span><span class="lbl">'+x[2]+'</span></button>').join('')+
+ [['pesanan','📦','Pesanan'],['produk','📷','Produk'],['pengaturan','⚙️','Pengaturan']].map(x=>'<button title="'+x[2]+'" class="'+(t===x[0]?'on':'')+'" onclick="state.adminTab=\''+x[0]+'\';renderAdmin()"><span class="ico">'+x[1]+'</span><span class="lbl">'+x[2]+(x[0]==='pesanan'&&notesCount?' <span style="background:var(--accent);color:var(--navy-900);font-size:10px;font-weight:800;border-radius:9px;padding:1px 6px;margin-left:4px">🔔'+notesCount+'</span>':'')+'</span></button>').join('')+
  '<button title="Keluar" onclick="state.unlocked=false;go(\'home\')"><span class="ico">🚪</span><span class="lbl">Keluar</span></button></div>'+
  '<div><div class="stat-row">'+
  (t!=='pengaturan'?('<div class="stat"><b>'+orders.length+'</b><span>TOTAL PESANAN</span></div><div class="stat"><b>'+menunggu+'</b><span>MENUNGGU</span></div>'+
@@ -2014,29 +1991,63 @@ function checkPin(){
 }
 function payBadge(o){
  const lunas=o.statusBayar==='lunas';
- return '<span class="stage-pill" style="background:'+(lunas?'#dcfce7':'#fef3c7')+';color:'+(lunas?'#16a34a':'#b45309')+'">'+(lunas?'✅ LUNAS':'⏳ BELUM LUNAS')+'</span>';
+ return '<span class="stage-pill" style="background:'+(lunas?'var(--ok-soft)':'var(--warn-soft)')+';color:'+(lunas?'var(--ok)':'var(--warn)')+'">'+(lunas?'✅ LUNAS':'⏳ BELUM LUNAS')+'</span>';
 }
 function orderBody(o,showPill){
  if(showPill===undefined)showPill=true;
+ const hasNote=!!(o.note&&o.note.trim());
  return '<div class="top"><span class="code">'+o.code+'</span>'+
+ (hasNote?'<span title="Ada catatan dari vendor" style="background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:6px">🔔 CATATAN</span>':'')+
  (showPill?'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>':'')+(showPill?payBadge(o):'')+'</div>'+
- '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+(o.note?' • 📝 '+esc(o.note):'')+'</div>'+
- '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>';
+ '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+'</div>'+
+ '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>'+
+ (hasNote?'<div style="margin-top:8px;padding:9px 12px;background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;font-size:12.5px;color:#8A5A00"><b>📝 Catatan dari vendor:</b><br>'+esc(o.note)+'</div>':'');
 }
 function adminOrders(){
  if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
- return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+'<div class="acts">'+
+ return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+
+ (o.synced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Gagal tersinkron ke server — stok Inventory <u>belum dipotong</u> untuk pesanan ini.</div>':'')+
+ '<div class="acts">'+
  (o.stage===0?'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>':'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>')+
+ (o.synced===false?'<button class="btn btn-outline btn-sm" onclick="retryOrderSync('+i+')">🔄 Sinkron Ulang</button>':'')+
  '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
 }
 function setStage(i,v){
  v=+v;const code=orders[i].code;orders[i].stage=v;LS.set('rj_orders',orders);renderAdmin();toast('🏭 '+code+' → '+STAGES[v][1]);
  if(sb)sb.from(ORDERS_TABLE).update({stage:v}).eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal sync: '+(error.message||error.code||'unknown error'))}});
 }
-function delOrder(i){
- if(!confirm('Hapus pesanan '+orders[i].code+'?'))return;
- const code=orders[i].code;orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();
- if(sb)sb.from(ORDERS_TABLE).delete().eq('order_code',code).then(({error})=>{if(error){console.error(error);toast('⚠️ Gagal hapus: '+(error.message||error.code||'unknown error'))}});
+async function delOrder(i){
+ const o=orders[i];
+ const willRestock=!!o.synced;
+ if(!confirm('Hapus pesanan '+o.code+'?'+(willRestock?'\n\nStok yang sudah dipotong untuk pesanan ini akan dikembalikan otomatis.':'')))return;
+ const code=o.code;orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();
+ if(!sb)return;
+ const {error:orderErr}=await sb.from(ORDERS_TABLE).delete().eq('order_code',code);
+ if(orderErr){console.error(orderErr);toast('⚠️ Gagal hapus: '+(orderErr.message||orderErr.code||'unknown error'));return}
+ if(!willRestock)return;
+ // Order ini sudah sempat memotong stok (lihat syncStokKeluarPesanan) lewat baris transaksi+transaksi_item
+ // di Inventory yang ditandai order_code. Hapus baris transaksi itu supaya stoknya kembali normal —
+ // transaksi_item ikut terhapus otomatis lewat FK ON DELETE CASCADE ke transaksi.
+ const {error:trxErr}=await sb.from('transaksi').delete().eq('order_code',code);
+ if(trxErr){console.error(trxErr);toast('⚠️ Pesanan terhapus, tapi gagal mengembalikan stok Inventory: '+(trxErr.message||trxErr.code||'unknown error'));return}
+ toast('🗑 Pesanan '+code+' dihapus & stok dikembalikan');
+}
+// Coba ulang sinkron pesanan yang gagal tersimpan ke server saat dibuat (lihat PERBAIKAN di placeOrder()).
+// Kalau berhasil, BARU potong stok Inventory (supaya tidak ada pesanan yang stoknya kepotong dua kali
+// kalau tombol ini ditekan berkali-kali — syncStokKeluarPesanan hanya dipanggil sekali di sini,
+// tepat setelah insert produksi_orders sukses).
+async function retryOrderSync(i){
+ const o=orders[i];if(!o||o.synced)return;
+ if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
+ toast('⏳ Mencoba sinkron ulang...');
+ try{
+  const {error}=await sb.from(ORDERS_TABLE).insert({order_code:o.code,items:o.items,stage:o.stage||0,note:o.note||''});
+  if(error)throw error;
+  o.synced=true;LS.set('rj_orders',orders);
+  await syncStokKeluarPesanan(o.code,o.items);
+  toast('✅ Pesanan '+o.code+' berhasil disinkron & stok dipotong');
+  renderAdmin();
+ }catch(e){console.error(e);toast('❌ Gagal sinkron ulang: '+(e.message||e.code||'unknown error'))}
 }
 function adminProduk(){
  if(!sb)return '<p style="color:var(--muted)">🔌 Sambungkan ke Supabase dulu di tab Pengaturan.</p>';
@@ -2045,10 +2056,9 @@ function adminProduk(){
   const meta=produkMeta[m.id]||{};
   const bUp=(m.brandNama||'').trim().toUpperCase(),mUp=(m.nama||'').trim().toUpperCase();
   const totalStok=stokRows.filter(r=>r.brand===bUp&&r.model===mUp).reduce((a,r)=>a+Math.max(0,r.stok),0);
-  // Daftar warna yang tersedia untuk model ini (sama seperti yang dipakai katalog) — dipakai untuk form gambar per-warna.
+  // Daftar warna yang tersedia untuk model ini (sama seperti yang dipakai katalog) — dipakai untuk checklist invert overlay per warna.
   const prod=PRODUCTS.find(x=>x.modelId===m.id);
   const modelColors=prod?prod.colors:[];
-  adminProdukColors[m.id]=modelColors.map(c=>(c.n||'').trim().toUpperCase());
   return '<div class="a-order">'+
    '<div class="top" style="align-items:center">'+
    '<span style="display:flex;gap:10px;align-items:center"><img id="pm-preview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:46px;height:46px;border-radius:9px;object-fit:cover;background:#EEF1F7"><b style="font-size:13px">'+esc(m.nama)+' <span style="color:var(--muted);font-weight:600">— '+esc(m.brandNama||'—')+'</span></b></span>'+
@@ -2166,13 +2176,6 @@ function compressImage(file,maxDim,quality){
   reader.readAsDataURL(file);
  });
 }
-function setImgFromUrl(modelId,url){
- url=(url||'').trim();
- if(!url)return;
- $('pm-img-'+modelId).value=url;
- const bp=$('pm-bigpreview-'+modelId);if(bp)bp.src=url;
- const sp=$('pm-preview-'+modelId);if(sp)sp.src=url;
-}
 function updateOverlayInvertVisibility(modelId){
  const wrap=$('pm-ovinvwrap-'+modelId);if(!wrap)return;
  wrap.style.display=$('pm-ovinvert-'+modelId)?.checked?'block':'none';
@@ -2209,11 +2212,6 @@ async function handleOverlayUpload(modelId,inputEl){
   toast('✅ Gambar tambahan siap — klik Simpan untuk menyimpan');
  }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
 }
-function setOverlayFromUrl(modelId,url){
- url=(url||'').trim();
- $('pm-ov-'+modelId).value=url;
- updateOverlayPreview(modelId);
-}
 function clearOverlay(modelId){
  const uv=$('pm-ov-'+modelId);if(uv)uv.value='';
  const uf=$('pm-ovurl-'+modelId);if(uf)uf.value='';
@@ -2235,31 +2233,10 @@ function updateOverlayPreview(modelId){
   else{img.style.display='none'}
  }
 }
-async function handleColorImgUpload(modelId,colorIdx,inputEl){
- const file=inputEl.files&&inputEl.files[0];
- if(!file)return;
- if(!file.type.startsWith('image/')){toast('⚠️ File harus berupa gambar');inputEl.value='';return}
- if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
- toast('⏳ Memproses gambar...');
- try{
-  const dataUrl=await compressImage(file,900,0.82);
-  const hid=$('pm-cimg-'+modelId+'-'+colorIdx);if(hid)hid.value=dataUrl;
-  const pv=$('pm-cprev-'+modelId+'-'+colorIdx);if(pv)pv.src=dataUrl;
-  const uf=$('pm-curl-'+modelId+'-'+colorIdx);if(uf)uf.value='';
-  toast('✅ Gambar warna siap — klik Simpan untuk menyimpan');
- }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
-}
-function setColorImgFromUrl(modelId,colorIdx,url){
- url=(url||'').trim();
- const hid=$('pm-cimg-'+modelId+'-'+colorIdx);if(hid)hid.value=url;
- const pv=$('pm-cprev-'+modelId+'-'+colorIdx);if(pv)pv.src=url||PLACEHOLDER_IMG;
-}
 async function saveProdukMeta(modelId){
  if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
  const cur=produkMeta[modelId]||{};
- const colorKeys=adminProdukColors[modelId]||[];
- const gambar_warna={};
- colorKeys.forEach((ck,i)=>{const el=$('pm-cimg-'+modelId+'-'+i);const v=el?el.value.trim():'';if(v)gambar_warna[ck]=v});
+ const gambar_warna=cur.gambar_warna||{};
  const overlay_url=($('pm-ov-'+modelId)?.value||'').trim();
  const overlay_invert_warna=[...document.querySelectorAll('#pm-ovinvwrap-'+modelId+' input[type=checkbox]:checked')].map(cb=>cb.dataset.color);
  const row={model_id:modelId,gambar_url:$('pm-img-'+modelId).value.trim(),gambar_warna,auto_tint:cur.auto_tint===true,
@@ -2286,7 +2263,7 @@ async function toggleAutoTint(modelId){
  produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();renderAdmin();toast(!cur?'✅ Auto-Warna diaktifkan':'Auto-Warna dinonaktifkan');
 }
 function adminSettings(){
- const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  customer_name text, whatsapp text, address text, note text,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  status_bayar text not null default 'belum_lunas',\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\n-- Jaga-jaga kalau tabel produksi_orders sudah ada sebelumnya (dibuat sebelum fitur status pembayaran ini):\nalter table public.produksi_orders add column if not exists status_bayar text not null default 'belum_lunas';\n-- Kolom penghubung di sisi app Inventory (transaksi.order_code) supaya pelunasan di Inventory\n-- otomatis meng-update status_bayar pesanan ini. Ditambahkan di sini juga (dengan IF EXISTS)\n-- supaya SQL ini aman dijalankan di urutan manapun terhadap SQL app Inventory.\ndo $$\nbegin\n  if exists (select 1 from information_schema.tables where table_name = 'transaksi') then\n    alter table transaksi add column if not exists order_code text;\n  end if;\nend $$;\ndrop policy if exists \"ord insert\" on public.produksi_orders;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ndrop policy if exists \"ord read\" on public.produksi_orders;\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ndrop policy if exists \"ord update\" on public.produksi_orders;\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ndrop policy if exists \"ord delete\" on public.produksi_orders;\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  gambar_warna jsonb default '{}'::jsonb,\n  auto_tint boolean default false,\n  overlay_url text,\n  overlay_mode text default 'over',\n  overlay_size numeric default 40,\n  overlay_x numeric default 50,\n  overlay_y numeric default 50,\n  overlay_invert boolean default true,\n  overlay_invert_warna jsonb,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n-- Jaga-jaga kalau tabel pesanan_produk_meta sudah ada sebelumnya (dibuat sebelum fitur gambar per-warna & auto-warna ini):\nalter table public.pesanan_produk_meta add column if not exists gambar_warna jsonb default '{}'::jsonb;\nalter table public.pesanan_produk_meta add column if not exists auto_tint boolean default false;\n-- Gambar Tambahan (overlay/print) di atas Gambar Utama — posisi layer, ukuran & letak diatur admin:\nalter table public.pesanan_produk_meta add column if not exists overlay_url text;\nalter table public.pesanan_produk_meta add column if not exists overlay_mode text default 'over';\nalter table public.pesanan_produk_meta add column if not exists overlay_size numeric default 40;\nalter table public.pesanan_produk_meta add column if not exists overlay_x numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_y numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_invert boolean default true;\n-- Daftar nama warna (array JSON) yang gambar tambahannya di-invert — dipilih manual oleh admin lewat checklist,\n-- menggantikan deteksi otomatis gelap/terang. NULL (belum pernah disimpan/produk lama) = invert SEMUA warna\n-- (kompatibel dengan perilaku lama) sampai admin menyimpan pilihannya sendiri lewat panel admin.\nalter table public.pesanan_produk_meta add column if not exists overlay_invert_warna jsonb;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\n-- PENTING: semua tabel Inventory yang dipantau di setupRealtimeStok() harus\n-- didaftarkan ke publication ini juga, kalau tidak event realtime tidak akan pernah terkirim\n-- (transaksi baru dari app Inventory tidak akan muncul otomatis di Pesanan sampai di-refresh manual).\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table brand; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table model; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table warna; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table ukuran; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input_item; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi_item; exception when duplicate_object then null; end;\nend $$;";
+ const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  status_bayar text not null default 'belum_lunas',\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\n-- Jaga-jaga kalau tabel produksi_orders sudah ada sebelumnya (dibuat sebelum fitur status pembayaran ini):\nalter table public.produksi_orders add column if not exists status_bayar text not null default 'belum_lunas';\n-- Fitur catat nama/WA/alamat pelanggan sengaja TIDAK dipakai (kurang efisien untuk alur kerja saat ini) —\n-- hapus kolomnya kalau masih ada dari versi sebelumnya:\nalter table public.produksi_orders drop column if exists customer_name;\nalter table public.produksi_orders drop column if exists whatsapp;\nalter table public.produksi_orders drop column if exists address;\n-- Kolom catatan vendor (request/permintaan khusus saat checkout), muncul sebagai notifikasi di Admin:\nalter table public.produksi_orders add column if not exists note text;\n-- Kolom penghubung di sisi app Inventory (transaksi.order_code) supaya pelunasan di Inventory\n-- otomatis meng-update status_bayar pesanan ini. Ditambahkan di sini juga (dengan IF EXISTS)\n-- supaya SQL ini aman dijalankan di urutan manapun terhadap SQL app Inventory.\ndo $$\nbegin\n  if exists (select 1 from information_schema.tables where table_name = 'transaksi') then\n    alter table transaksi add column if not exists order_code text;\n  end if;\nend $$;\ndrop policy if exists \"ord insert\" on public.produksi_orders;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ndrop policy if exists \"ord read\" on public.produksi_orders;\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ndrop policy if exists \"ord update\" on public.produksi_orders;\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ndrop policy if exists \"ord delete\" on public.produksi_orders;\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  gambar_warna jsonb default '{}'::jsonb,\n  auto_tint boolean default false,\n  overlay_url text,\n  overlay_mode text default 'over',\n  overlay_size numeric default 40,\n  overlay_x numeric default 50,\n  overlay_y numeric default 50,\n  overlay_invert boolean default true,\n  overlay_invert_warna jsonb,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n-- Jaga-jaga kalau tabel pesanan_produk_meta sudah ada sebelumnya (dibuat sebelum fitur gambar per-warna & auto-warna ini):\nalter table public.pesanan_produk_meta add column if not exists gambar_warna jsonb default '{}'::jsonb;\nalter table public.pesanan_produk_meta add column if not exists auto_tint boolean default false;\n-- Gambar Tambahan (overlay/print) di atas Gambar Utama — posisi layer, ukuran & letak diatur admin:\nalter table public.pesanan_produk_meta add column if not exists overlay_url text;\nalter table public.pesanan_produk_meta add column if not exists overlay_mode text default 'over';\nalter table public.pesanan_produk_meta add column if not exists overlay_size numeric default 40;\nalter table public.pesanan_produk_meta add column if not exists overlay_x numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_y numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_invert boolean default true;\n-- Daftar nama warna (array JSON) yang gambar tambahannya di-invert — dipilih manual oleh admin lewat checklist,\n-- menggantikan deteksi otomatis gelap/terang. NULL (belum pernah disimpan/produk lama) = invert SEMUA warna\n-- (kompatibel dengan perilaku lama) sampai admin menyimpan pilihannya sendiri lewat panel admin.\nalter table public.pesanan_produk_meta add column if not exists overlay_invert_warna jsonb;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\n-- PENTING: semua tabel Inventory yang dipantau di setupRealtimeStok() harus\n-- didaftarkan ke publication ini juga, kalau tidak event realtime tidak akan pernah terkirim\n-- (transaksi baru dari app Inventory tidak akan muncul otomatis di Pesanan sampai di-refresh manual).\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table brand; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table model; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table warna; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table ukuran; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input_item; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi_item; exception when duplicate_object then null; end;\nend $$;";
  return '<div class="panel" style="margin-bottom:14px"><h2>🔗 Koneksi Supabase</h2>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:6px">'+(sb?'🟢 <b style="color:var(--ok)">Tersambung</b> — pesanan tersinkron & katalog stok mengikuti data Inventory secara realtime.':'🔴 <b style="color:var(--danger)">Belum tersambung</b>.')+'</p>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:14px">URL & Anon Key project Supabase sudah tertanam otomatis di aplikasi ini (sama dengan aplikasi Inventory) — tidak perlu diisi manual. Katalog produk & stok mengikuti data Brand/Model/Warna/Ukuran di sana (read-only); Inventory tidak pernah ditulis dari sini. Jalankan SQL di bawah sekali di Supabase SQL Editor untuk menyiapkan tabel pesanan & view stok.</p>'+
