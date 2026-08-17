@@ -1429,12 +1429,15 @@ function closeNumpad(commit){
  numpadOpen=false;
  if(nv>0&&p&&p.colors.length&&s.size){
   const avail=stokFor(p,p.colors[s.color].n,s.size);
+  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
+  const ex=cart.find(c=>c.key===key);
+  const remaining=avail-(ex?ex.qty:0);
   if(avail<=0){
    toast('⚠️ Stok varian ini habis');
+  }else if(remaining<=0){
+   toast('⚠️ Jumlah di keranjang sudah mencapai batas stok ('+avail+' pcs)');
   }else{
-   nv=Math.min(nv,avail);
-   const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
-   const ex=cart.find(c=>c.key===key);
+   if(nv>remaining){nv=remaining;toast('⚠️ Jumlah disesuaikan, sisa stok yang bisa ditambahkan '+remaining+' pcs')}
    if(ex)ex.qty+=nv;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:nv});
    saveCart();toast('✅ '+p.name+' masuk keranjang');
   }
@@ -1446,7 +1449,12 @@ function closeNumpad(commit){
 function numpadKey(k){
  const s=state.sel,p=P(s.pid);
  let maxStok=Infinity;
- if(p&&s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
+ if(p&&s.size&&p.colors.length){
+  const avail=stokFor(p,p.colors[s.color].n,s.size);
+  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
+  const ex=cart.find(c=>c.key===key);
+  maxStok=avail-(ex?ex.qty:0);
+ }
  if(k==='back'){numpadBuf=numpadBuf.slice(0,-1)}
  else if(k==='clear'){numpadBuf=''}
  else if(numpadBuf.length<5){
@@ -1531,9 +1539,14 @@ function setQty(v){
  let nv=parseInt(v,10);
  if(isNaN(nv)||nv<1)nv=p.min;
  let maxStok=Infinity;
- if(s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
+ if(s.size&&p.colors.length){
+  const avail=stokFor(p,p.colors[s.color].n,s.size);
+  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
+  const ex=cart.find(c=>c.key===key);
+  maxStok=avail-(ex?ex.qty:0);
+ }
  nv=Math.max(p.min,nv);
- if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Stok varian ini habis');nv=p.min}else if(nv>maxStok){nv=maxStok;toast('⚠️ Jumlah disesuaikan dengan stok tersedia')}}
+ if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Sisa stok yang bisa ditambahkan sudah habis');nv=p.min}else if(nv>maxStok){nv=maxStok;toast('⚠️ Jumlah disesuaikan dengan sisa stok tersedia')}}
  s.qty=nv;
  // render ditunda 1 tick supaya klik tombol (Keranjang/Pesan Sekarang) yang memicu blur ini
  // sempat "landing" dulu sebelum tombolnya diganti oleh render ulang — mencegah harus klik 2x
@@ -1545,7 +1558,12 @@ function commitNumpadIfOpen(){
  let nv=parseInt(numpadBuf,10);
  if(isNaN(nv)||nv<1)nv=p.min;
  let maxStok=Infinity;
- if(s.size&&p.colors.length)maxStok=stokFor(p,p.colors[s.color].n,s.size);
+ if(s.size&&p.colors.length){
+  const avail=stokFor(p,p.colors[s.color].n,s.size);
+  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
+  const ex=cart.find(c=>c.key===key);
+  maxStok=avail-(ex?ex.qty:0);
+ }
  nv=Math.max(p.min,nv);
  if(isFinite(maxStok)){if(maxStok<=0)nv=p.min;else if(nv>maxStok)nv=maxStok}
  s.qty=nv;
@@ -1559,9 +1577,11 @@ function addSel(buy){
  if(!s.qty||s.qty<1){toast('⚠️ Masukkan jumlah terlebih dahulu');return}
  const avail=stokFor(p,p.colors[s.color].n,s.size);
  if(avail<=0){toast('⚠️ Stok habis untuk varian ini');return}
- if(s.qty>avail){toast('⚠️ Stok tidak cukup, tersedia '+avail+' pcs');return}
  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
  const ex=cart.find(c=>c.key===key);
+ const remaining=avail-(ex?ex.qty:0);
+ if(remaining<=0){toast('⚠️ Jumlah di keranjang sudah mencapai batas stok ('+avail+' pcs)');return}
+ if(s.qty>remaining){toast('⚠️ Stok tidak cukup, sisa yang bisa ditambahkan '+remaining+' pcs');return}
  if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
  saveCart();toast('✅ '+p.name+' masuk keranjang');
  s.qty=0;
@@ -1576,7 +1596,15 @@ function renderCart(){
  setCrumb('Beranda / <b>Keranjang</b>');
  const before=cart.length;
  cart=cart.filter(c=>!!P(c.pid));
- if(cart.length!==before)saveCart();
+ let stokAdjusted=false;
+ cart=cart.filter(c=>{
+  const p=P(c.pid);const avail=stokFor(p,c.color,c.size);
+  if(avail<=0){stokAdjusted=true;return false}
+  if(c.qty>avail){c.qty=avail;stokAdjusted=true}
+  return true
+ });
+ if(cart.length!==before||stokAdjusted)saveCart();
+ if(stokAdjusted)toast('⚠️ Jumlah di keranjang disesuaikan otomatis dengan stok terbaru');
  if(!cart.length){w.innerHTML='<div class="success"><div class="big" style="background:var(--navy-100);color:var(--navy-600)">🛒</div><h1>Keranjang Kosong</h1><p>Yuk mulai pilih produk konveksi favoritmu.</p><button class="btn btn-accent" onclick="go(\'catalog\')">🛍️ Belanja Sekarang</button></div>';return}
  const rows=cart.map((c,i)=>{const p=P(c.pid);const avail=stokFor(p,c.color,c.size);
   const cObj=colorObjByName(p,c.color);
