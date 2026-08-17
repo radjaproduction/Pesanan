@@ -910,7 +910,7 @@ function buildProducts(){
    min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
    badge:meta.badge||'', desc:meta.deskripsi||'',
    specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
-   colors, sizes, stokIndex, totalStok, aktif: meta.aktif!==false
+   colors, sizes, stokIndex, totalStok, aktifAdmin: meta.aktif!==false, aktif: meta.aktif!==false && totalStok>0
   };
  });
 }
@@ -2037,7 +2037,7 @@ function adminProduk(){
    '<div class="top" style="align-items:center">'+
    '<span style="display:flex;gap:10px;align-items:center"><img id="pm-preview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:46px;height:46px;border-radius:9px;object-fit:cover;background:#EEF1F7"><b style="font-size:13px">'+esc(m.nama)+' <span style="color:var(--muted);font-weight:600">— '+esc(m.brandNama||'—')+'</span></b></span>'+
    '<div class="switch '+(meta.aktif!==false?'on':'')+'" onclick="toggleProdukAktif('+m.id+')"></div></div>'+
-   '<div class="meta">📦 Stok saat ini: '+totalStok+' pcs • 💰 Harga: '+fmt(m.harga||0)+'</div>'+
+   '<div class="meta">📦 Stok saat ini: '+totalStok+' pcs • 💰 Harga: '+fmt(m.harga||0)+(meta.aktif!==false&&totalStok<=0?' • <span style="color:var(--danger);font-weight:700">🙈 Tersembunyi otomatis (stok habis)</span>':'')+'</div>'+
    '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:var(--navy-50);border-radius:9px">'+
    '<div class="switch '+(meta.auto_tint===true?'on':'')+'" onclick="toggleAutoTint('+m.id+')"></div>'+
    '<div style="font-size:11.5px;color:var(--navy-800)"><b>Auto-Warna dari Gambar Utama</b><br><span style="color:var(--muted);font-weight:500">Kalau aktif, warna yang belum punya foto manual di bawah otomatis diwarnai dari Gambar Utama sesuai kode warna di Inventory. Paling akurat untuk foto kaos polos background putih — kalau ada sablon/print, sebaiknya nonaktifkan &amp; upload foto manual per warna.</span></div>'+
