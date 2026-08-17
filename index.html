@@ -347,6 +347,14 @@ footer{flex-shrink:0}
 .track-input input{flex:1 1 100px;min-width:100px;padding:9px 8px;border:1.5px solid var(--line);border-radius:10px;font-weight:700;outline:none;font-size:12px}
 .track-input input:focus{border-color:var(--navy-500)}
 
+/* ============ INVOICE TABS (Riwayat Transaksi / Riwayat per Periode) ============ */
+.trk-tabs{display:flex;gap:4px;margin:14px 0 0;background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:4px}
+.trk-tabs button{flex:1;padding:10px 8px;border-radius:9px;font-weight:800;font-size:12px;color:var(--muted);text-align:center;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.trk-tabs button.on{background:var(--navy-900);color:#fff}
+.trk-panel{display:block}
+.trk-panel.hidden{display:none}
+.pl-list{margin-top:8px}
+
 /* ============ PERIOD SUMMARY CARD ============ */
 .period-card{position:relative;overflow:hidden;background:linear-gradient(120deg,var(--navy-950) 0%,var(--navy-800) 55%,var(--navy-700) 100%);border-radius:18px;color:#fff;padding:24px 26px;margin:16px 0;box-shadow:var(--shadow-lg)}
 .period-card::before{content:'';position:absolute;top:-40px;right:-40px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(255,159,28,.22),transparent 70%);pointer-events:none}
@@ -362,6 +370,25 @@ footer{flex-shrink:0}
 .period-card .pc-stat.pc-total b{color:var(--accent);font-size:17px;line-height:1.25}
 .period-card .pc-stat span{display:block;font-size:10.5px;font-weight:700;color:#8FA1CC;letter-spacing:.5px;margin-top:3px}
 .period-card .pc-paid-note{position:relative;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;font-weight:600;color:#9FE8C1}
+
+/* ============ PERIOD LIST PANEL (Riwayat per Periode) ============ */
+.pl-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;margin-top:14px;font-weight:800;font-size:12.5px;color:var(--navy-800);transition:.15s}
+.pl-toggle:hover{border-color:var(--navy-500)}
+.pl-toggle .pl-tog-l{display:flex;align-items:center;gap:8px}
+.pl-toggle .chev{transition:transform .2s;color:var(--muted);font-size:11px}
+.pl-toggle.open .chev{transform:rotate(180deg)}
+.pl-panel{max-height:0;overflow:hidden;transition:max-height .28s ease}
+.pl-panel.open{max-height:2000px}
+.pl-panel-in{border:1.5px solid var(--line);border-top:none;border-radius:0 0 12px 12px;margin-top:-1px;padding:6px;background:var(--navy-50)}
+.pl-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:8px;cursor:pointer;transition:.15s}
+.pl-item:hover{border-color:var(--navy-500);box-shadow:0 2px 8px rgba(11,22,51,.08)}
+.pl-item.active{border-color:var(--accent);background:var(--accent-soft)}
+.pl-item .pl-range{font-weight:800;font-size:12.5px;color:var(--navy-900)}
+.pl-item .pl-sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}
+.pl-item .pl-right{text-align:right;flex-shrink:0}
+.pl-item .pl-amt{font-weight:800;font-size:13px;color:var(--navy-900)}
+.pl-item .pl-amt.zero{color:var(--muted)}
+.pl-item .pl-paidtag{display:inline-block;margin-top:3px;font-size:10px;font-weight:800;color:var(--ok);background:var(--ok-soft);padding:2px 7px;border-radius:8px}
 
 .stepper{display:flex;margin:26px 0 8px}
 .step{flex:1;text-align:center;position:relative}
@@ -659,7 +686,7 @@ body.boot-lock{overflow:hidden}
       <h1>RADJA Production,<br>Spesialis <em>Kaos Anak.</em></h1>
       <p>Pilih model, pilih warna & ukuran, lalu checkout —<br>pantau progres pengiriman pesananmu.</p>
       <div class="hero-cta">
-        <button class="btn btn-accent" onclick="go('catalog')">🛍️ Pesan Sekarang</button>
+        <button class="btn btn-accent" onclick="state.q='';go('catalog')">🛍️ Pesan Sekarang</button>
         <button class="btn btn-ghost" onclick="go('track')">🧾 Invoice</button>
       </div>
       <div class="hero-contact">
@@ -718,17 +745,25 @@ body.boot-lock{overflow:hidden}
 <!-- ================= TRACK / RIWAYAT TRANSAKSI ================= -->
 <section class="view" id="view-track">
   <div class="container track-box">
-    <div class="track-input">
-      <input id="trackDateFrom" type="date">
-      <span style="align-self:center;color:var(--muted);font-weight:700;font-size:12.5px">s/d</span>
-      <input id="trackDateTo" type="date">
-      <button class="btn btn-navy btn-sm" onclick="filterByDate()">🔎 Cari</button>
-      <button class="btn btn-outline btn-sm" onclick="resetDateFilter()">✕ Reset</button>
+    <div class="trk-tabs" id="trkTabs">
+      <button class="on" data-tab="transaksi" onclick="setTrackTab('transaksi')">🧾 Riwayat Transaksi</button>
+      <button data-tab="periode" onclick="setTrackTab('periode')">📅 Riwayat per Periode</button>
     </div>
-    <div id="periodSummary"></div>
-    <div style="margin-top:30px">
-      <div class="sec-head" style="margin-bottom:6px"><h3 style="font-size:15px">Riwayat Transaksi</h3></div>
+
+    <div class="trk-panel" id="trkPanelTransaksi">
+      <div class="track-input">
+        <input id="trackDateFrom" type="date">
+        <span style="align-self:center;color:var(--muted);font-weight:700;font-size:12.5px">s/d</span>
+        <input id="trackDateTo" type="date">
+        <button class="btn btn-navy btn-sm" onclick="filterByDate()">🔎 Cari</button>
+        <button class="btn btn-outline btn-sm" onclick="resetDateFilter()">✕ Reset</button>
+      </div>
+      <div id="periodSummary"></div>
       <div id="historyList"></div>
+    </div>
+
+    <div class="trk-panel hidden" id="trkPanelPeriode">
+      <div id="periodListWrap"></div>
     </div>
   </div>
 
@@ -747,8 +782,8 @@ body.boot-lock{overflow:hidden}
       </div>
       <div>
         <h4>LAYANAN</h4>
-        <a onclick="go('catalog')">Kaos Anak Polos</a><a onclick="go('catalog')">Kaos Anak Sablon Custom</a>
-        <a onclick="go('catalog')">Kaos Anak Raglan</a>
+        <a onclick="state.q='';go('catalog')">Kaos Anak Polos</a><a onclick="state.q='';go('catalog')">Kaos Anak Sablon Custom</a>
+        <a onclick="state.q='';go('catalog')">Kaos Anak Raglan</a>
       </div>
       <div>
         <h4>BANTUAN</h4>
@@ -1155,7 +1190,7 @@ async function refreshTrackData(){
  if(!sb)return;
  try{
   const [ordersRes,vendorTrx]=await Promise.all([
-   sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30),
+   sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(2000),
    loadVendorTrxHistory()
   ]);
   if(ordersRes.error)throw ordersRes.error;
@@ -1234,8 +1269,17 @@ window.addEventListener('online',()=>{if(sb){rtChannel=null;setupRealtimeStok()}
 function doSearch(e){e.preventDefault();state.q=$('searchInput').value.trim();go('catalog')}
 
 /* ================= CATALOG ================= */
-function cardHTML(p){const habis=p.totalStok<=0;return '<div class="p-card" onclick="openProduct(\''+p.id+'\')">'+
- '<div class="ph'+(habis?' stok-off':'')+'"><img id="catimg-'+p.id+'" src="'+p.img+'" alt="'+esc(p.name)+'" loading="lazy">'+(habis?'<span class="stok-off-mark">Habis</span>':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
+function cardHTML(p,dispColor){const habis=p.totalStok<=0;
+ dispColor=dispColor||p.bestColor;
+ const isBest=!dispColor||!p.bestColor||(dispColor.n||'').trim().toUpperCase()===(p.bestColor.n||'').trim().toUpperCase();
+ let img=p.img;
+ if(dispColor && !isBest){
+  const cUp=(dispColor.n||'').trim().toUpperCase();
+  img=(p.imgByColor && p.imgByColor[cUp])?p.imgByColor[cUp]:(p.baseImg||PLACEHOLDER_IMG);
+ }
+ const colorArg=(dispColor && !isBest)?",'"+(dispColor.n||'').replace(/'/g,"\\'")+"'":'';
+ return '<div class="p-card" onclick="openProduct(\''+p.id+'\''+colorArg+')">'+
+ '<div class="ph'+(habis?' stok-off':'')+'"><img id="catimg-'+p.id+'" src="'+img+'" alt="'+esc(p.name)+'" loading="lazy">'+(habis?'<span class="stok-off-mark">Habis</span>':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
  '<div class="p-body"><div class="p-brand">'+esc(p.brand)+'</div><div class="p-name">'+esc(p.name)+'</div>'+
  '<div class="p-rate">'+(p.totalStok>0?p.totalStok+' pcs':'stok habis')+'</div>'+
  '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs</small></div></div></div>'}
@@ -1244,12 +1288,13 @@ function cardHTML(p){const habis=p.totalStok<=0;return '<div class="p-card" oncl
 let _catImgGen=0;
 let _catImgObserver=null; // IntersectionObserver aktif untuk render katalog saat ini
 // Proses tint/overlay SATU produk (dipanggil saat kartunya masuk/mendekati viewport, bukan langsung semua)
-function _processCatalogBestColorImg(p,gen){
- const colorName=p.bestColor?p.bestColor.n:'';
+function _processCatalogBestColorImg(p,gen,dispColor){
+ dispColor=dispColor||p.bestColor;
+ const colorName=dispColor?dispColor.n:'';
  const cUp=colorName.trim().toUpperCase();
  if(p.imgByColor && p.imgByColor[cUp])return; // sudah pakai foto manual warna itu, tak perlu proses
  if(p.totalStok<=0)return; // produk habis: pakai foto dasar polos, tak perlu tint
- const tintHex=(p.autoTint&&p.bestColor&&p.bestColor.h)?p.bestColor.h:null;
+ const tintHex=(p.autoTint&&dispColor&&dispColor.h)?dispColor.h:null;
  const hasOverlay=!!(p.overlay&&p.overlay.url);
  if(!tintHex&&!hasOverlay)return; // tak ada yang perlu diproses
  if(!p.baseImg||p.baseImg===PLACEHOLDER_IMG)return;
@@ -1265,13 +1310,14 @@ function _processCatalogBestColorImg(p,gen){
 // kelas menengah-bawah ini bikin thread nge-freeze sesaat kalau banyak produk butuh auto-tint/overlay.
 // Sekarang pakai IntersectionObserver: proses tint/overlay baru jalan saat kartu itu masuk (atau mendekati,
 // via rootMargin) area layar, jadi beban CPU tersebar mengikuti scroll, bukan numpuk di satu waktu.
-function applyCatalogBestColorImgs(list){
+function applyCatalogBestColorImgs(list,dispColorMap){
+ dispColorMap=dispColorMap||{};
  const gen=++_catImgGen; // token generasi — proses lama yang selesai belakangan tidak boleh menimpa hasil yang lebih baru
  if(_catImgObserver){_catImgObserver.disconnect();_catImgObserver=null}
  const byId={};list.forEach(p=>{byId[p.id]=p});
  if(!('IntersectionObserver' in window)){
   // Fallback untuk browser sangat lama tanpa IntersectionObserver: perilaku lama (proses semua langsung)
-  list.forEach(p=>_processCatalogBestColorImg(p,gen));
+  list.forEach(p=>_processCatalogBestColorImg(p,gen,dispColorMap[p.id]));
   return;
  }
  _catImgObserver=new IntersectionObserver(function(entries){
@@ -1280,7 +1326,7 @@ function applyCatalogBestColorImgs(list){
    _catImgObserver.unobserve(entry.target);
    const id=entry.target.id.replace('catimg-','');
    const p=byId[id];
-   if(p)_processCatalogBestColorImg(p,gen);
+   if(p)_processCatalogBestColorImg(p,gen,dispColorMap[id]);
   });
  },{root:null,rootMargin:'400px 0px',threshold:0.01}); // rootMargin 400px: mulai proses sebelum kartu benar2 kelihatan, biar tak "kosong sesaat" saat scroll
  list.forEach(function(p){
@@ -1305,11 +1351,29 @@ function setBrandFilter(v){state.brand=v;state.model='';renderCatalog()}
 function setModelFilter(v){state.model=v;renderCatalog()}
 function renderCatalog(){
  populateBrandFilter();
+ const searchEl=$('searchInput');
+ if(searchEl && searchEl.value!==state.q)searchEl.value=state.q;
  let list=PRODUCTS.filter(p=>p.aktif);
  if(state.brand)list=list.filter(p=>p.brand===state.brand);
  if(state.model)list=list.filter(p=>p.name===state.model);
- if(state.q)list=list.filter(p=>(p.name+' '+p.brand).toLowerCase().includes(state.q.toLowerCase()));
+ if(state.q){
+  const q=state.q.toLowerCase();
+  list=list.filter(p=>(p.name+' '+p.brand+' '+(p.colors||[]).map(c=>c.n||'').join(' ')).toLowerCase().includes(q));
+ }
  list.sort((a,b)=>b.sold-a.sold);
+ // Kalau query pencarian cocok dengan nama salah satu warna varian produk, tampilkan
+ // foto & jadikan warna itu sebagai warna aktif kartu — bukan warna stok-terbanyak (bestColor)
+ // seperti biasa — supaya user yang cari warna langsung lihat warna yang dia cari.
+ const qLower=state.q?state.q.toLowerCase():'';
+ const dispColorMap={};
+ list.forEach(p=>{
+  let dc=p.bestColor;
+  if(qLower){
+   const m=(p.colors||[]).find(c=>(c.n||'').toLowerCase().includes(qLower));
+   if(m)dc=m;
+  }
+  dispColorMap[p.id]=dc;
+ });
  $('crumbQ').innerHTML=state.q?'• hasil untuk <b>"'+esc(state.q)+'"</b>':'';
  setCrumb('Beranda / <b>Katalog</b> '+(state.q?'• hasil untuk <b>"'+esc(state.q)+'"</b>':''));
  if(!sb){$('catGrid').innerHTML='<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">🔌 Belum tersambung ke data Inventory. Hubungi admin untuk menyambungkan.</p>';return}
@@ -1322,8 +1386,8 @@ function renderCatalog(){
    :'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">⏳ Memuat data produk...</p>';
   return;
  }
- $('catGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">😕 Tidak ada produk yang cocok.</p>';
- applyCatalogBestColorImgs(list);
+ $('catGrid').innerHTML=list.length?list.map(p=>cardHTML(p,dispColorMap[p.id])).join(''):'<p style="color:var(--muted);grid-column:1/-1;padding:30px 0">😕 Tidak ada produk yang cocok.</p>';
+ applyCatalogBestColorImgs(list,dispColorMap);
 }
 function renderHome(){
  if(!$('homeGrid'))return;
@@ -1334,13 +1398,17 @@ function renderHome(){
 }
 
 /* ================= PRODUCT DETAIL ================= */
-function openProduct(id){
+function openProduct(id,colorName){
  const p=P(id);if(!p)return;
- // Buka detail dengan warna yang SAMA seperti foto katalog (bestColor = stok terbanyak),
+ // Buka detail dengan warna yang SAMA seperti foto katalog (bestColor = stok terbanyak,
+ // atau warna hasil pencarian kalau kartu ini dibuka dari hasil cari warna tertentu),
  // bukan warna index-0 — supaya tidak sempat kelihatan foto warna lain (mis. putih) dulu
  // sebelum "loncat" ke warna yang benar.
  let initColor=0;
- if(p.bestColor && p.colors.length){
+ if(colorName && p.colors.length){
+  const idx=p.colors.findIndex(c=>(c.n||'').trim().toUpperCase()===colorName.trim().toUpperCase());
+  if(idx>=0)initColor=idx;
+ }else if(p.bestColor && p.colors.length){
   const idx=p.colors.findIndex(c=>(c.n||'')===(p.bestColor.n||''));
   if(idx>=0)initColor=idx;
  }
@@ -1928,7 +1996,7 @@ function trxRowToOrder(t){
 async function loadVendorTrxHistory(){
  if(!sb)return[];
  try{
-  const {data,error}=await sb.from('transaksi').select('*, transaksi_item(*)').eq('vendor',VENDOR_APP).is('order_code',null).order('created_at',{ascending:false}).limit(50);
+  const {data,error}=await sb.from('transaksi').select('*, transaksi_item(*)').eq('vendor',VENDOR_APP).is('order_code',null).order('created_at',{ascending:false}).limit(2000);
   if(error)throw error;
   return (data||[]).map(trxRowToOrder);
  }catch(e){console.error('Gagal memuat transaksi vendor dari Inventory:',e);return[]}
@@ -1945,6 +2013,7 @@ function defaultPeriod(){
 async function renderTrack(){
  const box=$('historyList');
  setCrumb('<span class="crumb-title">Invoice</span>');
+ setTrackTab('transaksi');
  const def=defaultPeriod();
  if($('trackDateFrom'))$('trackDateFrom').value=def.from;
  if($('trackDateTo'))$('trackDateTo').value=def.to;
@@ -1954,12 +2023,13 @@ async function renderTrack(){
  box.innerHTML='<p style="color:var(--muted);font-size:13px;margin-top:12px">Memuat riwayat transaksi…</p>';
  try{
   const [ordersRes,vendorTrx]=await Promise.all([
-   sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(30),
+   sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(2000),
    loadVendorTrxHistory()
   ]);
   if(ordersRes.error)throw ordersRes.error;
   const list=ordersRes.data.map(rowToOrder).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
   window._history=list;
+  renderPeriodList(list);
   filterByDate();
  }catch(e){console.error(e);box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Gagal memuat riwayat transaksi.</p>'}
 }
@@ -2007,10 +2077,71 @@ function renderPeriodSummary(list){
   '</div>';
 }
 function fmtTgl(iso){const[y,m,d]=iso.split('-');return new Date(y,m-1,d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}
+// ============ PANEL: RIWAYAT PER PERIODE ============
+// Mengelompokkan seluruh riwayat transaksi (tidak terpengaruh filter tanggal yang lagi
+// aktif) ke dalam periode mingguan Sabtu s/d Jumat, lalu ditampilkan sebagai daftar yang
+// bisa diklik untuk langsung mengisi filter tanggal & menampilkan ringkasan periode itu.
+function startOfWeekSat(d){
+ const daysSinceSat=(d.getDay()-6+7)%7;
+ return new Date(d.getFullYear(),d.getMonth(),d.getDate()-daysSinceSat);
+}
+function renderPeriodList(list){
+ const wrap=$('periodListWrap');
+ if(!wrap)return;
+ if(!list.length){wrap.innerHTML='';return}
+ const groups={};
+ list.forEach(o=>{
+  const key=toISODate(startOfWeekSat(new Date(o.ts)));
+  (groups[key]=groups[key]||[]).push(o);
+ });
+ const keys=Object.keys(groups).sort((a,b)=>b.localeCompare(a));
+ const rows=keys.map(k=>{
+  const [y,m,d]=k.split('-');
+  const start=new Date(+y,+m-1,+d);
+  const end=new Date(start);end.setDate(start.getDate()+6);
+  const fromISO=k,toISO=toISODate(end);
+  const orders=groups[k];
+  const belumLunas=orders.filter(o=>o.statusBayar!=='lunas');
+  const sudahLunas=orders.filter(o=>o.statusBayar==='lunas');
+  const total=belumLunas.reduce((a,o)=>a+orderTotal(o),0);
+  const totalLunas=sudahLunas.reduce((a,o)=>a+orderTotal(o),0);
+  const pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
+  return '<div class="pl-item" data-from="'+fromISO+'" data-to="'+toISO+'" onclick="selectPeriod(\''+fromISO+'\',\''+toISO+'\')">'+
+   '<div><div class="pl-range">'+fmtTgl(fromISO)+' – '+fmtTgl(toISO)+'</div>'+
+   '<div class="pl-sub">'+orders.length+' transaksi • '+pcs+' pcs</div></div>'+
+   '<div class="pl-right"><div class="pl-amt'+(total===0?' zero':'')+'">'+fmt(total)+'</div>'+
+   (totalLunas>0?'<span class="pl-paidtag">✅ '+fmt(totalLunas)+' lunas</span>':'')+
+   '</div></div>';
+ }).join('');
+ wrap.innerHTML='<div style="font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:2px 0 4px">'+keys.length+' Periode</div>'+
+  '<div class="pl-list">'+rows+'</div>';
+ updatePeriodListActive();
+}
+function updatePeriodListActive(){
+ const from=$('trackDateFrom')?$('trackDateFrom').value:'',to=$('trackDateTo')?$('trackDateTo').value:'';
+ document.querySelectorAll('#periodListWrap .pl-item').forEach(el=>{
+  el.classList.toggle('active',el.dataset.from===from&&el.dataset.to===to);
+ });
+}
+function setTrackTab(tab){
+ const tabs=$('trkTabs');if(!tabs)return;
+ tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+ const pT=$('trkPanelTransaksi'),pP=$('trkPanelPeriode');
+ if(pT)pT.classList.toggle('hidden',tab!=='transaksi');
+ if(pP)pP.classList.toggle('hidden',tab!=='periode');
+}
+function selectPeriod(from,to){
+ if(!$('trackDateFrom')||!$('trackDateTo'))return;
+ $('trackDateFrom').value=from;
+ $('trackDateTo').value=to;
+ filterByDate();
+ setTrackTab('transaksi');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
 function filterByDate(){
  const from=$('trackDateFrom').value,to=$('trackDateTo').value;
  const list=window._history||[];
- if(!from&&!to){window._dateFilterActive=false;renderHistoryList(list);return}
+ if(!from&&!to){window._dateFilterActive=false;renderHistoryList(list);updatePeriodListActive();return}
  window._dateFilterActive=true;
  const fromD=from?new Date(from+'T00:00:00'):null;
  const toD=to?new Date(to+'T23:59:59'):null;
@@ -2021,6 +2152,7 @@ function filterByDate(){
   return true;
  });
  renderHistoryList(filtered);
+ updatePeriodListActive();
 }
 function resetDateFilter(){
  const def=defaultPeriod();
