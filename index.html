@@ -791,7 +791,7 @@ const P=id=>PRODUCTS.find(p=>p.id===id);
 function priceLabel(p){if(!p.est[0])return 'Hubungi Admin';return p.est[0]===p.est[1]?fmt(p.est[0]):fmt(p.est[0])+' – '+fmt(p.est[1])}
 function stokFor(p,warna,ukuran){if(!p)return 0;const row=p.stokIndex[(warna||'').trim().toUpperCase()+'|'+(ukuran||'').trim().toUpperCase()];return row?Math.max(0,row.stok):0}
 function stokForColor(p,warna){if(!p)return 0;const w=(warna||'').trim().toUpperCase();let t=0;Object.keys(p.stokIndex).forEach(k=>{if(k.split('|')[0]===w)t+=Math.max(0,p.stokIndex[k].stok)});return t}
-function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2600)}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);const dur=m.length>40?4200:2600;t._x=setTimeout(()=>t.classList.remove('show'),dur)}
 
 /* ================= CUSTOM DROPDOWN ================= */
 // options: [{value,label}]. onSelect: string JS dieksekusi saat opsi diklik (harus tutup sendiri via cselCloseAll() bila perlu).
@@ -1431,15 +1431,21 @@ function closeNumpad(commit){
   const avail=stokFor(p,p.colors[s.color].n,s.size);
   const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
   const ex=cart.find(c=>c.key===key);
-  const remaining=avail-(ex?ex.qty:0);
+  const already=ex?ex.qty:0;
+  const remaining=avail-already;
   if(avail<=0){
    toast('⚠️ Stok varian ini habis');
   }else if(remaining<=0){
-   toast('⚠️ Jumlah di keranjang sudah mencapai batas stok ('+avail+' pcs)');
+   toast('⚠️ Sudah '+already+' pcs di keranjang, sisa stok habis');
   }else{
-   if(nv>remaining){nv=remaining;toast('⚠️ Jumlah disesuaikan, sisa stok yang bisa ditambahkan '+remaining+' pcs')}
+   if(nv>remaining){
+    nv=remaining;
+    toast('⚠️ Sisa stok '+remaining+' pcs, jumlah disesuaikan');
+   }else{
+    toast('✅ '+p.name+' masuk keranjang');
+   }
    if(ex)ex.qty+=nv;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:nv});
-   saveCart();toast('✅ '+p.name+' masuk keranjang');
+   saveCart();
   }
  }
  if(s)s.qty=0;
@@ -1448,12 +1454,13 @@ function closeNumpad(commit){
 }
 function numpadKey(k){
  const s=state.sel,p=P(s.pid);
- let maxStok=Infinity;
+ let maxStok=Infinity,already=0,avail=Infinity;
  if(p&&s.size&&p.colors.length){
-  const avail=stokFor(p,p.colors[s.color].n,s.size);
+  avail=stokFor(p,p.colors[s.color].n,s.size);
   const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
   const ex=cart.find(c=>c.key===key);
-  maxStok=avail-(ex?ex.qty:0);
+  already=ex?ex.qty:0;
+  maxStok=avail-already;
  }
  if(k==='back'){numpadBuf=numpadBuf.slice(0,-1)}
  else if(k==='clear'){numpadBuf=''}
@@ -1461,10 +1468,10 @@ function numpadKey(k){
   const candidate=(numpadBuf==='0'?'':numpadBuf)+k;
   const nv=parseInt(candidate,10);
   if(isFinite(maxStok)&&maxStok<=0){
-   toast('⚠️ Stok varian ini habis');
+   toast(already>0?('⚠️ Sudah '+already+' pcs di keranjang, sisa stok habis'):'⚠️ Stok varian ini habis');
   }else if(isFinite(maxStok)&&nv>maxStok){
    numpadBuf=String(maxStok);
-   toast('⚠️ Jumlah tidak boleh melebihi stok tersedia ('+maxStok+' pcs)');
+   toast(already>0?('⚠️ Sisa stok tinggal '+maxStok+' pcs'):('⚠️ Jumlah tidak boleh melebihi stok ('+maxStok+' pcs)'));
   }else{
    numpadBuf=candidate;
   }
@@ -1538,15 +1545,24 @@ function setQty(v){
  const s=state.sel,p=P(s.pid);if(!p)return;
  let nv=parseInt(v,10);
  if(isNaN(nv)||nv<1)nv=p.min;
- let maxStok=Infinity;
+ let maxStok=Infinity,already=0,avail=Infinity;
  if(s.size&&p.colors.length){
-  const avail=stokFor(p,p.colors[s.color].n,s.size);
+  avail=stokFor(p,p.colors[s.color].n,s.size);
   const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
   const ex=cart.find(c=>c.key===key);
-  maxStok=avail-(ex?ex.qty:0);
+  already=ex?ex.qty:0;
+  maxStok=avail-already;
  }
  nv=Math.max(p.min,nv);
- if(isFinite(maxStok)){if(maxStok<=0){toast('⚠️ Sisa stok yang bisa ditambahkan sudah habis');nv=p.min}else if(nv>maxStok){nv=maxStok;toast('⚠️ Jumlah disesuaikan dengan sisa stok tersedia')}}
+ if(isFinite(maxStok)){
+  if(maxStok<=0){
+   toast(already>0?('⚠️ Sudah '+already+' pcs di keranjang, sisa stok habis'):'⚠️ Sisa stok sudah habis');
+   nv=p.min;
+  }else if(nv>maxStok){
+   nv=maxStok;
+   toast(already>0?('⚠️ Sisa stok tinggal '+maxStok+' pcs'):'⚠️ Jumlah disesuaikan dengan stok tersedia');
+  }
+ }
  s.qty=nv;
  // render ditunda 1 tick supaya klik tombol (Keranjang/Pesan Sekarang) yang memicu blur ini
  // sempat "landing" dulu sebelum tombolnya diganti oleh render ulang — mencegah harus klik 2x
@@ -1579,11 +1595,18 @@ function addSel(buy){
  if(avail<=0){toast('⚠️ Stok habis untuk varian ini');return}
  const key=s.pid+'|'+p.colors[s.color].n+'|'+s.size;
  const ex=cart.find(c=>c.key===key);
- const remaining=avail-(ex?ex.qty:0);
- if(remaining<=0){toast('⚠️ Jumlah di keranjang sudah mencapai batas stok ('+avail+' pcs)');return}
- if(s.qty>remaining){toast('⚠️ Stok tidak cukup, sisa yang bisa ditambahkan '+remaining+' pcs');return}
- if(ex)ex.qty+=s.qty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:s.qty});
- saveCart();toast('✅ '+p.name+' masuk keranjang');
+ const already=ex?ex.qty:0;
+ const remaining=avail-already;
+ if(remaining<=0){toast('⚠️ Sudah '+already+' pcs di keranjang, sisa stok habis');return}
+ let addQty=s.qty;
+ if(addQty>remaining){
+  addQty=remaining;
+  toast('⚠️ Sisa stok '+remaining+' pcs, jumlah disesuaikan');
+ }else{
+  toast('✅ '+p.name+' masuk keranjang');
+ }
+ if(ex)ex.qty+=addQty;else cart.push({key,pid:s.pid,color:p.colors[s.color].n,size:s.size,qty:addQty});
+ saveCart();
  s.qty=0;
  if(numpadOpen)numpadBuf='';
  renderProduct();
