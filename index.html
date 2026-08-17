@@ -449,7 +449,7 @@ body.hide-footer footer{display:none}
 /* order success modal */
 #orderModal{position:fixed;inset:0;background:rgba(8,15,38,.55);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 #orderModal.show{display:flex}
-.om-box{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:34px 28px;text-align:center;box-shadow:var(--shadow-lg);animation:omPop .25s ease}
+.om-box{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:34px 28px;text-align:center;box-shadow:var(--shadow-lg);animation:omPop .25s ease;max-height:90vh;overflow-y:auto;position:relative}
 @keyframes omPop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
 .om-box .big{width:64px;height:64px;border-radius:50%;background:var(--ok-soft);color:var(--ok);font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
 .om-box h2{font-size:19px;margin-bottom:8px}
@@ -1946,7 +1946,8 @@ function previewInvoice(code){
  const rows=o.items.map(i=>'<tr><td><b>'+esc(i.name)+'</b><div class="var">'+esc(i.color)+' • '+esc(i.size)+'</div></td>'+
   '<td class="r">'+i.qty+'</td><td class="r">'+(i.est?fmt(i.est[0]):'-')+'</td><td class="r">'+fmt(i.qty*(i.est?i.est[0]:0))+'</td></tr>').join('');
  $('omBox').className='om-box wide';
- $('omBox').innerHTML='<div class="inv-wrap">'+
+ $('omBox').innerHTML='<button onclick="closeModal()" aria-label="Tutup" style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--navy-100);color:var(--navy-900);font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:5">✕</button>'+
+  '<div class="inv-wrap">'+
   '<div class="inv-head"><div><div class="inv-brand">RADJA PRODUCTION</div></div>'+
    '<div><div class="inv-badge">TAGIHAN</div><div class="inv-no">'+esc(o.code)+'</div></div></div>'+
   '<div class="inv-infobox">'+
