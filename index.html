@@ -1202,7 +1202,7 @@ async function loadInventoryData(){
   if(activeView==='view-catalog')renderCatalog();
   if(activeView==='view-product')renderProduct();
   if(activeView==='view-cart')renderCart();
-  if(activeView==='view-admin')renderAdmin();
+  if(activeView==='view-admin')renderAdminSafe();
  }catch(e){console.error('Gagal memuat data Inventory:',e);invError=true;
   // PERBAIKAN: kalau gagal/timeout (mis. koneksi lambat), coba lagi otomatis sebentar lagi
   // alih-alih diam saja — supaya katalog tidak nyangkut kosong sampai user refresh manual.
@@ -1211,6 +1211,29 @@ async function loadInventoryData(){
 }
 let _invRetryTimer=null;
 function scheduleReload(){clearTimeout(_rtTimer);_rtTimer=setTimeout(loadInventoryData,400)}
+// BUG FIX: renderAdmin() dipanggil otomatis tiap ada event realtime dari Supabase (stok, pesanan
+// lain, dst) — termasuk gara-gara perubahan yang kita sendiri kirim (mis. edit qty item nge-trigger
+// update transaksi_item, yang balik lagi lewat realtime). Karena renderAdmin() mengganti innerHTML
+// #adminWrap, kalau ini terjadi PAS user lagi ngetik di kolom qty, input-nya ikut hilang dari DOM
+// dan keyboard di HP otomatis tertutup sendiri. renderAdminSafe() menahan render itu kalau ada
+// input/select di dalam #adminWrap yang lagi fokus, lalu menjalankannya begitu user selesai (blur).
+let _pendingAdminRender=false;
+function isAdminInputActive(){
+ const el=document.activeElement;
+ if(!el)return false;
+ if(el.tagName!=='INPUT'&&el.tagName!=='SELECT'&&el.tagName!=='TEXTAREA')return false;
+ return !!el.closest('#adminWrap');
+}
+function renderAdminSafe(){
+ if(isAdminInputActive()){_pendingAdminRender=true;return}
+ renderAdmin();
+}
+document.addEventListener('focusout',e=>{
+ if(_pendingAdminRender&&e.target&&e.target.closest&&e.target.closest('#adminWrap')){
+  _pendingAdminRender=false;
+  setTimeout(()=>{if(!isAdminInputActive())renderAdmin()},50);
+ }
+});
 // Tarik ulang data Invoice (halaman "track") TANPA reset filter tanggal yang lagi dipakai
 // user — dipanggil otomatis saat status_bayar berubah (mis. dilunasi dari app Inventory)
 // supaya badge LUNAS/BELUM LUNAS di halaman Invoice ikut update tanpa perlu refresh manual.
@@ -1233,7 +1256,7 @@ function scheduleOrdersReload(){clearTimeout(_rtOrdersTimer);_rtOrdersTimer=setT
  const ok=await syncOrdersFromCloud();
  if(!ok)return;
  const activeView=document.querySelector('.view.on')?.id;
- if(activeView==='view-admin'&&state.unlocked&&state.adminTab==='pesanan')renderAdmin();
+ if(activeView==='view-admin'&&state.unlocked&&state.adminTab==='pesanan')renderAdminSafe();
  // PERBAIKAN: sebelumnya halaman Invoice (view-track) tidak pernah ikut di-refresh di sini,
  // jadi status LUNAS/BELUM LUNAS di situ nyangkut sampai user refresh manual.
  if(activeView==='view-track')refreshTrackData();
@@ -2349,7 +2372,7 @@ function orderBody(o,i,showPill){
   :'<span class="stage-pill ord-stage final">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>';
  return '<div class="top"><span class="code">'+o.code+'</span>'+
  (hasNote?'<span title="Ada catatan dari vendor" style="background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:6px">🔔 CATATAN</span>':'')+
- (showPill?'<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">'+stagePill+payBadge(o)+'</span>':'')+'</div>'+
+ (showPill?'<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">'+stagePill+payBadge(o)+'<button class="btn btn-danger btn-sm" title="Hapus pesanan" onclick="delOrder('+i+')">🗑</button></span>':'')+'</div>'+
  '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+'</div>'+
  orderItemsHtml(o,i)+
  (hasNote?'<div style="margin-top:8px;padding:9px 12px;background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;font-size:12.5px;color:#8A5A00"><b>📝 Catatan dari vendor:</b><br>'+esc(o.note)+'</div>':'');
@@ -2413,7 +2436,7 @@ function checkStokCukup(it,newQty){
  const p=P(it.pid);
  if(!p)return true; // produk tidak dikenal (mis. sudah dihapus dari katalog) — tidak bisa dicek, biarkan lanjut
  const avail=stokFor(p,it.color,it.size);
- if(delta>avail){toast('⚠️ Stok tidak cukup — sisa stok '+p.name+' ('+it.color+', '+it.size+') hanya '+avail+' pcs');return false}
+ if(delta>avail){toast('⚠️ STOK TIDAK CUKUP — Total stok '+p.name+' ('+it.color+', '+it.size+') hanya '+avail+' pcs');return false}
  return true;
 }
 function removeOrderItem(oi,ii){
@@ -2458,7 +2481,7 @@ function confirmAddItem(oi){
  if(!s.color||!s.size){toast('⚠️ Pilih warna & ukuran dulu');return}
  const qty=Math.max(1,parseInt(s.qty)||1);
  const avail=stokFor(p,s.color,s.size);
- if(qty>avail){toast('⚠️ Stok tidak cukup — sisa stok '+p.name+' ('+s.color+', '+s.size+') hanya '+avail+' pcs');return}
+ if(qty>avail){toast('⚠️ STOK TIDAK CUKUP — Total stok '+p.name+' ('+s.color+', '+s.size+') hanya '+avail+' pcs');return}
  const newItem={pid:s.pid,name:p.name,color:s.color,size:s.size,qty,est:p.est||[0,0]};
  o.items.push(newItem);
  state.addItemFor=null;
@@ -2536,7 +2559,7 @@ function adminOrders(){
  '<div class="acts">'+
  (o.synced===false?'<button class="btn btn-outline btn-sm" onclick="retryOrderSync('+i+')">🔄 Sinkron Ulang</button>':'')+
  (o.stageSynced===false?'<button class="btn btn-outline btn-sm" onclick="retryStageSync('+i+')">🔄 Sinkron Status</button>':'')+
- '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
+ '</div></div>').join('');
 }
 function setStage(i,v){
  v=+v;const o=orders[i];const code=o.code;
@@ -2566,7 +2589,7 @@ function retryStageSync(i){
 }
 async function delOrder(i){
  const o=orders[i];
- if(!confirm('Hapus pesanan '+o.code+'?\n\nStok yang sudah dipotong untuk pesanan ini (jika ada) akan dikembalikan otomatis.'))return;
+ if(!confirm('Hapus pesanan '+o.code+'?'))return;
  const code=o.code;orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();
  if(!sb)return;
  const {error:orderErr}=await sb.from(ORDERS_TABLE).delete().eq('order_code',code);
