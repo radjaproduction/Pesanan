@@ -361,10 +361,11 @@ footer{flex-shrink:0}
 .period-card .pc-range{position:relative;font-size:13.5px;color:#C7D1EC;font-weight:600;margin-top:4px}
 .period-card .pc-stats{position:relative;display:flex;gap:0;margin-top:20px;flex-wrap:wrap}
 .period-card .pc-stat{flex:1;min-width:100px;padding:0 20px}
-.period-card .pc-stat:first-child{padding-left:0}
+.period-card .pc-stat:first-child{padding-left:0;flex:.7;min-width:64px}
+.period-card .pc-stat.pc-total{flex:1.5;min-width:120px}
 .period-card .pc-stat+.pc-stat{border-left:1px solid rgba(255,255,255,.14)}
 .period-card .pc-stat b{display:block;font-size:24px;font-weight:800;color:#fff;line-height:1.2}
-.period-card .pc-stat.pc-total b{color:var(--accent);font-size:17px;line-height:1.25}
+.period-card .pc-stat.pc-total b{color:var(--accent);font-size:17px;line-height:1.25;white-space:nowrap}
 .period-card .pc-stat span{display:block;font-size:10.5px;font-weight:700;color:var(--navy-muted-dk);letter-spacing:.5px;margin-top:3px}
 .period-card .pc-paid-note{position:relative;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;font-weight:600;color:#9FE8C1}
 @media(max-width:480px){
@@ -387,8 +388,7 @@ footer{flex-shrink:0}
 .pl-pager button:hover:not(:disabled){background:var(--navy-700)}
 .pl-pager button:disabled{opacity:.35;cursor:default}
 .pl-pager-info{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap}
-.pl-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:8px;cursor:pointer;transition:.15s}
-.pl-item:hover{border-color:var(--navy-500);box-shadow:0 2px 8px rgba(11,22,51,.08)}
+.pl-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:8px;transition:.15s}
 .pl-item.active{border-color:var(--accent);background:var(--accent-soft)}
 .pl-item .pl-range{font-weight:800;font-size:12.5px;color:var(--navy-900)}
 .pl-item .pl-sub{font-size:11px;color:var(--muted);margin-top:2px;font-weight:600}
@@ -2180,7 +2180,8 @@ function renderPeriodList(list){
  if(periodPage>totalPages)periodPage=totalPages;
  if(periodPage<1)periodPage=1;
  const pageKeys=keys.slice((periodPage-1)*PER_PAGE,periodPage*PER_PAGE);
- const rows=pageKeys.map(k=>{
+ const startIdx=(periodPage-1)*PER_PAGE;
+ const rows=pageKeys.map((k,i)=>{
   const [y,m,d]=k.split('-');
   const start=new Date(+y,+m-1,+d);
   const end=new Date(start);end.setDate(start.getDate()+6);
@@ -2191,9 +2192,11 @@ function renderPeriodList(list){
   const total=belumLunas.reduce((a,o)=>a+orderTotal(o),0);
   const totalLunas=sudahLunas.reduce((a,o)=>a+orderTotal(o),0);
   const pcs=orders.reduce((a,o)=>a+o.items.reduce((x,i)=>x+i.qty,0),0);
-  return '<div class="pl-item" data-from="'+fromISO+'" data-to="'+toISO+'" onclick="selectPeriod(\''+fromISO+'\',\''+toISO+'\')">'+
+  return '<div class="pl-item" data-from="'+fromISO+'" data-to="'+toISO+'">'+
+   '<div style="display:flex;align-items:flex-start;gap:8px">'+
+   '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:7px;background:var(--navy-100);color:var(--navy-700);font-size:11.5px;font-weight:800;flex-shrink:0;margin-top:1px">'+(startIdx+i+1)+'</span>'+
    '<div><div class="pl-range">'+fmtTgl(fromISO)+' – '+fmtTgl(toISO)+'</div>'+
-   '<div class="pl-sub">'+orders.length+' transaksi • '+pcs+' pcs</div></div>'+
+   '<div class="pl-sub">'+orders.length+' transaksi • '+pcs+' pcs</div></div></div>'+
    '<div class="pl-right"><div class="pl-amt'+(total===0?' zero':'')+'">'+fmt(total)+'</div>'+
    (totalLunas>0?'<span class="pl-paidtag">✅ '+fmt(totalLunas)+' lunas</span>':'')+
    '</div></div>';
