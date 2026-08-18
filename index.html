@@ -2107,13 +2107,16 @@ function renderHistoryList(list){
   const pcs=o.items.reduce((a,i)=>a+i.qty,0);
   const total=orderTotal(o);
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-  return '<div class="order-card"><div class="hd"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:7px;background:var(--navy-100);color:var(--navy-700);font-size:11.5px;font-weight:800;margin-right:8px">'+(idx+1)+'</span><span class="code">'+o.code+'</span>'+
+  return '<div class="order-card"><div class="hd">'+
+  '<div style="display:flex;align-items:center;gap:8px">'+
+  '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:7px;background:var(--navy-100);color:var(--navy-700);font-size:11.5px;font-weight:800;flex-shrink:0">'+(idx+1)+'</span>'+
+  '<span class="code">'+o.code+'</span></div>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
   (o.fromInventory?'<span class="stage-pill" style="background:var(--navy-100);color:var(--navy-700)">👤 Admin</span>':'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>')+
   payBadge(o)+
   '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
   '</div></div>'+
-  '<div style="font-size:12px;color:var(--muted);margin:2px 0 0">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div></div>';
+  '<div style="font-size:12px;color:var(--muted);margin:2px 0 0 30px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div></div>';
  }).join('') + renderHistoryPager(totalPages) : '<p style="color:var(--muted);font-size:13px;margin-top:12px">'+(window._dateFilterActive?'Tidak ada transaksi pada periode ini.':'Belum ada transaksi.')+'</p>';
  renderPeriodSummary(list);
 }
