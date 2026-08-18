@@ -875,6 +875,7 @@ let masterData = {brand:[], model:[], warna:[], ukuran:[]};
 const HIDDEN_BRANDS=new Set(['BM','DAP KIDS','DUPLEK','DUPLEX','PESANAN','POLOSAN ANAK','ZOLAQU']);
 let stokRows = [];      // dari view v_stok_ringkas: {brand,model,warna,ukuran,stok,terjual}
 let produkMeta = {};    // dari tabel pesanan_produk_meta, keyed by model_id
+let pendingColorImg = {}; // foto per-warna yg baru diupload admin tapi belum "Simpan" — {modelId:{WARNA:dataUrl atau '' utk hapus}}
 let PRODUCTS = [];      // hasil gabungan (dibangun oleh buildProducts())
 let invReady=false, invError=false; // status pemuatan data Inventory — dipakai renderCatalog() supaya tidak salah tampil "Tidak ada produk" saat data sebenarnya masih dimuat (koneksi lambat)
 
@@ -2714,6 +2715,14 @@ function adminProduk(){
   // Daftar warna yang tersedia untuk model ini (sama seperti yang dipakai katalog) — dipakai untuk checklist invert overlay per warna.
   const prod=PRODUCTS.find(x=>x.modelId===m.id);
   const modelColors=prod?prod.colors:[];
+  // Stok per warna (dipakai untuk urutkan & tampilkan angka stok di panel "Gambar per Warna").
+  const colorStok={};
+  modelColors.forEach(c=>{
+   const cUp=(c.n||'').trim().toUpperCase();
+   colorStok[cUp]=stokRows.filter(r=>r.brand===bUp&&r.model===mUp&&r.warna===cUp).reduce((a,r)=>a+Math.max(0,r.stok),0);
+  });
+  const colorsByStok=modelColors.slice().sort((a,b)=>(colorStok[(b.n||'').trim().toUpperCase()]||0)-(colorStok[(a.n||'').trim().toUpperCase()]||0));
+  const pendingC=pendingColorImg[m.id]||{};
   return '<div class="a-order">'+
    '<div class="top" style="align-items:center">'+
    '<span style="display:flex;gap:10px;align-items:center"><img id="pm-preview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:46px;height:46px;border-radius:9px;object-fit:cover;background:#EEF1F7"><b style="font-size:13px">'+esc(m.nama)+' <span style="color:var(--muted);font-weight:600">— '+esc(m.brandNama||'—')+'</span></b></span>'+
@@ -2732,6 +2741,26 @@ function adminProduk(){
    '<input type="hidden" id="pm-imgurl-'+m.id+'" value="'+esc(meta.gambar_url||'')+'">'+
    '<input type="hidden" id="pm-img-'+m.id+'" value="'+esc(meta.gambar_url||'')+'">'+
    '</div></div></div>'+
+   '<div style="grid-column:1/-1;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)">'+
+   '<label>Gambar per Warna (upload foto khusus untuk warna tertentu — misalnya kaos yang sudah ada sablon/print di kain itu)</label>'+
+   '<p style="font-size:11px;color:var(--muted);margin:2px 0 10px">Diurutkan dari stok terbanyak. Warna yang belum diupload fotonya di sini otomatis pakai Auto-Warna (jika aktif) atau Gambar Utama sebagai cadangan.</p>'+
+   (colorsByStok.length ? colorsByStok.map(c=>{
+     const cUp=(c.n||'').trim().toUpperCase();
+     const stokC=colorStok[cUp]||0;
+     const pendingImg=pendingC.hasOwnProperty(cUp)?pendingC[cUp]:null;
+     const curImg=pendingImg!==null?pendingImg:((meta.gambar_warna&&meta.gambar_warna[cUp])||'');
+     const uid='pm-cimg-'+m.id+'-'+cUp.replace(/[^A-Z0-9]/g,'')+'-'+Math.random().toString(36).slice(2,7);
+     return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">'+
+      '<img id="'+uid+'-preview" src="'+esc(curImg||PLACEHOLDER_IMG)+'" onclick="openImgLightbox(this.src)" style="width:44px;height:44px;border-radius:8px;object-fit:cover;background:#EEF1F7;border:1px solid #E3E7F0;flex-shrink:0;cursor:zoom-in">'+
+      '<i style="width:14px;height:14px;border-radius:4px;border:1px solid var(--line);background:'+esc(c.h||'#CBD3E3')+';flex-shrink:0"></i>'+
+      '<div style="flex:1;min-width:0">'+
+      '<div style="font-size:12.5px;font-weight:700;color:var(--navy-800)">'+esc(c.n)+' <span style="font-weight:600;color:'+(stokC>0?'var(--muted)':'var(--danger)')+'">— '+stokC+' pcs</span></div>'+
+      '<input type="file" accept="image/*" id="'+uid+'" data-model="'+m.id+'" data-color="'+esc(cUp)+'" data-preview="'+uid+'-preview" onchange="handleColorImgUpload(this)" style="font-size:11px;width:100%;margin-top:3px">'+
+      '</div>'+
+      (curImg?'<button type="button" class="btn btn-outline btn-sm" style="font-size:10px;padding:4px 8px;flex-shrink:0" title="Hapus foto warna ini" onclick="clearColorImg('+m.id+',\''+cUp+'\',\''+uid+'-preview\')">🗑</button>':'')+
+      '</div>';
+   }).join('') : '<div style="font-size:11.5px;color:var(--muted)">Model ini belum punya data warna di Inventory</div>')+
+   '</div>'+
    '<div style="grid-column:1/-1;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)">'+
    '<label>Gambar Tambahan (Overlay/Print di atas Gambar Utama — opsional, untuk sablon/logo dsb.)</label>'+
    '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">'+
@@ -2808,6 +2837,27 @@ async function handleImgUpload(modelId,inputEl){
   const uf=$('pm-imgurl-'+modelId);if(uf)uf.value='';
   toast('✅ Gambar siap — klik Simpan untuk menyimpan');
  }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+}
+async function handleColorImgUpload(inputEl){
+ const modelId=+inputEl.dataset.model, colorKey=inputEl.dataset.color, previewId=inputEl.dataset.preview;
+ const file=inputEl.files&&inputEl.files[0];
+ if(!file)return;
+ if(!file.type.startsWith('image/')){toast('⚠️ File harus berupa gambar');inputEl.value='';return}
+ if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
+ toast('⏳ Memproses gambar...');
+ try{
+  const dataUrl=await compressImage(file,900,0.82);
+  if(!pendingColorImg[modelId])pendingColorImg[modelId]={};
+  pendingColorImg[modelId][colorKey]=dataUrl;
+  const prev=$(previewId);if(prev)prev.src=dataUrl;
+  toast('✅ Foto warna siap — klik Simpan untuk menyimpan');
+ }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+}
+function clearColorImg(modelId,colorKey,previewId){
+ if(!pendingColorImg[modelId])pendingColorImg[modelId]={};
+ pendingColorImg[modelId][colorKey]=''; // tanda: hapus foto warna ini saat Simpan
+ const prev=$(previewId);if(prev)prev.src=PLACEHOLDER_IMG;
+ toast('🗑 Foto warna dihapus — klik Simpan untuk menyimpan');
 }
 function compressImage(file,maxDim,quality){
  // PNG (apalagi kalau ada transparansi) diekspor tetap sebagai PNG supaya alpha/background transparan
@@ -2923,7 +2973,12 @@ function updateOverlayPreview(modelId){
 async function saveProdukMeta(modelId){
  if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
  const cur=produkMeta[modelId]||{};
- const gambar_warna=cur.gambar_warna||{};
+ // Gabungkan foto per-warna yang tersimpan sebelumnya dengan yang baru diupload/dihapus admin di panel ini.
+ const gambar_warna={...(cur.gambar_warna||{})};
+ const pendingC=pendingColorImg[modelId]||{};
+ Object.keys(pendingC).forEach(k=>{
+  if(pendingC[k])gambar_warna[k]=pendingC[k]; else delete gambar_warna[k];
+ });
  const overlay_url=($('pm-ov-'+modelId)?.value||'').trim();
  const overlay_invert_warna=[...document.querySelectorAll('#pm-ovinvwrap-'+modelId+' input[type=checkbox]:checked')].map(cb=>cb.dataset.color);
  const row={model_id:modelId,gambar_url:$('pm-img-'+modelId).value.trim(),gambar_warna,auto_tint:cur.auto_tint===true,
@@ -2931,6 +2986,7 @@ async function saveProdukMeta(modelId){
   kategori:cur.kategori||'',min_order:cur.min_order||1,estimasi_hari:cur.estimasi_hari||'',badge:cur.badge||'',deskripsi:cur.deskripsi||'',aktif:cur.aktif!==false};
  const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
  if(error){console.error(error);toast('❌ Gagal simpan: cek apakah kolom gambar_warna/overlay_* sudah ada di tabel pesanan_produk_meta (lihat SQL di tab Pengaturan)');return}
+ delete pendingColorImg[modelId];
  produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();toast('💾 Produk disimpan');renderAdmin();
 }
 async function toggleProdukAktif(modelId){
