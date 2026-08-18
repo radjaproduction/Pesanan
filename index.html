@@ -367,6 +367,13 @@ footer{flex-shrink:0}
 .period-card .pc-stat.pc-total b{color:var(--accent);font-size:17px;line-height:1.25}
 .period-card .pc-stat span{display:block;font-size:10.5px;font-weight:700;color:var(--navy-muted-dk);letter-spacing:.5px;margin-top:3px}
 .period-card .pc-paid-note{position:relative;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14);font-size:11.5px;font-weight:600;color:#9FE8C1}
+@media(max-width:480px){
+  .period-card .pc-stats{flex-wrap:wrap;row-gap:14px}
+  .period-card .pc-stat{flex:0 0 50%;padding:0 14px 0 0;border-left:none!important}
+  .period-card .pc-stat:nth-child(2){padding-left:14px;border-left:1px solid rgba(255,255,255,.14)!important}
+  .period-card .pc-stat.pc-total{flex:0 0 100%;padding:14px 0 0;margin-top:0;border-top:1px solid rgba(255,255,255,.14);border-left:none!important}
+  .period-card .pc-stat.pc-total b{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
 
 /* ============ PERIOD LIST PANEL (Riwayat per Periode) ============ */
 .pl-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;margin-top:14px;font-weight:800;font-size:12.5px;color:var(--navy-800);transition:.15s}
@@ -2085,21 +2092,42 @@ async function renderTrack(){
  }catch(e){console.error(e);box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Gagal memuat riwayat transaksi.</p>'}
 }
 function orderTotal(o){return o.items.reduce((a,i)=>a+i.qty*(i.est?i.est[0]:0),0)}
+let historyPage=1;
+const HISTORY_PER_PAGE=10;
 function renderHistoryList(list){
  const box=$('historyList');
- box.innerHTML = list.length ? list.map((o,idx)=>{
+ window._historyFiltered=list;
+ const totalPages=Math.max(1,Math.ceil(list.length/HISTORY_PER_PAGE));
+ if(historyPage>totalPages)historyPage=totalPages;
+ if(historyPage<1)historyPage=1;
+ const startIdx=(historyPage-1)*HISTORY_PER_PAGE;
+ const pageList=list.slice(startIdx,startIdx+HISTORY_PER_PAGE);
+ box.innerHTML = list.length ? pageList.map((o,i)=>{
+  const idx=startIdx+i;
   const pcs=o.items.reduce((a,i)=>a+i.qty,0);
   const total=orderTotal(o);
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
   return '<div class="order-card"><div class="hd"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:7px;background:var(--navy-100);color:var(--navy-700);font-size:11.5px;font-weight:800;margin-right:8px">'+(idx+1)+'</span><span class="code">'+o.code+'</span>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
-  (o.fromInventory?'<span class="stage-pill" style="background:var(--navy-100);color:var(--navy-700)">🏭 Input Inventory</span>':'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>')+
+  (o.fromInventory?'<span class="stage-pill" style="background:var(--navy-100);color:var(--navy-700)">👤 Admin</span>':'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>')+
   payBadge(o)+
   '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
   '</div></div>'+
   '<div style="font-size:12px;color:var(--muted);margin:2px 0 0">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div></div>';
- }).join('') : '<p style="color:var(--muted);font-size:13px;margin-top:12px">'+(window._dateFilterActive?'Tidak ada transaksi pada periode ini.':'Belum ada transaksi.')+'</p>';
+ }).join('') + renderHistoryPager(totalPages) : '<p style="color:var(--muted);font-size:13px;margin-top:12px">'+(window._dateFilterActive?'Tidak ada transaksi pada periode ini.':'Belum ada transaksi.')+'</p>';
  renderPeriodSummary(list);
+}
+function renderHistoryPager(totalPages){
+ if(totalPages<=1)return'';
+ return '<div class="pl-pager">'+
+  '<button'+(historyPage<=1?' disabled':'')+' onclick="goHistoryPage('+(historyPage-1)+')">← Sebelumnya</button>'+
+  '<span class="pl-pager-info">Halaman '+historyPage+' dari '+totalPages+'</span>'+
+  '<button'+(historyPage>=totalPages?' disabled':'')+' onclick="goHistoryPage('+(historyPage+1)+')">Selanjutnya →</button>'+
+  '</div>';
+}
+function goHistoryPage(p){
+ historyPage=p;
+ renderHistoryList(window._historyFiltered||window._history||[]);
 }
 function renderPeriodSummary(list){
  const box=$('periodSummary');
@@ -2209,6 +2237,7 @@ function selectPeriod(from,to){
 function filterByDate(){
  const from=$('trackDateFrom').value,to=$('trackDateTo').value;
  const list=window._history||[];
+ historyPage=1;
  if(!from&&!to){window._dateFilterActive=false;renderHistoryList(list);updatePeriodListActive();return}
  window._dateFilterActive=true;
  const fromD=from?new Date(from+'T00:00:00'):null;
