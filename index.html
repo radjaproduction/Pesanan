@@ -411,6 +411,23 @@ footer{flex-shrink:0}
 .stage-pill.final{background:var(--ok-soft);color:var(--ok)}
 .o-items{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px;font-size:12.5px;color:var(--muted)}
 .o-items div{padding:4px 0;display:flex;justify-content:space-between;gap:10px}
+.oi-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed #eee}
+.oi-row:last-child{border-bottom:none}
+.oi-info{flex:1;min-width:0}
+.oi-name{font-weight:700;color:var(--navy-800);font-size:12.5px}
+.oi-sub{color:var(--muted);font-size:11.5px}
+.oi-acts{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.oi-edit-btn,.oi-del-btn{width:26px;height:26px;border-radius:7px;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.oi-edit-btn{background:var(--navy-100);color:var(--navy-700)}
+.oi-del-btn{background:var(--warn-soft);color:#dc2626}
+.oi-qty-edit{display:flex;align-items:center;gap:6px}
+.oi-qty-edit .stepper-qty{transform:scale(.85);transform-origin:right center}
+.oi-qty-edit input{width:44px;height:30px;text-align:center;border:1.5px solid var(--line);border-radius:8px;font-weight:700}
+.oi-add-btn{margin-top:8px;width:100%;padding:8px;border:1.5px dashed var(--accent);border-radius:10px;background:var(--accent-soft);color:#8A5A00;font-weight:800;font-size:12.5px}
+.oi-add-form{margin-top:8px;padding:10px;background:var(--navy-50);border-radius:10px;display:flex;flex-direction:column;gap:8px}
+.oi-add-form select,.oi-add-form input{padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff}
+.oi-add-form .row2{display:flex;gap:8px}
+.oi-add-form .row2>*{flex:1}
 
 /* ============ SUCCESS ============ */
 .success{max-width:640px;margin:44px auto 60px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:44px 34px}
@@ -859,7 +876,7 @@ const SUPABASE_URL='https://ehhyagqldsurkutabwsg.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoaHlhZ3FsZHN1cmt1dGFid3NnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDM1MTYsImV4cCI6MjEwMjM3OTUxNn0.o01HVxTcQvOi1js_rQAWellOOmoasMhFUGEJlDbcJKA';
 let settings=LS.get('rj_settings',{table:'inventory',pin:'1234'});
 settings.url=SUPABASE_URL;settings.key=SUPABASE_KEY;
-let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',note:''};
+let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',note:'',editItem:null,addItemFor:null,addSel:null};
 const ORDERS_TABLE='produksi_orders';
 let sb=null;
 let rtChannel=null;
@@ -2332,10 +2349,184 @@ function orderBody(o,i,showPill){
   :'<span class="stage-pill ord-stage final">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>';
  return '<div class="top"><span class="code">'+o.code+'</span>'+
  (hasNote?'<span title="Ada catatan dari vendor" style="background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:6px">🔔 CATATAN</span>':'')+
- (showPill?stagePill:'')+(showPill?payBadge(o):'')+'</div>'+
+ (showPill?'<span style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">'+stagePill+payBadge(o)+'</span>':'')+'</div>'+
  '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+'</div>'+
- '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>'+
+ orderItemsHtml(o,i)+
  (hasNote?'<div style="margin-top:8px;padding:9px 12px;background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;font-size:12.5px;color:#8A5A00"><b>📝 Catatan dari vendor:</b><br>'+esc(o.note)+'</div>':'');
+}
+// Baris item pesanan yang bisa diedit qty-nya (✏️) atau dihapus (🗑) langsung dari Admin,
+// plus tombol "+ Tambah Item" untuk menyusulkan item tambahan ke pesanan yang sudah ada.
+// Setiap perubahan (ubah qty / hapus / tambah item) disimpan ke kolom `items` produksi_orders
+// DAN otomatis disinkronkan ke tabel transaksi/transaksi_item supaya stok di app Inventory
+// ikut ter-update (lihat syncItemChangeToInventory di bawah).
+// PEMBATASAN: editing HANYA boleh selama status pembayaran masih KREDIT (belum lunas) — begitu
+// pesanan ditandai LUNAS, item dikunci (read-only) supaya tidak mengubah nominal yang sudah
+// dianggap final/tertagih.
+function orderItemsHtml(o,oi){
+ const ed=state.editItem;
+ const locked=o.statusBayar==='lunas';
+ const rows=o.items.map((it,ii)=>{
+  const harga=it.est?it.est[0]:0;
+  const isEditing=!locked&&ed&&ed.oi===oi&&ed.ii===ii;
+  const qtyPart=locked?''
+   :isEditing
+   ?'<div class="oi-qty-edit"><div class="stepper-qty"><button onclick="itemQtyStep('+oi+','+ii+',-1)">−</button><input value="'+it.qty+'" type="text" inputmode="numeric" pattern="[0-9]*" onchange="itemQtySet('+oi+','+ii+',this.value)"><button onclick="itemQtyStep('+oi+','+ii+',1)">+</button></div><button class="oi-edit-btn" title="Selesai" onclick="toggleEditItem('+oi+','+ii+')">✔</button></div>'
+   :'<div class="oi-acts"><button class="oi-edit-btn" title="Ubah qty" onclick="toggleEditItem('+oi+','+ii+')">✏️</button><button class="oi-del-btn" title="Hapus item" onclick="removeOrderItem('+oi+','+ii+')">🗑</button></div>';
+  return '<div class="oi-row"><div class="oi-info"><div class="oi-name">'+esc(it.name)+'</div>'+
+   '<div class="oi-sub">'+esc(it.color)+' • '+esc(it.size)+' • '+it.qty+' pcs'+(harga?' • '+fmt(it.qty*harga):'')+'</div></div>'+
+   qtyPart+'</div>';
+ }).join('');
+ const addForm=locked
+  ?'<div style="margin-top:8px;padding:8px 10px;background:var(--navy-50);border-radius:8px;font-size:11.5px;color:var(--muted);text-align:center">🔒 Sudah LUNAS — item tidak bisa diubah</div>'
+  :(state.addItemFor===oi?adminAddItemFormHtml(oi):'<button class="oi-add-btn" onclick="toggleAddItem('+oi+')">➕ Tambah Item</button>');
+ return '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+rows+'</div>'+addForm;
+}
+function toggleEditItem(oi,ii){
+ const o=orders[oi];if(o&&o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ state.editItem=(state.editItem&&state.editItem.oi===oi&&state.editItem.ii===ii)?null:{oi,ii};
+ renderAdmin();
+}
+function itemQtyStep(oi,ii,d){
+ const o=orders[oi];if(!o)return;const it=o.items[ii];if(!it)return;
+ if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ const newQty=Math.max(1,(+it.qty||1)+d);
+ if(!checkStokCukup(it,newQty))return;
+ it.qty=newQty;
+ saveOrderItems(o);
+ syncItemChangeToInventory(o,it,'update');
+}
+function itemQtySet(oi,ii,val){
+ const o=orders[oi];if(!o)return;const it=o.items[ii];if(!it)return;
+ if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');renderAdmin();return}
+ const v=Math.max(1,parseInt(val)||1);
+ if(!checkStokCukup(it,v)){renderAdmin();return}
+ it.qty=v;
+ saveOrderItems(o);
+ syncItemChangeToInventory(o,it,'update');
+}
+// Cek stok tersedia sebelum qty dinaikkan. stokFor() sudah menghitung stok bersih (sudah
+// memperhitungkan qty item ini yang sudah terpotong sebelumnya), jadi selisih kenaikannya
+// (delta) harus <= stok yang masih tersedia sekarang. Turun qty selalu aman, tidak perlu dicek.
+function checkStokCukup(it,newQty){
+ const delta=newQty-(+it.qty||0);
+ if(delta<=0)return true;
+ const p=P(it.pid);
+ if(!p)return true; // produk tidak dikenal (mis. sudah dihapus dari katalog) — tidak bisa dicek, biarkan lanjut
+ const avail=stokFor(p,it.color,it.size);
+ if(delta>avail){toast('⚠️ Stok tidak cukup — sisa stok '+p.name+' ('+it.color+', '+it.size+') hanya '+avail+' pcs');return false}
+ return true;
+}
+function removeOrderItem(oi,ii){
+ const o=orders[oi];if(!o)return;
+ if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ if(o.items.length<=1){toast('⚠️ Tidak bisa menghapus item terakhir — hapus pesanan ini saja kalau memang batal');return}
+ if(!confirm('Hapus item "'+o.items[ii].name+'" dari pesanan '+o.code+'?'))return;
+ const removed=o.items[ii];
+ o.items.splice(ii,1);
+ if(state.editItem&&state.editItem.oi===oi)state.editItem=null;
+ saveOrderItems(o);
+ syncItemChangeToInventory(o,removed,'delete');
+}
+function toggleAddItem(oi){
+ const o=orders[oi];if(o&&o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ state.addItemFor=state.addItemFor===oi?null:oi;
+ state.addSel={pid:'',color:'',size:'',qty:1};
+ renderAdmin();
+}
+function adminAddItemFormHtml(oi){
+ const s=state.addSel||{pid:'',color:'',size:'',qty:1};
+ const p=s.pid?P(s.pid):null;
+ return '<div class="oi-add-form">'+
+  '<select onchange="state.addSel.pid=this.value;state.addSel.color=\'\';state.addSel.size=\'\';renderAdmin()">'+
+   '<option value="">Pilih produk…</option>'+
+   PRODUCTS.map(pr=>'<option value="'+pr.id+'" '+(s.pid===pr.id?'selected':'')+'>'+esc(pr.brand+' — '+pr.name)+'</option>').join('')+
+  '</select>'+
+  (p?('<div class="row2">'+
+   '<select onchange="state.addSel.color=this.value">'+'<option value="">Warna</option>'+p.colors.map(c=>'<option value="'+esc(c.n)+'" '+(s.color===c.n?'selected':'')+'>'+esc(c.n)+'</option>').join('')+'</select>'+
+   '<select onchange="state.addSel.size=this.value">'+'<option value="">Ukuran</option>'+p.sizes.map(z=>'<option value="'+esc(z)+'" '+(s.size===z?'selected':'')+'>'+esc(z)+'</option>').join('')+'</select>'+
+  '</div>'):'')+
+  (p&&s.color&&s.size?'<div class="qty-note" style="margin:0">📦 Stok tersedia: <b>'+stokFor(p,s.color,s.size)+' pcs</b></div>':'')+
+  '<input type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Qty" value="'+(s.qty||1)+'" onchange="state.addSel.qty=Math.max(1,parseInt(this.value)||1)">'+
+  '<div class="row2"><button class="btn btn-accent btn-sm" onclick="confirmAddItem('+oi+')">✅ Tambahkan</button><button class="btn btn-outline btn-sm" onclick="toggleAddItem('+oi+')">Batal</button></div>'+
+ '</div>';
+}
+function confirmAddItem(oi){
+ const s=state.addSel;const o=orders[oi];
+ if(!o||!s||!s.pid){toast('⚠️ Pilih produk dulu');return}
+ if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ const p=P(s.pid);if(!p){toast('⚠️ Produk tidak ditemukan');return}
+ if(!s.color||!s.size){toast('⚠️ Pilih warna & ukuran dulu');return}
+ const qty=Math.max(1,parseInt(s.qty)||1);
+ const avail=stokFor(p,s.color,s.size);
+ if(qty>avail){toast('⚠️ Stok tidak cukup — sisa stok '+p.name+' ('+s.color+', '+s.size+') hanya '+avail+' pcs');return}
+ const newItem={pid:s.pid,name:p.name,color:s.color,size:s.size,qty,est:p.est||[0,0]};
+ o.items.push(newItem);
+ state.addItemFor=null;
+ saveOrderItems(o);
+ syncItemChangeToInventory(o,newItem,'add');
+ toast('➕ Item ditambahkan ke '+o.code);
+}
+// Simpan perubahan `items` ke localStorage + coba sinkron ke produksi_orders.items di Supabase.
+function saveOrderItems(o){
+ LS.set('rj_orders',orders);renderAdmin();
+ if(!sb)return;
+ sb.from(ORDERS_TABLE).update({items:o.items}).eq('order_code',o.code).then(({error})=>{
+  if(error){console.error(error);toast('⚠️ Perubahan item tersimpan lokal, tapi gagal sync ke server untuk '+o.code)}
+ });
+}
+// Menyinkronkan perubahan qty/hapus/tambah item ke tabel transaksi/transaksi_item (yang dipakai
+// v_stok_ringkas / hitungStokItem() di app Inventory untuk hitung stok keluar), supaya stok
+// ikut ter-update otomatis begitu item pesanan diubah dari Admin — tidak perlu edit manual lagi
+// di app Inventory. Cari baris transaksi lewat order_code + brand + model (ini pola yang sama
+// dipakai syncStokKeluarPesanan() waktu pesanan pertama kali dibuat).
+async function syncItemChangeToInventory(o,item,mode){
+ if(!sb)return;
+ if(o.synced===false)return; // pesanan ini belum pernah sinkron stok — nanti ikut kebawa saat "Sinkron Ulang"
+ const p=P(item.pid);
+ if(!p){toast('⚠️ Produk tidak dikenali — stok Inventory tidak ikut disesuaikan, cek manual');return}
+ try{
+  const {data:trxRows,error:trxSelErr}=await sb.from('transaksi').select('id').eq('order_code',o.code).eq('brand',p.brand).eq('model',p.name);
+  if(trxSelErr)throw trxSelErr;
+  let trxId=trxRows&&trxRows[0]?trxRows[0].id:null;
+
+  if(mode==='delete'){
+   if(!trxId)return; // tidak ada baris terkait di Inventory, tidak ada yang perlu dihapus
+   const {error:delErr}=await sb.from('transaksi_item').delete().eq('transaksi_id',trxId).eq('warna',item.color).eq('ukuran',item.size);
+   if(delErr)throw delErr;
+   const {data:remain,error:remErr}=await sb.from('transaksi_item').select('id').eq('transaksi_id',trxId);
+   if(remErr)throw remErr;
+   if(remain&&remain.length===0){await sb.from('transaksi').delete().eq('id',trxId)}
+   return;
+  }
+
+  if(mode==='update'){
+   if(trxId){
+    const {data:upd,error:updErr}=await sb.from('transaksi_item').update({qty:item.qty}).eq('transaksi_id',trxId).eq('warna',item.color).eq('ukuran',item.size).select();
+    if(updErr)throw updErr;
+    if(upd&&upd.length>0)return; // berhasil update baris yang sudah ada
+   }
+   // baris transaksi_item-nya belum ada (mis. item ini baru ditambahkan lewat produksi_orders
+   // sebelum fitur ini ada) — lanjut ke logika 'add' di bawah supaya tetap tercatat
+  }
+
+  // mode 'add' (atau fallback dari 'update' yang belum punya baris transaksi_item)
+  let tId=trxId;
+  if(!tId){
+   const now=new Date();
+   const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+   const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+   const {data:trx,error:insErr}=await sb.from('transaksi').insert({
+    vendor:VENDOR_APP,brand:p.brand,model:p.name,harga:(p.est&&p.est[0])||0,harga_modal:0,status:'credit',order_code:o.code,tanggal,jam
+   }).select().single();
+   if(insErr)throw insErr;
+   tId=trx.id;
+  }
+  const {error:itemInsErr}=await sb.from('transaksi_item').insert({transaksi_id:tId,warna:item.color,ukuran:item.size,qty:item.qty,ssk:'-'});
+  if(itemInsErr)throw itemInsErr;
+ }catch(e){
+  console.error('Gagal sinkron stok Inventory untuk '+o.code+' ('+item.name+'):',e);
+  toast('⚠️ Item tersimpan, tapi gagal sesuaikan stok Inventory untuk '+item.name+' — cek manual');
+ }
 }
 function adminOrders(){
  if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
@@ -2343,7 +2534,6 @@ function adminOrders(){
  (o.synced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Gagal tersinkron ke server — stok Inventory <u>belum dipotong</u> untuk pesanan ini.</div>':'')+
  (o.stageSynced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Perubahan status ('+STAGES[o.stage][1]+') belum tersinkron ke server.</div>':'')+
  '<div class="acts">'+
- (o.stage!==0?'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>':'')+
  (o.synced===false?'<button class="btn btn-outline btn-sm" onclick="retryOrderSync('+i+')">🔄 Sinkron Ulang</button>':'')+
  (o.stageSynced===false?'<button class="btn btn-outline btn-sm" onclick="retryStageSync('+i+')">🔄 Sinkron Status</button>':'')+
  '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
