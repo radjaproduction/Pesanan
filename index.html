@@ -837,7 +837,7 @@ body.boot-lock{overflow:hidden}
 /* ================= DATA ================= */
 const IMG = {hero:'radja-kids-bg.png',custom:'custom.jpg'};
 const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="%23EEF1F7"/><text x="50%" y="50%" font-family="sans-serif" font-size="15" fill="%235B6478" text-anchor="middle" dy=".3em">Belum ada foto</text></svg>'.replace(/%23/g,'#'));
-const STAGES = [['⏳','Menunggu'],['📥','Pesanan Diterima']];
+const STAGES = [['⏳','Menunggu'],['📥','Diterima']];
 
 /* Katalog produk sekarang diambil LANGSUNG & REALTIME dari data brand/model/stok
    aplikasi Inventory (INDEX) via Supabase — bukan lagi data statis. Lihat
@@ -2322,25 +2322,28 @@ function checkPin(){
 }
 function payBadge(o){
  const lunas=o.statusBayar==='lunas';
- return '<span class="stage-pill" style="background:'+(lunas?'var(--ok-soft)':'var(--warn-soft)')+';color:'+(lunas?'var(--ok)':'var(--warn)')+'">'+(lunas?'✅ LUNAS':'⏳ BELUM LUNAS')+'</span>';
+ return '<span class="stage-pill" style="background:'+(lunas?'var(--ok-soft)':'var(--warn-soft)')+';color:'+(lunas?'var(--ok)':'var(--warn)')+'">'+(lunas?'✅ LUNAS':'⏳ KREDIT')+'</span>';
 }
-function orderBody(o,showPill){
+function orderBody(o,i,showPill){
  if(showPill===undefined)showPill=true;
  const hasNote=!!(o.note&&o.note.trim());
+ const stagePill=o.stage===0
+  ?(o.synced===false?'<button class="btn btn-accent btn-sm" disabled title="Sinkronkan pesanan ke server dulu sebelum konfirmasi">✅ Konfirmasi</button>':'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi</button>')
+  :'<span class="stage-pill ord-stage final">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>';
  return '<div class="top"><span class="code">'+o.code+'</span>'+
  (hasNote?'<span title="Ada catatan dari vendor" style="background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:6px">🔔 CATATAN</span>':'')+
- (showPill?'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>':'')+(showPill?payBadge(o):'')+'</div>'+
+ (showPill?stagePill:'')+(showPill?payBadge(o):'')+'</div>'+
  '<div class="meta">🗓 '+new Date(o.ts).toLocaleDateString('id-ID')+'</div>'+
  '<div class="o-items" style="border-top:none;padding-top:0;margin-top:0">'+o.items.map(i=>'<div><span>'+i.qty+'× '+esc(i.name)+' ('+esc(i.color)+', '+esc(i.size)+')</span></div>').join('')+'</div>'+
  (hasNote?'<div style="margin-top:8px;padding:9px 12px;background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;font-size:12.5px;color:#8A5A00"><b>📝 Catatan dari vendor:</b><br>'+esc(o.note)+'</div>':'');
 }
 function adminOrders(){
  if(!orders.length)return '<p style="color:var(--muted)">Belum ada pesanan.</p>';
- return orders.map((o,i)=>'<div class="a-order">'+orderBody(o)+
+ return orders.map((o,i)=>'<div class="a-order">'+orderBody(o,i)+
  (o.synced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Gagal tersinkron ke server — stok Inventory <u>belum dipotong</u> untuk pesanan ini.</div>':'')+
  (o.stageSynced===false?'<div style="margin:8px 0;padding:8px 10px;background:var(--warn-soft);border-radius:8px;font-size:12px;color:var(--warn);font-weight:600">⚠️ Perubahan status ('+STAGES[o.stage][1]+') belum tersinkron ke server.</div>':'')+
  '<div class="acts">'+
- (o.stage===0?(o.synced===false?'<button class="btn btn-accent btn-sm" disabled title="Sinkronkan pesanan ke server dulu sebelum konfirmasi">✅ Konfirmasi Pesanan</button>':'<button class="btn btn-accent btn-sm" onclick="setStage('+i+',1)">✅ Konfirmasi Pesanan</button>'):'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>')+
+ (o.stage!==0?'<span style="color:var(--muted);font-size:13px">✅ Pesanan sudah diterima</span>':'')+
  (o.synced===false?'<button class="btn btn-outline btn-sm" onclick="retryOrderSync('+i+')">🔄 Sinkron Ulang</button>':'')+
  (o.stageSynced===false?'<button class="btn btn-outline btn-sm" onclick="retryStageSync('+i+')">🔄 Sinkron Status</button>':'')+
  '<button class="btn btn-danger btn-sm" onclick="delOrder('+i+')">🗑</button></div></div>').join('');
