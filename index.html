@@ -865,7 +865,7 @@ let sb=null;
 let rtChannel=null;
 let _rtTimer=null;
 function initSupabase(){
- if(settings.url&&settings.key&&window.supabase){try{sb=window.supabase.createClient(settings.url,settings.key)}catch(e){sb=null}}
+ if(settings.url&&settings.key&&window.supabase){try{sb=window.supabase.createClient(settings.url,settings.key,{realtime:{worker:true,heartbeatCallback:(status)=>{if(status==='disconnected'||status==='timeout'){try{sb.realtime.connect()}catch(e){}}}}})}catch(e){sb=null}}
  else sb=null;
 }
 initSupabase();
