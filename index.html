@@ -2596,9 +2596,11 @@ async function syncItemChangeToInventory(o,item,mode){
    if(!trxId)return; // tidak ada baris terkait di Inventory, tidak ada yang perlu dihapus
    const {error:delErr}=await sb.from('transaksi_item').delete().eq('transaksi_id',trxId).eq('warna',item.color).eq('ukuran',item.size);
    if(delErr)throw delErr;
-   const {data:remain,error:remErr}=await sb.from('transaksi_item').select('id').eq('transaksi_id',trxId);
-   if(remErr)throw remErr;
-   if(remain&&remain.length===0){await sb.from('transaksi').delete().eq('id',trxId)}
+   // Cleanup atomik di server (bukan select-sisa-lalu-delete dari client) — hapus header
+   // transaksi HANYA kalau memang sudah 0 item & belum lunas, jadi tidak ada celah race
+   // condition kalau ada 2 perubahan ke transaksi yang sama nyaris bersamaan.
+   const {error:cleanErr}=await sb.rpc('cleanup_transaksi_kosong',{p_trx_id:trxId});
+   if(cleanErr)throw cleanErr;
    return;
   }
 
