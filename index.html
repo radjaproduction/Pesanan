@@ -934,7 +934,23 @@ function initSupabase(){
  else sb=null;
 }
 initSupabase();
-function rowToOrder(r){return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,statusBayar:r.status_bayar||'belum_lunas',mine:false,synced:true,items:r.items||[],note:r.note||'',priorityItems:r.priority_items||[]};}
+function rowToOrder(r){
+ const items=(r.items||[]).map(it=>{
+  // Migration: Auto-fill brand untuk items lama yang tidak punya brand
+  if(!it.brand && it.pid){
+   // Path 1: Try lookup dari PRODUCTS (kalau sudah ter-load)
+   if(PRODUCTS.length){
+    const prod=P(it.pid);
+    if(prod)it.brand=prod.brand||'';
+   }
+   // Path 2: Jika PRODUCTS belum load, defer ke render time (fallback logic akan handle)
+   // Path 3: Hint untuk debug: log kalau ada item tanpa brand
+   if(!it.brand)console.warn('[Migration] Item tanpa brand:', it);
+  }
+  return it;
+ });
+ return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,statusBayar:r.status_bayar||'belum_lunas',mine:false,synced:true,items,note:r.note||'',priorityItems:r.priority_items||[]};
+}
 async function syncOrdersFromCloud(){
  if(!sb)return false;
  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false});
@@ -2087,7 +2103,7 @@ async function syncStokKeluarPesanan(code,cartSnapshot){
 async function placeOrder(){
  for(const c of cart){const p=P(c.pid);if(!p)continue;const avail=stokFor(p,c.color,c.size);if(avail<c.qty){toast('⚠️ Stok '+p.name+' ('+c.color+', '+c.size+') tidak mencukupi lagi');return}}
  const code=state.draftCode||('TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0'));
- const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
+ const items=cart.map(c=>({pid:c.pid,brand:P(c.pid)?.brand||'',name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
  const note=(state.note||'').trim();
  // Konversi index prioritas → key berbasis "code__idx" supaya tahan terhadap perubahan urutan item di masa depan
@@ -2200,7 +2216,7 @@ function renderHistoryList(list){
   // Build accordion detail rows
   const priKeys=o.priorityItems||[];
   const detailRows=o.items.map((it,ii)=>{
-   const brand=it.brand||(it.pid?P(it.pid)?.brand:'') ||'—';
+   const brand=(it.brand||'').trim()||(it.pid?P(it.pid)?.brand||'':'') ||'—';
    const modelName=it.name||it.model||'—';
    const colorName=it.color||it.warna||'—';
    const sizeName=it.size||it.ukuran||'—';
@@ -2745,7 +2761,7 @@ function confirmAddItem(oi){
  const qty=Math.max(1,parseInt(s.qty)||1);
  const avail=stokFor(p,s.color,s.size);
  if(qty>avail){toast('⚠️ STOK TIDAK CUKUP — Total stok '+p.name+' ('+s.color+', '+s.size+') hanya '+avail+' pcs');return}
- const newItem={pid:s.pid,name:p.name,color:s.color,size:s.size,qty,est:p.est||[0,0]};
+ const newItem={pid:s.pid,brand:p.brand||'',name:p.name,color:s.color,size:s.size,qty,est:p.est||[0,0]};
  o.items.push(newItem);
  state.addItemFor=null;
  saveOrderItems(o);
@@ -3199,12 +3215,45 @@ function adminSettings(){
  '<button class="btn btn-outline btn-sm" onclick="testConn()">🔌 Tes Koneksi Pesanan</button>'+
  '<button class="btn btn-outline btn-sm" onclick="copySQL()">📄 Copy SQL Schema</button></div>'+
  '<p style="font-size:11px;color:var(--muted);margin-top:10px">📦 Model ter-load: <b>'+masterData.model.length+'</b> • Baris stok ter-load: <b>'+stokRows.length+'</b></p></div>'+
+ '<div class="panel"><h2>🔧 Tools Maintenance</h2>'+
+ '<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Jika BRAND/MODEL column masih kosong di order history, gunakan tool ini:</p>'+
+ '<button class="btn btn-outline btn-sm" onclick="batchMigrateBrandToOrders()">🔄 Auto-Fill Brand ke Semua Order</button></div>'+
  '<div class="panel"><h2>🔐 Ganti PIN Admin</h2><div class="form-grid" style="max-width:340px">'+
  '<div><label>PIN Baru</label><input id="sPin" maxlength="6" placeholder="4–6 digit"></div></div>'+
  '<button class="btn btn-accent btn-sm" style="margin-top:12px" onclick="changePin()">Ganti PIN</button></div>'+
  '<textarea id="sqlBox" style="position:fixed;left:-9999px">'+SQL+'</textarea>';
 }
 function changePin(){const v=$('sPin').value.trim();if(v.length<4){toast('⚠️ PIN minimal 4 digit');return}settings.pin=v;LS.set('rj_settings',settings);toast('🔐 PIN berhasil diganti')}
+async function batchMigrateBrandToOrders(){
+ if(!sb||!PRODUCTS.length){toast('⚠️ Belum siap: PRODUCTS belum ter-load atau belum connected');return}
+ const count=orders.reduce((a,o)=>{
+  o.items.forEach(it=>{
+   if(!it.brand && it.pid){
+    const prod=P(it.pid);
+    if(prod)it.brand=prod.brand||'',a++;
+   }
+  });
+  return a;
+ },0);
+ if(count===0){toast('✅ Semua order items sudah punya brand.');return}
+ toast('⟳ Menyimpan '+count+' item...');
+ LS.set('rj_orders',orders);
+ let synced=0,failed=0;
+ for(const o of orders){
+  if(!o.items.some(it=>it.brand))continue;
+  const {error}=await sb.from(ORDERS_TABLE).update({items:o.items}).eq('order_code',o.code).then(r=>r,e=>({error:e}));
+  if(error){failed++;console.error('Gagal sync '+o.code,error)}else synced++;
+ }
+ renderAdmin();
+ toast('✅ Migration selesai: '+synced+' order synced'+(failed?' • '+failed+' failed':''));
+}
+function debugBrandStatus(){
+ const report=orders.map(o=>({code:o.code,total:o.items.length,withBrand:o.items.filter(i=>i.brand||'').length,emptyBrand:o.items.filter(i=>!i.brand).length}));
+ console.table(report);
+ const emptyCount=report.reduce((a,r)=>a+r.emptyBrand,0);
+ console.log('Total items tanpa brand:',emptyCount);
+ return report;
+}
 function copySQL(){const t=$('sqlBox');t.style.left='0';t.select();document.execCommand('copy');t.style.left='-9999px';toast('📄 SQL schema disalin')}
 async function testConn(){
  if(!settings.url||!settings.key){toast('⚠️ Isi URL & Anon Key dulu');return}
