@@ -61,6 +61,7 @@ header{position:sticky;top:0;z-index:100;background:var(--navy-900);box-shadow:0
 .view{display:none}
 .view.on{flex:1;display:flex;flex-direction:column;animation:fadeUp .35s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
 /* ============ HERO ============ */
 .hero{position:relative;margin-top:0;background:var(--navy-900);overflow:hidden;flex:1;display:flex;flex-direction:column}
@@ -3270,10 +3271,173 @@ async function bootApp(){
 bootApp();
 
 /* ================= PWA: SERVICE WORKER ================= */
+let swController = null;
+let updateNotified = false; // Track jika user sudah diberi notif
+
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW gagal daftar:', err));
+    navigator.serviceWorker.register('sw.js')
+      .then((reg) => {
+        console.log('[PWA] SW registered:', reg.scope);
+        swController = navigator.serviceWorker.controller;
+        
+        // Detect update instalasi (SW baru tersedia)
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          console.log('[PWA] New SW installing');
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Ada SW lama yang masih aktif, jadi ada update
+              console.log('[PWA] Update detected via statechange');
+              _notifyAppUpdate('statechange');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
   });
+  
+  // Listen untuk notifikasi update dari Service Worker (multi-tab signal)
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if(event.data.type === 'UPDATE_AVAILABLE'){
+      console.log('[PWA] Received UPDATE_AVAILABLE from SW, version:', event.data.version);
+      _notifyAppUpdate('message');
+    }
+  });
+  
+  // Detect controller change (bisa indikasi SW update)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('[PWA] Controller changed — new SW activated');
+    // Kalau user belum di-notify, notify sekarang
+    if (!updateNotified) {
+      _notifyAppUpdate('controller');
+    }
+  });
+}
+
+// State tracking untuk prevent duplicate notifikasi
+let _updateTimeouts = {};
+
+// Tampilkan notifikasi update aplikasi (robust version)
+function _notifyAppUpdate(reason){
+  console.log('[PWA] _notifyAppUpdate called, reason:', reason);
+  
+  const existing = document.getElementById('update-notification');
+  if(existing) {
+    console.log('[PWA] Update notification already exists, skipping');
+    return;
+  }
+  
+  // Debounce: kalau dalam 500ms ada notif yang sama, skip
+  const key = 'update-' + reason;
+  if (_updateTimeouts[key]) return;
+  _updateTimeouts[key] = true;
+  setTimeout(() => { delete _updateTimeouts[key]; }, 500);
+  
+  updateNotified = true;
+  
+  const notif = document.createElement('div');
+  notif.id = 'update-notification';
+  notif.style.cssText = `
+    position: fixed;
+    bottom: 80px;
+    left: 18px;
+    right: 18px;
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px 16px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 4px 16px rgba(255,159,28,.2);
+    animation: slideUp .4s ease;
+  `;
+  
+  const text = document.createElement('div');
+  text.style.cssText = `
+    flex: 1;
+    color: var(--warn);
+    font-size: 14px;
+    font-weight: 600;
+  `;
+  text.textContent = '📲 Update aplikasi tersedia! Versi terbaru sudah siap digunakan.';
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = `
+    background: none;
+    color: var(--warn);
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 4px 8px;
+  `;
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = () => notif.remove();
+  
+  const reloadBtn = document.createElement('button');
+  reloadBtn.style.cssText = `
+    background: var(--accent);
+    color: var(--navy-900);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: transform .2s, box-shadow .2s;
+  `;
+  reloadBtn.textContent = '↻ Reload';
+  reloadBtn.onmouseover = () => {
+    reloadBtn.style.transform = 'scale(1.05)';
+    reloadBtn.style.boxShadow = '0 2px 8px rgba(255,159,28,.3)';
+  };
+  reloadBtn.onmouseout = () => {
+    reloadBtn.style.transform = 'scale(1)';
+    reloadBtn.style.boxShadow = 'none';
+  };
+  reloadBtn.onclick = () => {
+    console.log('[PWA] User clicked reload');
+    reloadBtn.textContent = '⟳ Memuat...';
+    reloadBtn.disabled = true;
+    // Hard reload: skip cache completely & clear service worker cache
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => caches.delete(name));
+      });
+    }
+    setTimeout(() => {
+      window.location.href = window.location.href;
+    }, 100);
+  };
+  
+  notif.appendChild(text);
+  notif.appendChild(reloadBtn);
+  notif.appendChild(closeBtn);
+  document.body.appendChild(notif);
+  
+  // Auto-remove setelah 15 detik jika user tidak klik
+  const autoRemoveTimer = setTimeout(() => {
+    if(notif.parentNode) {
+      notif.style.opacity = '0';
+      notif.style.transform = 'translateY(20px)';
+      notif.style.transition = 'all .3s ease';
+      setTimeout(() => { if(notif.parentNode) notif.remove(); }, 300);
+    }
+  }, 15000);
+  
+  // Clear timer kalau user close manual
+  closeBtn.onclick = () => {
+    clearTimeout(autoRemoveTimer);
+    notif.remove();
+  };
+  
+  console.log('🔔 Update aplikasi tersedia — user diberi notifikasi (' + reason + ')');
 }
 
 /* ================= PWA: TOMBOL INSTAL ================= */
