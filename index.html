@@ -881,6 +881,15 @@ const ORDERS_TABLE='produksi_orders';
 let sb=null;
 let rtChannel=null;
 let _rtTimer=null;
+let _trackDataLoaded=false;
+let _trackDataDirty=true;
+
+function ordersSignature(list){
+ return (list||[]).map(o=>[
+  o.code,o.ts,o.stage,o.statusBayar,o.note,
+  JSON.stringify(o.priorityItems||[]),JSON.stringify(o.items||[])
+ ].join('|')).join('||');
+}
 function initSupabase(){
  if(settings.url&&settings.key&&window.supabase){try{sb=window.supabase.createClient(settings.url,settings.key,{realtime:{worker:true,heartbeatCallback:(status)=>{if(status==='disconnected'||status==='timeout'){try{sb.realtime.connect()}catch(e){}}}}})}catch(e){sb=null}}
  else sb=null;
@@ -926,7 +935,8 @@ async function syncOrdersFromCloud(){
    if(idx>=0)fresh[idx]=p;          // pertahankan versi lokal yang belum tersinkron
    else fresh.unshift(p);           // order lokal (belum pernah sampai ke server) tetap ditampilkan
   });
-  orders=fresh;LS.set('rj_orders',orders);return true}
+  const changed=ordersSignature(orders)!==ordersSignature(fresh);
+  orders=fresh;LS.set('rj_orders',orders);return changed}
  catch(e){console.error(e);return false}
 }
 function seedOrders(){const n=Date.now(),D=86400000;return[
@@ -968,12 +978,12 @@ function go(v,fromBack){
   // tombol back FISIK HP juga bisa dipakai untuk pindah tab (lihat popstate di bawah).
   try{history.pushState({rjView:v,rjStackLen:navStack.length},'','#'+v)}catch(e){}
  }
- document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('view-'+v).classList.add('on');window.scrollTo({top:0,behavior:'smooth'});
+ document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));$('view-'+v).classList.add('on');window.scrollTo({top:0,behavior:'auto'});
  $('backBar').classList.toggle('show', v!=='home');
  document.body.classList.toggle('bg-catalog', v==='catalog');
  document.body.classList.toggle('hide-footer', v==='admin');
  if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();if(v==='product')renderProduct();if(v==='checkout')renderCheckout();
- if(v==='admin'&&sb){syncOrdersFromCloud().then(ok=>{if(ok)renderAdmin()})}
+ if(v==='admin'&&sb){syncOrdersFromCloud().then(changed=>{if(changed)renderAdmin()})}
 }
 let navStack=[];
 function goBack(){
@@ -1292,21 +1302,24 @@ async function refreshTrackData(){
   ]);
   if(ordersRes.error)throw ordersRes.error;
   window._history=ordersRes.data.map(rowToOrder).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
+  _trackDataLoaded=true;
+  _trackDataDirty=false;
   filterByDate();
  }catch(e){console.error('Gagal refresh Invoice:',e)}
 }
 // Dipanggil saat tabel produksi_orders berubah (mis. status_bayar di-update otomatis dari
 // app Inventory saat owner melakukan pelunasan). Refresh daftar pesanan lokal, lalu render
 // ulang view yang sedang aktif (Admin/Pesanan ATAU halaman Invoice customer) kalau relevan.
-function scheduleOrdersReload(){clearTimeout(_rtOrdersTimer);_rtOrdersTimer=setTimeout(async()=>{
- const ok=await syncOrdersFromCloud();
- if(!ok)return;
+function scheduleOrdersReload(){
+ _trackDataDirty=true;
+ clearTimeout(_rtOrdersTimer);_rtOrdersTimer=setTimeout(async()=>{
  const activeView=document.querySelector('.view.on')?.id;
- if(activeView==='view-admin'&&state.unlocked&&state.adminTab==='pesanan')renderAdminSafe();
- // PERBAIKAN: sebelumnya halaman Invoice (view-track) tidak pernah ikut di-refresh di sini,
- // jadi status LUNAS/BELUM LUNAS di situ nyangkut sampai user refresh manual.
- if(activeView==='view-track')refreshTrackData();
-},400)}
+ // Invoice memakai sumber data gabungan sendiri; cukup satu refresh ketika sedang terbuka.
+ if(activeView==='view-track'){refreshTrackData();return;}
+ const ok=await syncOrdersFromCloud();
+ if(activeView==='view-admin'&&state.unlocked&&state.adminTab==='pesanan'&&ok)renderAdminSafe();
+ },400)
+}
 let _rtOrdersTimer=null;
 let _rtReconnectTimer=null;
 let _rtTrxTimer=null;
@@ -1319,6 +1332,7 @@ function scheduleTrxReload(){
  clearTimeout(_rtTrxTimer);_rtTrxTimer=setTimeout(()=>{
   const activeView=document.querySelector('.view.on')?.id;
   if(activeView==='view-track')refreshTrackData();
+  else _trackDataDirty=true;
  },400);
 }
 function setupRealtimeStok(){
@@ -2182,6 +2196,13 @@ async function renderTrack(){
  window._dateFilterActive=false;
  $('periodSummary').innerHTML='';
  if(!sb){box.innerHTML='<p style="color:var(--danger);font-size:13px;margin-top:12px">⚠️ Tidak terhubung ke server, riwayat transaksi tidak bisa dimuat.</p>';return}
+ // Gunakan cache selama belum ada event Realtime yang menandai data berubah.
+ // Ini membuat buka-tutup Invoice terasa instan tanpa mengorbankan sinkronisasi.
+ if(_trackDataLoaded&&!_trackDataDirty&&Array.isArray(window._history)){
+  renderPeriodList(window._history);
+  filterByDate();
+  return;
+ }
  box.innerHTML='<p style="color:var(--muted);font-size:13px;margin-top:12px">Memuat riwayat transaksi…</p>';
  try{
   const [ordersRes,vendorTrx]=await Promise.all([
