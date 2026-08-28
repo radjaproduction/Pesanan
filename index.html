@@ -411,6 +411,41 @@ footer{flex-shrink:0}
 .order-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:8px}
 .order-card .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .order-card .code{font-weight:800;color:var(--navy-800);letter-spacing:.6px}
+/* ---- accordion detail pesanan ---- */
+.order-card .acc-toggle{display:flex;align-items:center;gap:5px;margin-top:6px;margin-left:30px;font-size:11.5px;font-weight:700;color:var(--navy-600);cursor:pointer;user-select:none;width:fit-content;padding:3px 0}
+.order-card .acc-toggle:hover{color:var(--navy-800)}
+.order-card .acc-toggle .acc-chev{font-size:9px;transition:transform .2s;display:inline-block}
+.order-card .acc-toggle.open .acc-chev{transform:rotate(180deg)}
+.order-card .acc-body{overflow:hidden;max-height:0;transition:max-height .28s ease,opacity .22s ease;opacity:0}
+.order-card .acc-body.open{max-height:1200px;opacity:1}
+.order-card .acc-inner{margin-top:10px;border-top:1.5px dashed var(--line);padding-top:10px}
+.acc-table{width:100%;border-collapse:collapse;font-size:12px}
+.acc-table thead tr{background:var(--navy-800)}
+.acc-table thead th{padding:7px 9px;font-size:10px;font-weight:800;color:#fff;text-align:left;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.acc-table thead th.r{text-align:right}
+.acc-table tbody td{padding:7px 9px;color:var(--ink);border-bottom:1px solid var(--line)}
+.acc-table tbody tr:last-child td{border-bottom:none}
+.acc-table tbody tr:nth-child(even){background:var(--navy-50)}
+.acc-table td.r{text-align:right;white-space:nowrap;font-weight:700}
+.acc-table .td-brand{font-size:10px;color:var(--navy-500);font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.acc-table .td-model{font-weight:700;color:var(--navy-800)}
+.acc-table .td-color{display:inline-flex;align-items:center;gap:5px}
+.acc-swatch{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.12);flex-shrink:0;display:inline-block}
+.acc-footer{display:flex;justify-content:flex-end;gap:16px;margin-top:10px;padding-top:8px;border-top:1.5px solid var(--line);font-size:12px}
+.acc-footer span{color:var(--muted);font-weight:600}
+.acc-footer b{color:var(--navy-800);font-weight:800}
+.acc-note{margin-top:8px;padding:7px 10px;background:var(--accent-soft);border-radius:8px;font-size:11.5px;color:#8A5A00;font-weight:600}
+/* ---- prioritas item ---- */
+.pri-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:800;cursor:pointer;transition:.15s;border:1.5px solid transparent;white-space:nowrap;flex-shrink:0}
+.pri-btn.off{background:#fff;border-color:var(--line);color:var(--muted)}
+.pri-btn.off:hover{border-color:#e03131;color:#e03131;background:#fff5f5}
+.pri-btn.on{background:#fff5f5;border-color:#e03131;color:#c92a2a;animation:priPulse 2s ease-in-out infinite}
+@keyframes priPulse{0%,100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}50%{box-shadow:0 0 0 4px rgba(229,72,77,.18)}}
+.pri-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;background:#fff5f5;color:#c92a2a;border:1px solid #ffc9c9;white-space:nowrap;vertical-align:middle;margin-left:6px}
+/* kartu pesanan yang ada item prioritas: glow tipis merah di border */
+.order-card.has-priority{border-color:#ffa8a8;box-shadow:0 0 0 2px rgba(229,72,77,.10)}
+.order-card.has-priority .hd{position:relative}
+.pri-order-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:#c92a2a;background:#fff5f5;border:1px solid #ffc9c9;border-radius:7px;padding:3px 8px;margin-left:4px;animation:priPulse 2s ease-in-out infinite}
 .inv-icon-btn{width:34px;height:34px;border-radius:9px;background:var(--navy-800);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s}
 .inv-icon-btn:hover{background:var(--navy-600);transform:translateY(-1px)}
 .stage-pill{font-size:11px;font-weight:800;padding:5px 12px;border-radius:14px;background:var(--navy-100);color:var(--navy-700)}
@@ -888,7 +923,7 @@ const SUPABASE_URL='https://wyalxprcrrisowsqftgt.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5YWx4cHJjcnJpc293c3FmdGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDg2MDcsImV4cCI6MjA5NjkyNDYwN30.yA3g5bydgYbcrp1KOvYf0G7JXJHmbjhoCw928A0TzKc';
 let settings=LS.get('rj_settings',{table:'inventory',pin:'1234'});
 settings.url=SUPABASE_URL;settings.key=SUPABASE_KEY;
-let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',note:'',editItem:null,addItemFor:null,addSel:null};
+let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',note:'',editItem:null,addItemFor:null,addSel:null,priorityItems:[]};
 const ORDERS_TABLE='produksi_orders';
 let sb=null;
 let rtChannel=null;
@@ -898,7 +933,7 @@ function initSupabase(){
  else sb=null;
 }
 initSupabase();
-function rowToOrder(r){return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,statusBayar:r.status_bayar||'belum_lunas',mine:false,synced:true,items:r.items||[],note:r.note||''};}
+function rowToOrder(r){return {code:r.order_code,ts:new Date(r.created_at).getTime(),stage:r.stage,statusBayar:r.status_bayar||'belum_lunas',mine:false,synced:true,items:r.items||[],note:r.note||'',priorityItems:r.priority_items||[]};}
 async function syncOrdersFromCloud(){
  if(!sb)return false;
  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false});
@@ -1942,8 +1977,28 @@ function renderCheckout(){
  const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
  const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
  const grandTotal=cart.reduce((a,c)=>{const p=P(c.pid);return a+(p?c.qty*p.est[0]:0)},0);
- const rows=cart.map(c=>{const p=P(c.pid);const sub=p?c.qty*p.est[0]:0;return '<tr><td><b>'+esc(p?.name||'')+'</b><div class="var">'+esc(c.color)+' • '+esc(c.size)+'</div></td>'+
-  '<td class="r">'+c.qty+'</td><td class="r">'+(p?fmt(p.est[0]):'-')+'</td><td class="r">'+fmt(sub)+'</td></tr>'}).join('');
+ if(!state.priorityItems)state.priorityItems=[];
+ const priSet=new Set(state.priorityItems);
+ const rows=cart.map((c,i)=>{
+  const p=P(c.pid);const sub=p?c.qty*p.est[0]:0;
+  const isPri=priSet.has(i);
+  return '<tr style="'+(isPri?'background:#fff5f5;':'')+'">' +
+   '<td>' +
+    '<b>'+esc(p?.name||'')+'</b>' +
+    '<div class="var">'+esc(c.color)+' • '+esc(c.size)+'</div>' +
+    '<button class="pri-btn '+(isPri?'on':'off')+'" style="margin-top:5px" onclick="toggleCheckoutPriority('+i+',this)" title="'+(isPri?'Batalkan prioritas':'Tandai item ini perlu segera dikirim')+'">'+
+     (isPri?'🔴 URGENT — Segera Kirim':'⚐ Tandai Prioritas')+
+    '</button>' +
+   '</td>'+
+   '<td class="r">'+c.qty+'</td>'+
+   '<td class="r">'+(p?fmt(p.est[0]):'-')+'</td>'+
+   '<td class="r">'+fmt(sub)+'</td>'+
+  '</tr>';
+ }).join('');
+ const priCount=priSet.size;
+ const priInfo=priCount>0
+  ?'<div class="pri-info-box" style="background:#fff5f5;border:1.5px solid #ffc9c9;border-radius:10px;padding:10px 13px;margin:12px 0;font-size:12.5px;font-weight:700;color:#c92a2a;display:flex;align-items:center;gap:8px">🔴 <span><b>'+priCount+' item</b> ditandai URGENT — akan langsung terlihat oleh Admin saat pesanan masuk.</span></div>'
+  :'<div class="pri-info-box" style="background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#8A5A00;margin:12px 0;display:flex;align-items:center;gap:8px">💡 Tap <b>⚐ Tandai Prioritas</b> di item yang perlu segera dikirim — Admin akan langsung tahu.</div>';
  $('coWrap').innerHTML='<div style="max-width:520px;margin:26px auto 44px">'+
  '<div class="panel"><h2>Ringkasan Pesanan</h2>'+
  '<div class="inv-wrap">'+
@@ -1960,12 +2015,42 @@ function renderCheckout(){
   '<tr class="inv-totalrow"><td colspan="3" class="lbl">TOTAL TAGIHAN (estimasi)</td><td class="val">'+fmt(grandTotal)+'</td></tr>'+
   '</table>'+
  '</div>'+
- '<div class="note-box">✅ Total tagihan dan invoice per transaksi bisa dilihat di halaman Dashboard (menu awal).</div>'+
+ priInfo+
  '<div style="margin:14px 0">'+
   '<label style="display:block;font-size:12.5px;font-weight:700;color:var(--navy-900);margin-bottom:6px">📝 Catatan untuk Admin (opsional)</label>'+
   '<textarea id="coNote" rows="3" placeholder="Contoh: request warna khusus, minta dikirim terpisah, dll." style="width:100%;border:1px solid #E3E7F0;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical" oninput="state.note=this.value">'+esc(state.note||'')+'</textarea>'+
  '</div>'+
  '<button class="btn btn-accent btn-block" onclick="placeOrder()">✅ Buat Pesanan</button></div></div>';
+}
+function toggleCheckoutPriority(idx,btn){
+ if(!state.priorityItems)state.priorityItems=[];
+ const set=new Set(state.priorityItems);
+ const isPri=set.has(idx);
+ if(isPri)set.delete(idx); else set.add(idx);
+ state.priorityItems=[...set];
+ // Update tombol
+ btn.className='pri-btn '+(isPri?'off':'on');
+ btn.title=isPri?'Tandai item ini perlu segera dikirim':'Batalkan prioritas';
+ btn.textContent=isPri?'⚐ Tandai Prioritas':'🔴 URGENT — Segera Kirim';
+ // Update background baris
+ const tr=btn.closest('tr');
+ if(tr)tr.style.background=isPri?'':'#fff5f5';
+ // Update info box
+ const wrap=$('coWrap');
+ if(wrap){
+  const priCount=state.priorityItems.length;
+  const infoEl=wrap.querySelector('.pri-info-box');
+  if(infoEl){
+   infoEl.style.display='';
+   if(priCount>0){
+    infoEl.style.cssText='background:#fff5f5;border:1.5px solid #ffc9c9;border-radius:10px;padding:10px 13px;margin:12px 0;font-size:12.5px;font-weight:700;color:#c92a2a;display:flex;align-items:center;gap:8px';
+    infoEl.innerHTML='🔴 <span><b>'+priCount+' item</b> ditandai URGENT — akan langsung terlihat oleh Admin saat pesanan masuk.</span>';
+   }else{
+    infoEl.style.cssText='background:var(--accent-soft);border:1px solid #FFDFAE;border-radius:10px;padding:11px 13px;font-size:11.5px;color:#8A5A00;margin:12px 0;display:flex;align-items:center;gap:8px';
+    infoEl.innerHTML='💡 Tap <b>⚐ Tandai Prioritas</b> di item yang perlu segera dikirim — Admin akan langsung tahu.';
+   }
+  }
+ }
 }
 // Kurangi stok Inventory otomatis: setiap grup brand+model di keranjang jadi satu baris
 // `transaksi` (header) + baris-baris `transaksi_item` (warna/ukuran/qty), meniru persis
@@ -2004,14 +2089,16 @@ async function placeOrder(){
  const items=cart.map(c=>({pid:c.pid,name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
  const note=(state.note||'').trim();
- orders.unshift({code,ts:Date.now(),stage:0,statusBayar:'belum_lunas',mine:true,synced:false,items,note});
- LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;state.note='';cart=[];saveCart();
+ // Konversi index prioritas → key berbasis "code__idx" supaya tahan terhadap perubahan urutan item di masa depan
+ const priorityItems=(state.priorityItems||[]).map(idx=>code+'__'+idx);
+ orders.unshift({code,ts:Date.now(),stage:0,statusBayar:'belum_lunas',mine:true,synced:false,items,note,priorityItems});
+ LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;state.note='';state.priorityItems=[];cart=[];saveCart();
  // Sinkron ke server (produksi_orders + potong stok Inventory) DIDULUKAN dan
  // dipisah dari urusan tampilan (popup), supaya kalau nanti ada error di UI
  // popup, sinkronisasi stok Inventory tetap sudah selesai duluan dan tidak ikut gagal.
  if(sb){
   let orderSynced=false;
-  try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,items,stage:0,note});
+  try{const {error}=await sb.from(ORDERS_TABLE).insert({order_code:code,items,stage:0,note,priority_items:priorityItems});
    if(error)throw error;
    orderSynced=true;
   }catch(e){console.error(e);toast('⚠️ Pesanan tersimpan lokal, tapi gagal sync ke server — stok Inventory TIDAK dipotong. Coba "Sinkron Ulang" di Admin nanti.')}
@@ -2108,18 +2195,113 @@ function renderHistoryList(list){
   const pcs=o.items.reduce((a,i)=>a+i.qty,0);
   const total=orderTotal(o);
   const tgl=new Date(o.ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-  return '<div class="order-card"><div class="hd">'+
+  const accId='acc-'+o.code.replace(/[^a-zA-Z0-9]/g,'_');
+  // Build accordion detail rows
+  const priKeys=o.priorityItems||[];
+  const detailRows=o.items.map((it,ii)=>{
+   const brand=it.brand||(it.pid?P(it.pid)?.brand:'') ||'—';
+   const modelName=it.name||it.model||'—';
+   const colorName=it.color||it.warna||'—';
+   const sizeName=it.size||it.ukuran||'—';
+   const harga=it.est?it.est[0]:0;
+   const subtotal=it.qty*(harga||0);
+   const itemKey=o.code+'__'+ii;
+   const isPri=priKeys.includes(itemKey);
+   return '<tr'+(isPri?' style="background:#fff5f5"':'')+'>'+
+    '<td><div class="td-brand">'+esc(brand)+'</div><div class="td-model">'+esc(modelName)+(isPri?'<span class="pri-badge">🔴 URGENT</span>':'')+'</div></td>'+
+    '<td><span class="td-color"><span class="acc-swatch" style="background:'+colorHex(colorName)+'"></span>'+esc(colorName)+'</span></td>'+
+    '<td style="text-align:center;font-weight:700">'+esc(sizeName)+'</td>'+
+    '<td class="r">'+it.qty+'</td>'+
+    '<td class="r">'+(harga?fmt(harga):'—')+'</td>'+
+    '<td class="r">'+(subtotal?fmt(subtotal):'—')+'</td>'+
+   '</tr>';
+  }).join('');
+  const noteHtml=o.note?'<div class="acc-note">📝 '+esc(o.note)+'</div>':'';
+  const hasPriority=priKeys.length>0;
+  const accHtml=
+   '<div class="acc-body" id="'+accId+'">'+
+   '<div class="acc-inner">'+
+   (hasPriority?'<div style="background:#fff5f5;border:1.5px solid #ffc9c9;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:700;color:#c92a2a;display:flex;align-items:center;gap:7px">🔴 Ada <b style="margin:0 2px">'+priKeys.length+'</b> item ditandai URGENT — mohon diprioritaskan pengirimannya.</div>':'')+
+   '<table class="acc-table">'+
+   '<thead><tr><th>Brand / Model</th><th>Warna</th><th style="text-align:center">Ukuran</th><th class="r">Qty</th><th class="r">Harga/pcs</th><th class="r">Subtotal</th></tr></thead>'+
+   '<tbody>'+detailRows+'</tbody>'+
+   '</table>'+
+   '<div class="acc-footer"><span>Total Pieces:</span><b>'+pcs+' pcs</b><span>Total:</span><b>'+fmt(total)+'</b></div>'+
+   noteHtml+
+   '</div></div>';
+  return '<div class="order-card'+(hasPriority?' has-priority':'')+'" id="card-'+o.code.replace(/[^a-zA-Z0-9]/g,'_')+'"><div class="hd">'+
   '<div style="display:flex;align-items:center;gap:8px">'+
   '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:7px;background:var(--navy-100);color:var(--navy-700);font-size:11.5px;font-weight:800;flex-shrink:0">'+(idx+1)+'</span>'+
-  '<span class="code">'+o.code+'</span></div>'+
+  '<span class="code">'+o.code+'</span>'+(hasPriority?'<span class="pri-order-badge">🔴 '+priKeys.length+' URGENT</span>':'')+
+  '</div>'+
   '<div style="display:flex;align-items:center;gap:8px">'+
   (o.fromInventory?'<span class="stage-pill" style="background:var(--navy-100);color:var(--navy-700)">👤 Admin</span>':'<span class="stage-pill ord-stage '+(o.stage>=1?'final':'')+'">'+STAGES[o.stage][0]+' '+STAGES[o.stage][1]+'</span>')+
   payBadge(o)+
   '<button class="inv-icon-btn" title="Preview Invoice" aria-label="Preview Invoice" onclick="previewInvoice(\''+o.code+'\')">🧾</button>'+
   '</div></div>'+
-  '<div style="font-size:12px;color:var(--muted);margin:2px 0 0 30px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div></div>';
+  '<div style="font-size:12px;color:var(--muted);margin:2px 0 0 30px">'+tgl+' • '+pcs+' pcs • <b style="color:var(--navy-900)">'+fmt(total)+'</b></div>'+
+  '<button class="acc-toggle" onclick="toggleOrderAcc(\''+accId+'\',this)">'+
+  '<span class="acc-chev">▼</span> Lihat Rincian ('+o.items.length+' item)'+
+  '</button>'+
+  accHtml+
+  '</div>';
  }).join('') + renderHistoryPager(totalPages) : '<p style="color:var(--muted);font-size:13px;margin-top:12px">'+(window._dateFilterActive?'Tidak ada transaksi pada periode ini.':'Belum ada transaksi.')+'</p>';
  renderPeriodSummary(list);
+}
+function toggleOrderAcc(id,btn){
+ const body=document.getElementById(id);
+ if(!body)return;
+ const isOpen=body.classList.contains('open');
+ // tutup semua accordion lain yang sedang terbuka
+ if(!isOpen){
+  document.querySelectorAll('.order-card .acc-body.open').forEach(function(el){
+   if(el.id===id)return;
+   el.classList.remove('open');
+   const sibBtn=el.closest('.order-card').querySelector('.acc-toggle');
+   if(sibBtn){
+    const sibItems=sibBtn.textContent.match(/\d+ item/);
+    const sibStr=sibItems?sibItems[0]:'';
+    sibBtn.classList.remove('open');
+    sibBtn.innerHTML='<span class="acc-chev">▼</span> Lihat Rincian ('+sibStr+')';
+   }
+  });
+ }
+ body.classList.toggle('open',!isOpen);
+ btn.classList.toggle('open',!isOpen);
+ const items=btn.textContent.match(/\d+ item/);
+ const itemStr=items?items[0]:'';
+ btn.innerHTML='<span class="acc-chev" style="transform:'+(isOpen?'':'rotate(180deg)')+'">▼</span> '+(isOpen?'Lihat Rincian':'Tutup Rincian')+' ('+itemStr+')';
+}
+// Mapping nama warna umum ke hex untuk swatch
+function colorHex(name){
+ if(!name)return'#ccc';
+ const n=name.toLowerCase().trim();
+ const map={
+  'putih':'#ffffff','white':'#ffffff',
+  'hitam':'#1a1a1a','black':'#1a1a1a',
+  'merah':'#e03131','red':'#e03131',
+  'biru':'#1971c2','blue':'#1971c2',
+  'biru dongker':'#1e3a5f','navy':'#1e3a5f','dongker':'#1e3a5f',
+  'hijau':'#2f9e44','green':'#2f9e44',
+  'kuning':'#f08c00','yellow':'#f08c00',
+  'abu':'#868e96','abu-abu':'#868e96','grey':'#868e96','gray':'#868e96',
+  'coklat':'#8c5a2c','brown':'#8c5a2c',
+  'oranye':'#e67700','orange':'#e67700',
+  'ungu':'#7048e8','purple':'#7048e8',
+  'pink':'#e64980','merah muda':'#e64980',
+  'tosca':'#0ca678','teal':'#0ca678',
+  'maroon':'#8c0000','marun':'#8c0000',
+  'cream':'#f5e6c8','krem':'#f5e6c8',
+  'silver':'#c9c9c9','perak':'#c9c9c9',
+  'gold':'#d4a800','emas':'#d4a800',
+ };
+ // cek exact match dulu
+ if(map[n])return map[n];
+ // cari substring
+ for(const k of Object.keys(map)){if(n.includes(k))return map[k]}
+ // fallback hash
+ let hash=0;for(let i=0;i<n.length;i++){hash=n.charCodeAt(i)+((hash<<5)-hash)}
+ return'hsl('+(Math.abs(hash)%360)+',55%,55%)';
 }
 function renderHistoryPager(totalPages){
  if(totalPages<=1)return'';
@@ -3008,7 +3190,7 @@ async function toggleAutoTint(modelId){
  produkMeta[modelId]={...produkMeta[modelId],...row};buildProducts();renderAdmin();toast(!cur?'✅ Auto-Warna diaktifkan':'Auto-Warna dinonaktifkan');
 }
 function adminSettings(){
- const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  status_bayar text not null default 'belum_lunas',\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\n-- Jaga-jaga kalau tabel produksi_orders sudah ada sebelumnya (dibuat sebelum fitur status pembayaran ini):\nalter table public.produksi_orders add column if not exists status_bayar text not null default 'belum_lunas';\n-- Fitur catat nama/WA/alamat pelanggan sengaja TIDAK dipakai (kurang efisien untuk alur kerja saat ini) —\n-- hapus kolomnya kalau masih ada dari versi sebelumnya:\nalter table public.produksi_orders drop column if exists customer_name;\nalter table public.produksi_orders drop column if exists whatsapp;\nalter table public.produksi_orders drop column if exists address;\n-- Kolom catatan vendor (request/permintaan khusus saat checkout), muncul sebagai notifikasi di Admin:\nalter table public.produksi_orders add column if not exists note text;\n-- Kolom penghubung di sisi app Inventory (transaksi.order_code) supaya pelunasan di Inventory\n-- otomatis meng-update status_bayar pesanan ini. Ditambahkan di sini juga (dengan IF EXISTS)\n-- supaya SQL ini aman dijalankan di urutan manapun terhadap SQL app Inventory.\ndo $$\nbegin\n  if exists (select 1 from information_schema.tables where table_name = 'transaksi') then\n    alter table transaksi add column if not exists order_code text;\n  end if;\nend $$;\ndrop policy if exists \"ord insert\" on public.produksi_orders;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ndrop policy if exists \"ord read\" on public.produksi_orders;\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ndrop policy if exists \"ord update\" on public.produksi_orders;\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ndrop policy if exists \"ord delete\" on public.produksi_orders;\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  gambar_warna jsonb default '{}'::jsonb,\n  auto_tint boolean default false,\n  overlay_url text,\n  overlay_mode text default 'over',\n  overlay_size numeric default 40,\n  overlay_x numeric default 50,\n  overlay_y numeric default 50,\n  overlay_invert boolean default true,\n  overlay_invert_warna jsonb,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n-- Jaga-jaga kalau tabel pesanan_produk_meta sudah ada sebelumnya (dibuat sebelum fitur gambar per-warna & auto-warna ini):\nalter table public.pesanan_produk_meta add column if not exists gambar_warna jsonb default '{}'::jsonb;\nalter table public.pesanan_produk_meta add column if not exists auto_tint boolean default false;\n-- Gambar Tambahan (overlay/print) di atas Gambar Utama — posisi layer, ukuran & letak diatur admin:\nalter table public.pesanan_produk_meta add column if not exists overlay_url text;\nalter table public.pesanan_produk_meta add column if not exists overlay_mode text default 'over';\nalter table public.pesanan_produk_meta add column if not exists overlay_size numeric default 40;\nalter table public.pesanan_produk_meta add column if not exists overlay_x numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_y numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_invert boolean default true;\n-- Daftar nama warna (array JSON) yang gambar tambahannya di-invert — dipilih manual oleh admin lewat checklist,\n-- menggantikan deteksi otomatis gelap/terang. NULL (belum pernah disimpan/produk lama) = invert SEMUA warna\n-- (kompatibel dengan perilaku lama) sampai admin menyimpan pilihannya sendiri lewat panel admin.\nalter table public.pesanan_produk_meta add column if not exists overlay_invert_warna jsonb;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\n-- PENTING: semua tabel Inventory yang dipantau di setupRealtimeStok() harus\n-- didaftarkan ke publication ini juga, kalau tidak event realtime tidak akan pernah terkirim\n-- (transaksi baru dari app Inventory tidak akan muncul otomatis di Pesanan sampai di-refresh manual).\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table brand; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table model; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table warna; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table ukuran; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input_item; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi_item; exception when duplicate_object then null; end;\n  -- WAJIB: tanpa baris ini, app Inventory (index.html) yang dengar tabel produksi_orders\\n  -- untuk bel/toast/alarm/notifikasi pesanan baru TIDAK AKAN PERNAH menerima event realtime-nya.\\n  begin alter publication supabase_realtime add table produksi_orders; exception when duplicate_object then null; end;\nend $$;";
+ const SQL="-- RADJA Konveksi — Pesanan + Sinkron Stok Inventory (jalankan sekali)\ncreate table if not exists public.produksi_orders (\n  id bigint generated always as identity primary key,\n  order_code text unique not null,\n  items jsonb not null default '[]',\n  stage int not null default 0,\n  status_bayar text not null default 'belum_lunas',\n  created_at timestamptz not null default now()\n);\nalter table public.produksi_orders enable row level security;\n-- Jaga-jaga kalau tabel produksi_orders sudah ada sebelumnya (dibuat sebelum fitur status pembayaran ini):\nalter table public.produksi_orders add column if not exists status_bayar text not null default 'belum_lunas';\n-- Fitur catat nama/WA/alamat pelanggan sengaja TIDAK dipakai (kurang efisien untuk alur kerja saat ini) —\n-- hapus kolomnya kalau masih ada dari versi sebelumnya:\nalter table public.produksi_orders drop column if exists customer_name;\nalter table public.produksi_orders drop column if exists whatsapp;\nalter table public.produksi_orders drop column if exists address;\n-- Kolom catatan vendor (request/permintaan khusus saat checkout), muncul sebagai notifikasi di Admin:\nalter table public.produksi_orders add column if not exists note text;\n-- Kolom prioritas item: array key item yang ditandai URGENT oleh customer (dibaca app Inventory untuk badge notifikasi):\nalter table public.produksi_orders add column if not exists priority_items jsonb default '[]'::jsonb;\n-- Kolom penghubung di sisi app Inventory (transaksi.order_code) supaya pelunasan di Inventory\n-- otomatis meng-update status_bayar pesanan ini. Ditambahkan di sini juga (dengan IF EXISTS)\n-- supaya SQL ini aman dijalankan di urutan manapun terhadap SQL app Inventory.\ndo $$\nbegin\n  if exists (select 1 from information_schema.tables where table_name = 'transaksi') then\n    alter table transaksi add column if not exists order_code text;\n  end if;\nend $$;\ndrop policy if exists \"ord insert\" on public.produksi_orders;\ncreate policy \"ord insert\" on public.produksi_orders for insert with check (true);\ndrop policy if exists \"ord read\" on public.produksi_orders;\ncreate policy \"ord read\" on public.produksi_orders for select using (true);\ndrop policy if exists \"ord update\" on public.produksi_orders;\ncreate policy \"ord update\" on public.produksi_orders for update using (true);\ndrop policy if exists \"ord delete\" on public.produksi_orders;\ncreate policy \"ord delete\" on public.produksi_orders for delete using (true);\n\n-- Tabel metadata tampilan produk milik PESANAN saja (gambar, deskripsi, dst).\n-- TIDAK menyentuh tabel Inventory (brand/model/warna/ukuran/riwayat_input*/transaksi*).\ncreate table if not exists public.pesanan_produk_meta (\n  model_id bigint primary key,\n  gambar_url text,\n  gambar_warna jsonb default '{}'::jsonb,\n  auto_tint boolean default false,\n  overlay_url text,\n  overlay_mode text default 'over',\n  overlay_size numeric default 40,\n  overlay_x numeric default 50,\n  overlay_y numeric default 50,\n  overlay_invert boolean default true,\n  overlay_invert_warna jsonb,\n  kategori text,\n  deskripsi text,\n  min_order int default 1,\n  estimasi_hari text,\n  badge text,\n  aktif boolean default true,\n  updated_at timestamptz default now()\n);\nalter table public.pesanan_produk_meta disable row level security;\n-- Jaga-jaga kalau tabel pesanan_produk_meta sudah ada sebelumnya (dibuat sebelum fitur gambar per-warna & auto-warna ini):\nalter table public.pesanan_produk_meta add column if not exists gambar_warna jsonb default '{}'::jsonb;\nalter table public.pesanan_produk_meta add column if not exists auto_tint boolean default false;\n-- Gambar Tambahan (overlay/print) di atas Gambar Utama — posisi layer, ukuran & letak diatur admin:\nalter table public.pesanan_produk_meta add column if not exists overlay_url text;\nalter table public.pesanan_produk_meta add column if not exists overlay_mode text default 'over';\nalter table public.pesanan_produk_meta add column if not exists overlay_size numeric default 40;\nalter table public.pesanan_produk_meta add column if not exists overlay_x numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_y numeric default 50;\nalter table public.pesanan_produk_meta add column if not exists overlay_invert boolean default true;\n-- Daftar nama warna (array JSON) yang gambar tambahannya di-invert — dipilih manual oleh admin lewat checklist,\n-- menggantikan deteksi otomatis gelap/terang. NULL (belum pernah disimpan/produk lama) = invert SEMUA warna\n-- (kompatibel dengan perilaku lama) sampai admin menyimpan pilihannya sendiri lewat panel admin.\nalter table public.pesanan_produk_meta add column if not exists overlay_invert_warna jsonb;\n\n-- View read-only yang menghitung stok bersih per brand+model+warna+ukuran,\n-- meniru logika hitungStokItem() di aplikasi Inventory (masuk - retur - keluar).\ncreate or replace view public.v_stok_ringkas as\nwith masuk as (\n  select upper(trim(ri.brand)) brand, upper(trim(ri.model)) model,\n         upper(trim(rii.warna)) warna, upper(trim(rii.ukuran)) ukuran,\n         case when ri.mode = 'retur' then -rii.qty else rii.qty end as qty_signed,\n         0 as qty_keluar\n  from riwayat_input ri join riwayat_input_item rii on rii.riwayat_input_id = ri.id\n),\nkeluar as (\n  select upper(trim(t.brand)) brand, upper(trim(t.model)) model,\n         upper(trim(ti.warna)) warna, upper(trim(ti.ukuran)) ukuran,\n         -ti.qty as qty_signed, ti.qty as qty_keluar\n  from transaksi t join transaksi_item ti on ti.transaksi_id = t.id\n),\ngab as (select * from masuk union all select * from keluar)\nselect brand, model, warna, ukuran,\n       sum(qty_signed)::int as stok,\n       sum(qty_keluar)::int as terjual\nfrom gab group by brand, model, warna, ukuran;\n\ngrant select on public.v_stok_ringkas to anon, authenticated;\n\n-- Realtime (agar Pesanan otomatis update saat stok Inventory berubah)\n-- PENTING: semua tabel Inventory yang dipantau di setupRealtimeStok() harus\n-- didaftarkan ke publication ini juga, kalau tidak event realtime tidak akan pernah terkirim\n-- (transaksi baru dari app Inventory tidak akan muncul otomatis di Pesanan sampai di-refresh manual).\ndo $$\nbegin\n  begin alter publication supabase_realtime add table pesanan_produk_meta; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table brand; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table model; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table warna; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table ukuran; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table riwayat_input_item; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi; exception when duplicate_object then null; end;\n  begin alter publication supabase_realtime add table transaksi_item; exception when duplicate_object then null; end;\n  -- WAJIB: tanpa baris ini, app Inventory (index.html) yang dengar tabel produksi_orders\\n  -- untuk bel/toast/alarm/notifikasi pesanan baru TIDAK AKAN PERNAH menerima event realtime-nya.\\n  begin alter publication supabase_realtime add table produksi_orders; exception when duplicate_object then null; end;\nend $$;";
  return '<div class="panel" style="margin-bottom:14px"><h2>🔗 Koneksi Supabase</h2>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:6px">'+(sb?'🟢 <b style="color:var(--ok)">Tersambung</b> — pesanan tersinkron & katalog stok mengikuti data Inventory secara realtime.':'🔴 <b style="color:var(--danger)">Belum tersambung</b>.')+'</p>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:14px">URL & Anon Key project Supabase sudah tertanam otomatis di aplikasi ini (sama dengan aplikasi Inventory) — tidak perlu diisi manual. Katalog produk & stok mengikuti data Brand/Model/Warna/Ukuran di sana (read-only); Inventory tidak pernah ditulis dari sini. Jalankan SQL di bawah sekali di Supabase SQL Editor untuk menyiapkan tabel pesanan & view stok.</p>'+
