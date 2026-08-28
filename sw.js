@@ -4,7 +4,6 @@ const RUNTIME_CACHE = 'radja-runtime-v8'; // Cache untuk dynamic content
 const APP_SHELL = [
   './index.html',
   './manifest.json',
-  './hero.jpg',
   './icon-72.png',
   './icon-96.png',
   './icon-128.png',
