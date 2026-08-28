@@ -1,5 +1,5 @@
 /* RADJA Production — Service Worker */
-const CACHE_VERSION = 'radja-pwa-v7';
+const CACHE_VERSION = 'radja-pwa-v8';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
