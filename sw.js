@@ -1,5 +1,6 @@
-/* RADJA Production — Service Worker */
+/* RADJA Production — Service Worker (Robust Multi-Tab Update Handler) */
 const CACHE_VERSION = 'radja-pwa-v8';
+const RUNTIME_CACHE = 'radja-runtime-v8'; // Cache untuk dynamic content
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -17,51 +18,103 @@ const APP_SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
+  console.log('[SW] Install event — caching app shell');
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL)).catch(()=>{})
+    caches.open(CACHE_VERSION)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .catch((err) => console.warn('[SW] Cache fail:', err))
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Langsung aktif tanpa tunggu tab lama ditutup
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activate event — cleanup old caches');
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
-    )
+    // Hapus SEMUA cache lama (tidak hanya beda versi)
+    caches.keys()
+      .then((keys) => {
+        const toDelete = keys.filter((k) => k !== CACHE_VERSION && k !== RUNTIME_CACHE);
+        console.log('[SW] Deleting old caches:', toDelete);
+        return Promise.all(toDelete.map((k) => caches.delete(k)));
+      })
+      .then(() => {
+        // Beritahu ALL client ada update available
+        return self.clients.matchAll({ type: 'window' })
+          .then((clients) => {
+            if (clients.length > 0) {
+              console.log('[SW] Broadcasting UPDATE_AVAILABLE to', clients.length, 'clients');
+              clients.forEach((client) => {
+                client.postMessage({ 
+                  type: 'UPDATE_AVAILABLE',
+                  timestamp: Date.now(),
+                  version: CACHE_VERSION
+                });
+              });
+            }
+          });
+      })
   );
-  self.clients.claim();
+  self.clients.claim(); // Langsung kontrol semua client existing
 });
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
+  const url = new URL(req.url);
 
-  // Hanya tangani request GET dari origin sendiri; biarkan request lain (Supabase API, dll) lewat apa adanya.
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  // Hanya handle GET dari origin sendiri
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // Halaman utama (navigasi): network-first, fallback ke cache saat offline.
-  if (req.mode === 'navigate') {
+  // Manifest: selalu coba fetch fresh, fallback ke cache (utk offline)
+  if (url.pathname === '/manifest.json') {
     event.respondWith(
       fetch(req, { cache: 'no-store' })
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put('./index.html', clone));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          }
           return res;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => caches.match(req) || new Response('{}', { status: 503 }))
     );
     return;
   }
 
-  // Aset statis (gambar, ikon, manifest): cache-first, lalu update cache di background.
+  // Navigasi (page): network-first dengan timeout, fallback ke cache
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      Promise.race([
+        fetch(req, { cache: 'no-store' }).then((res) => {
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          }
+          return res;
+        }),
+        new Promise((resolve) => setTimeout(resolve, 5000)) // 5s timeout
+      ])
+        .catch(() => caches.match(req))
+        .then((res) => res || caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Aset statis: cache-first, update di background
   event.respondWith(
     caches.match(req).then((cached) => {
-      const fetchPromise = fetch(req)
+      const fetchPromise = fetch(req, { cache: 'no-store' })
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(req, clone));
+          }
           return res;
         })
-        .catch(() => cached);
+        .catch((err) => {
+          console.warn('[SW] Fetch failed for', url.pathname, err);
+          return cached;
+        });
+      
       return cached || fetchPromise;
     })
   );
