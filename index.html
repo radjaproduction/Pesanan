@@ -590,6 +590,16 @@ body.hide-footer footer{display:none}
 #boot-overlay .boot-meta{display:flex;flex-direction:column;align-items:center;gap:6px}
 #boot-overlay .boot-pct{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:13px;font-weight:800;color:var(--accent);letter-spacing:.3px;font-variant-numeric:tabular-nums}
 #boot-overlay .boot-txt{font-size:10.5px;font-weight:700;letter-spacing:.7px;color:#8A95B5;text-transform:uppercase;min-height:14px;transition:opacity .25s ease}
+#update-notification{position:fixed;left:18px;right:18px;bottom:80px;z-index:999;display:flex;align-items:center;gap:12px;padding:12px 13px 12px 14px;background:linear-gradient(135deg,#fffaf0 0%,#fff3d8 100%);border:1px solid rgba(242,140,0,.4);border-radius:16px;box-shadow:0 12px 30px rgba(11,22,51,.18),0 2px 8px rgba(242,140,0,.12);animation:slideUp .4s ease}
+#update-notification .update-icon{display:flex;align-items:center;justify-content:center;width:42px;height:42px;flex-shrink:0;border-radius:12px;background:var(--navy-900);color:var(--accent);font-size:21px;box-shadow:0 5px 12px rgba(11,22,51,.18)}
+#update-notification .update-copy{flex:1;min-width:0}
+#update-notification .update-title{color:var(--navy-900);font-size:13px;font-weight:900;line-height:1.3}
+#update-notification .update-sub{margin-top:3px;color:#7b6542;font-size:11px;font-weight:600;line-height:1.4}
+#update-notification .update-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+#update-notification .update-reload{background:var(--accent);color:var(--navy-900);border:0;border-radius:9px;padding:9px 12px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;box-shadow:0 3px 8px rgba(242,140,0,.22);transition:transform .2s,box-shadow .2s,opacity .2s}
+#update-notification .update-reload:hover{transform:translateY(-1px);box-shadow:0 5px 12px rgba(242,140,0,.3)}
+#update-notification .update-close{display:flex;align-items:center;justify-content:center;width:30px;height:30px;background:rgba(11,22,51,.06);color:var(--navy-700);border:0;border-radius:8px;font-size:14px;cursor:pointer}
+@media(max-width:480px){#update-notification{left:12px;right:12px;bottom:68px;padding:10px;gap:9px}#update-notification .update-icon{width:36px;height:36px;border-radius:10px;font-size:18px}#update-notification .update-title{font-size:12px}#update-notification .update-sub{font-size:10px}#update-notification .update-reload{padding:8px 9px;font-size:10px}}
 @keyframes bootWeave{from{transform:translate(0,0)}to{transform:translate(26px,26px)}}
 @keyframes bootGlow{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.05)}}
 @keyframes bootRing{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.55);opacity:0}}
@@ -895,9 +905,17 @@ function rowToOrder(r){
 }
 async function syncOrdersFromCloud(){
  if(!sb)return false;
- try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(2000);
+  try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(2000);
   if(error)throw error;
   const fresh=data.map(rowToOrder);
+  // Jangan menghapus cache lokal hanya karena query server mengembalikan kosong.
+  // Ini bisa terjadi saat policy/RLS belum siap, project Supabase salah, atau respons
+  // sementara belum memuat data. Cache lokal dipertahankan agar dashboard tidak tiba-tiba
+  // berubah menjadi "Belum ada pesanan" dan data lokal tidak hilang.
+  if(fresh.length===0&&orders.length>0){
+   console.warn('[Orders] Supabase mengembalikan 0 order; cache lokal dipertahankan sementara.');
+   return false;
+  }
   // PERBAIKAN: jangan timpa order yang masih menunggu sync lokal (order baru yang
   // belum synced, ATAU perubahan stage yang belum stageSynced) — kalau tidak, hasil
   // dari server (yang belum tahu perubahan lokal itu) akan menimpanya diam-diam
@@ -3432,68 +3450,31 @@ function _notifyAppUpdate(reason){
   
   const notif = document.createElement('div');
   notif.id = 'update-notification';
-  notif.style.cssText = `
-    position: fixed;
-    bottom: 80px;
-    left: 18px;
-    right: 18px;
-    background: var(--accent-soft);
-    border: 2px solid var(--accent);
-    border-radius: 12px;
-    padding: 14px 16px;
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    box-shadow: 0 4px 16px rgba(255,159,28,.2);
-    animation: slideUp .4s ease;
-  `;
-  
-  const text = document.createElement('div');
-  text.style.cssText = `
-    flex: 1;
-    color: var(--warn);
-    font-size: 14px;
-    font-weight: 600;
-  `;
-  text.textContent = '📲 Update aplikasi tersedia! Versi terbaru sudah siap digunakan.';
+  const icon = document.createElement('div');
+  icon.className = 'update-icon';
+  icon.textContent = '↻';
+  icon.setAttribute('aria-hidden','true');
+
+  const copy = document.createElement('div');
+  copy.className = 'update-copy';
+  const title = document.createElement('div');
+  title.className = 'update-title';
+  title.textContent = 'Update aplikasi tersedia';
+  const sub = document.createElement('div');
+  sub.className = 'update-sub';
+  sub.textContent = 'Muat ulang untuk memakai versi terbaru.';
+  copy.appendChild(title);
+  copy.appendChild(sub);
   
   const closeBtn = document.createElement('button');
-  closeBtn.style.cssText = `
-    background: none;
-    color: var(--warn);
-    font-size: 18px;
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 4px 8px;
-  `;
+  closeBtn.className = 'update-close';
+  closeBtn.setAttribute('aria-label','Tutup notifikasi update');
   closeBtn.textContent = '✕';
   closeBtn.onclick = () => notif.remove();
   
   const reloadBtn = document.createElement('button');
-  reloadBtn.style.cssText = `
-    background: var(--accent);
-    color: var(--navy-900);
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: transform .2s, box-shadow .2s;
-  `;
-  reloadBtn.textContent = '↻ Reload';
-  reloadBtn.onmouseover = () => {
-    reloadBtn.style.transform = 'scale(1.05)';
-    reloadBtn.style.boxShadow = '0 2px 8px rgba(255,159,28,.3)';
-  };
-  reloadBtn.onmouseout = () => {
-    reloadBtn.style.transform = 'scale(1)';
-    reloadBtn.style.boxShadow = 'none';
-  };
+  reloadBtn.className = 'update-reload';
+  reloadBtn.textContent = '↻ Muat ulang';
   reloadBtn.onclick = () => {
     reloadBtn.textContent = '⟳ Memuat...';
     reloadBtn.disabled = true;
@@ -3508,9 +3489,13 @@ function _notifyAppUpdate(reason){
     }, 100);
   };
   
-  notif.appendChild(text);
-  notif.appendChild(reloadBtn);
-  notif.appendChild(closeBtn);
+  const actions = document.createElement('div');
+  actions.className = 'update-actions';
+  actions.appendChild(reloadBtn);
+  actions.appendChild(closeBtn);
+  notif.appendChild(icon);
+  notif.appendChild(copy);
+  notif.appendChild(actions);
   document.body.appendChild(notif);
   
   // Auto-remove setelah 15 detik jika user tidak klik
