@@ -3112,19 +3112,41 @@ function adminProduk(){
    '</div>';
  }).join('');
 }
+// Upload file ke Supabase Storage bucket gambar-pesanan, return public URL
+async function _uploadGambarPesanan(file, prefix){
+ if(!sb) throw new Error('Belum tersambung ke Supabase');
+ const ext=(file.name||'').split('.').pop()||'jpg';
+ const fileName=prefix+'_'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
+ const {error}=await sb.storage.from('gambar-pesanan').upload(fileName,file,{contentType:file.type||'image/jpeg',upsert:false});
+ if(error) throw new Error('Upload storage gagal: '+error.message);
+ const {data}=sb.storage.from('gambar-pesanan').getPublicUrl(fileName);
+ return data.publicUrl;
+}
+
+// Konversi dataURL ke File object (untuk upload ke Storage)
+function _dataUrlToFile(dataUrl, filename){
+ const arr=dataUrl.split(','), mime=arr[0].match(/:(.*?);/)[1];
+ const bstr=atob(arr[1]); let n=bstr.length;
+ const u8=new Uint8Array(n); while(n--){u8[n]=bstr.charCodeAt(n);}
+ return new File([u8], filename, {type:mime});
+}
+
 async function handleImgUpload(modelId,inputEl){
  const file=inputEl.files&&inputEl.files[0];
  if(!file)return;
  if(!file.type.startsWith('image/')){toast('⚠️ File harus berupa gambar');inputEl.value='';return}
  if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
- toast('⏳ Memproses gambar...');
+ toast('⏳ Memproses & mengupload gambar...');
  try{
   const dataUrl=await compressImage(file,900,0.82);
-  $('pm-img-'+modelId).value=dataUrl;
-  const bp=$('pm-bigpreview-'+modelId);if(bp)bp.src=dataUrl;
-  const sp=$('pm-preview-'+modelId);if(sp)sp.src=dataUrl;
-  toast('✅ Gambar siap — klik Simpan untuk menyimpan');
- }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+  // Upload ke Storage, simpan URL (bukan base64)
+  const uploadFile=_dataUrlToFile(dataUrl,'gambar_'+modelId);
+  const url=await _uploadGambarPesanan(uploadFile,'produk_'+modelId);
+  $('pm-img-'+modelId).value=url;
+  const bp=$('pm-bigpreview-'+modelId);if(bp)bp.src=url;
+  const sp=$('pm-preview-'+modelId);if(sp)sp.src=url;
+  toast('✅ Gambar diupload — klik Simpan untuk menyimpan');
+ }catch(e){console.error(e);toast('❌ Gagal upload gambar: '+e.message)}
 }
 async function handleColorImgUpload(inputEl){
  const modelId=+inputEl.dataset.model, colorKey=inputEl.dataset.color, previewId=inputEl.dataset.preview;
@@ -3132,14 +3154,17 @@ async function handleColorImgUpload(inputEl){
  if(!file)return;
  if(!file.type.startsWith('image/')){toast('⚠️ File harus berupa gambar');inputEl.value='';return}
  if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
- toast('⏳ Memproses gambar...');
+ toast('⏳ Memproses & mengupload foto warna...');
  try{
   const dataUrl=await compressImage(file,900,0.82);
+  // Upload ke Storage, simpan URL (bukan base64)
+  const uploadFile=_dataUrlToFile(dataUrl,'warna_'+modelId+'_'+colorKey);
+  const url=await _uploadGambarPesanan(uploadFile,'warna_'+modelId+'_'+colorKey.replace(/\s+/g,'_'));
   if(!pendingColorImg[modelId])pendingColorImg[modelId]={};
-  pendingColorImg[modelId][colorKey]=dataUrl;
-  const prev=$(previewId);if(prev)prev.src=dataUrl;
-  toast('✅ Foto warna siap — klik Simpan untuk menyimpan');
- }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+  pendingColorImg[modelId][colorKey]=url;
+  const prev=$(previewId);if(prev)prev.src=url;
+  toast('✅ Foto warna diupload — klik Simpan untuk menyimpan');
+ }catch(e){console.error(e);toast('❌ Gagal upload foto warna: '+e.message)}
 }
 function clearColorImg(modelId,colorKey,previewId){
  if(!pendingColorImg[modelId])pendingColorImg[modelId]={};
@@ -3197,13 +3222,16 @@ async function handleOverlayUpload(modelId,inputEl){
  if(!file)return;
  if(!file.type.startsWith('image/')){toast('⚠️ File harus berupa gambar');inputEl.value='';return}
  if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
- toast('⏳ Memproses gambar...');
+ toast('⏳ Memproses & mengupload gambar overlay...');
  try{
   const dataUrl=await compressImage(file,900,0.82);
-  $('pm-ov-'+modelId).value=dataUrl;
+  // Upload ke Storage, simpan URL (bukan base64)
+  const uploadFile=_dataUrlToFile(dataUrl,'overlay_'+modelId);
+  const url=await _uploadGambarPesanan(uploadFile,'overlay_'+modelId);
+  $('pm-ov-'+modelId).value=url;
   updateOverlayPreview(modelId);
-  toast('✅ Gambar tambahan siap — klik Simpan untuk menyimpan');
- }catch(e){console.error(e);toast('❌ Gagal memproses gambar, coba file lain')}
+  toast('✅ Gambar overlay diupload — klik Simpan untuk menyimpan');
+ }catch(e){console.error(e);toast('❌ Gagal upload gambar overlay: '+e.message)}
 }
 function ensureImgLightbox(){
  if($('imgLightboxModal'))return;
