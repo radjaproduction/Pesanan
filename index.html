@@ -870,6 +870,14 @@ const LS={
  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){console.warn('[Storage] Gagal menyimpan '+k+' (storage penuh/terblokir)',e);return false}}
 };
 let cart=LS.get('rj_cart',[]);
+// Cache foto keranjang yang SUDAH diberi tint/overlay, disimpan lintas reload (localStorage) —
+// key = "pid|warna|ukuran" (sama seperti c.key). Tanpa ini, tiap kali halaman Keranjang dibuka
+// dalam sesi baru (reload, kembali dari checkout, dst), foto item selalu muncul dulu dalam versi
+// polos/belum-diwarnai lalu "lompat" ke warna yang benar setelah proses canvas tint selesai —
+// itulah penyebab foto di kiri kelihatan lambat muncul. Dengan cache ini, versi yang sudah jadi
+// langsung dipakai sebagai foto awal, jadi tidak ada jeda/kedipan lagi.
+let cartImgCache=LS.get('rj_cart_img_cache',{});
+function saveCartImgCache(){LS.set('rj_cart_img_cache',cartImgCache)}
 let orders=LS.get('rj_orders',null);
 if(!orders){orders=seedOrders();LS.set('rj_orders',orders)}
 const SUPABASE_URL='https://wyalxprcrrisowsqftgt.supabase.co';
@@ -1901,10 +1909,17 @@ function renderCart(){
  if(cart.length!==before||stokAdjusted)saveCart();
  if(stokAdjusted)toast('⚠️ Jumlah di keranjang disesuaikan otomatis dengan stok terbaru');
  if(!cart.length){w.innerHTML='<div class="empty-wrap"><div class="success"><div class="big" style="background:var(--navy-100);color:var(--navy-600)">🛒</div><h1>Keranjang Kosong</h1><p>Yuk mulai pilih produk konveksi favoritmu.</p><button class="btn btn-accent" onclick="go(\'catalog\')">🛍️ Belanja Sekarang</button></div></div>';return}
+ // Buang entri cache foto milik item yang sudah tidak ada lagi di keranjang, biar tidak menumpuk terus.
+ const activeKeys=new Set(cart.map(c=>c.key));
+ let cacheTrimmed=false;
+ Object.keys(cartImgCache).forEach(k=>{if(!activeKeys.has(k)){delete cartImgCache[k];cacheTrimmed=true}});
+ if(cacheTrimmed)saveCartImgCache();
  const rows=cart.map((c,i)=>{const p=P(c.pid);const avail=stokFor(p,c.color,c.size);
   const cObj=colorObjByName(p,c.color);
   const explicitImg=cObj?(p.imgByColor[(cObj.n||'').trim().toUpperCase()]||''):'';
-  const baseImg=explicitImg||(p?p.img:PLACEHOLDER_IMG);
+  // Kalau versi sudah-di-tint pernah tersimpan buat item ini, pakai itu langsung sebagai foto
+  // awal (bukan foto polos) — supaya tidak ada jeda/kedipan sebelum tint-nya selesai diproses ulang.
+  const baseImg=cartImgCache[c.key]||explicitImg||(p?p.img:PLACEHOLDER_IMG);
   return '<div class="c-item"><img id="cart-img-'+i+'" src="'+baseImg+'">'+
   '<div class="inf"><b>'+esc(p.name)+'</b><div class="var">'+esc(c.color)+' • Ukuran '+esc(c.size)+' • '+priceLabel(p)+'/pcs'+(avail<c.qty?' • <span style="color:var(--danger);font-weight:700">stok hanya '+avail+'</span>':'')+'</div>'+
   '<div class="row"><div class="stepper-qty"><button onclick="cQty('+i+',-1)">−</button><input value="'+c.qty+'" type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,\'\')" onchange="cSetQty('+i+',this.value)" onblur="cSetQty('+i+',this.value)"><button onclick="cQty('+i+',1)">+</button></div>'+
@@ -1930,6 +1945,7 @@ function renderCart(){
   const ovNow=hasOverlay?Object.assign({},p.overlay,{invert:invertNow}):null;
   composeImage(p.img,ovNow,tintHex,function(url){
    const tag=document.getElementById('cart-img-'+i);if(tag)tag.src=url;
+   if(url){cartImgCache[c.key]=url;saveCartImgCache()}
   });
  });
 }
