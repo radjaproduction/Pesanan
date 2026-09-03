@@ -3373,7 +3373,7 @@ async function batchMigrateBrandToOrders(){
  renderAdmin();
  toast('✅ Migration selesai: '+synced+' order synced'+(failed?' • '+failed+' failed':''));
 }
-function copySQL(){const t=$('sqlBox');t.style.left='0';t.select();document.execCommand('copy');t.style.left='-9999px';toast('📄 SQL schema disalin')}
+function copySQL(){const t=$('sqlBox');if(!t.value.includes('Kompatibilitas Inventory: status selesai disiapkan'))t.value+='\n\n-- Kompatibilitas Inventory: status selesai disiapkan lintas perangkat.\nALTER TABLE public.produksi_orders ADD COLUMN IF NOT EXISTS disiapkan_selesai boolean NOT NULL DEFAULT false;';t.style.left='0';t.select();document.execCommand('copy');t.style.left='-9999px';toast('📄 SQL schema disalin')}
 async function testConn(){
  if(!settings.url||!settings.key){toast('⚠️ Isi URL & Anon Key dulu');return}
  initSupabase();
