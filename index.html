@@ -916,7 +916,7 @@ async function syncOrdersFromCloud(){
  if(!sb)return false;
   try{const {data,error}=await sb.from(ORDERS_TABLE).select('*').order('created_at',{ascending:false}).limit(2000);
   if(error)throw error;
-  const fresh=data.map(rowToOrder);
+  const fresh=data.map(rowToOrder).filter(o => Array.isArray(o.items) && o.items.length > 0);
   // Jangan menghapus cache lokal hanya karena query server mengembalikan kosong.
   // Ini bisa terjadi saat policy/RLS belum siap, project Supabase salah, atau respons
   // sementara belum memuat data. Cache lokal dipertahankan agar dashboard tidak tiba-tiba
@@ -940,9 +940,8 @@ async function syncOrdersFromCloud(){
  catch(e){console.error(e);return false}
 }
 function seedOrders(){const n=Date.now(),D=86400000;return[
- {code:'RJA-10241',ts:n-6*D,stage:1,mine:false,synced:true,items:[]},
- {code:'RJA-10257',ts:n-3*D,stage:1,mine:false,synced:true,items:[]},
- {code:'RJA-10263',ts:n-1*D,stage:0,mine:false,synced:true,items:[]}];}
+ {code:'RJA-10257',ts:n-3*D,stage:1,mine:false,synced:true,items:[{pid:'m1',name:'Kaos',size:'M',qty:10}]},
+ {code:'RJA-10263',ts:n-1*D,stage:0,mine:false,synced:true,items:[{pid:'m2',name:'Kaos',size:'L',qty:20}]}];}
 
 const $=id=>document.getElementById(id);
 const fmt=n=>'Rp '+(n||0).toLocaleString('id-ID');
@@ -1301,7 +1300,7 @@ async function refreshTrackData(){
    loadVendorTrxHistory()
   ]);
   if(ordersRes.error)throw ordersRes.error;
-  window._history=ordersRes.data.map(rowToOrder).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
+  window._history=ordersRes.data.map(rowToOrder).filter(o => Array.isArray(o.items) && o.items.length > 0).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
   _trackDataLoaded=true;
   _trackDataDirty=false;
   filterByDate();
@@ -2210,7 +2209,7 @@ async function renderTrack(){
    loadVendorTrxHistory()
   ]);
   if(ordersRes.error)throw ordersRes.error;
-  const list=ordersRes.data.map(rowToOrder).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
+  const list=ordersRes.data.map(rowToOrder).filter(o => Array.isArray(o.items) && o.items.length > 0).concat(vendorTrx).sort((a,b)=>b.ts-a.ts);
   window._history=list;
   periodPage=1;
   renderPeriodList(list);
