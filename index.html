@@ -981,6 +981,8 @@ function go(v,fromBack){
  $('backBar').classList.toggle('show', v!=='home');
  document.body.classList.toggle('bg-catalog', v==='catalog');
  document.body.classList.toggle('hide-footer', v==='admin');
+ // PERBAIKAN: Sync cart badge setiap kali pindah view (terutama untuk mobile/desktop dengan state terpisah)
+ updateBadge();
  if(v==='cart')renderCart();if(v==='catalog')renderCatalog();if(v==='track')renderTrack();if(v==='admin')renderAdmin();if(v==='home')renderHome();if(v==='product')renderProduct();if(v==='checkout')renderCheckout();
  if(v==='admin'&&sb){syncOrdersFromCloud().then(changed=>{if(changed)renderAdmin()})}
 }
@@ -1005,6 +1007,17 @@ function logoTap(){
 }
 function saveCart(){LS.set('rj_cart',cart);updateBadge()}
 function updateBadge(){$('cartCount').textContent=cart.reduce((a,c)=>a+c.qty,0)}
+
+// PERBAIKAN: Sync cart badge antar tab/window (jika user buka app di multiple tabs)
+window.addEventListener('storage',function(e){
+ if(e.key==='rj_cart'&&e.newValue){
+  try{
+   cart=JSON.parse(e.newValue);
+   updateBadge();
+   console.log('✓ Cart disinkronkan dari tab lain, badge updated');
+  }catch(err){console.error('Gagal parse cart dari storage event:',err)}
+ }
+});
 
 // Tabel Inventory (brand, model, warna, ukuran, riwayat_input_item) HANYA dibaca (select) di sini.
 // Pengecualian: transaksi + transaksi_item DITULIS saat order dibuat (lihat syncStokKeluarPesanan()
@@ -1887,6 +1900,8 @@ function addSel(buy){
 }
 
 function renderCart(){
+ // PERBAIKAN: Pastikan badge selalu disinkronkan saat render cart view
+ updateBadge();
  const w=$('cartWrap');
  setCrumb('Beranda / <b>Keranjang</b>');
  const before=cart.length;
