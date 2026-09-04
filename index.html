@@ -2115,6 +2115,20 @@ async function syncStokKeluarPesanan(code,cartSnapshot){
  return allOk;
 }
 async function placeOrder(){
+ // PERBAIKAN: tombol "Buat Pesanan" sebelumnya tidak punya proteksi apapun terhadap klik ganda.
+ // cart=[] di bawah dieksekusi SINKRON sebelum insert ke server selesai (yang butuh await) — kalau
+ // tombolnya sempat ke-tap 2x cepat (umum terjadi di HP, misal user kira belum kepencet), panggilan
+ // placeOrder() KEDUA akan mulai jalan SEBELUM panggilan pertama selesai, dengan `cart` yang sudah
+ // kosong dari panggilan pertama. Akibatnya kode order BARU tetap dibuat & di-insert ke
+ // produksi_orders dengan items:[] (order "kosong" tapi valid), padahal customer cuma niat checkout
+ // sekali. Guard di bawah ini menghentikan panggilan susulan selama satu proses checkout masih jalan,
+ // dan sekalian menolak kalau memang keranjangnya sudah kosong (jaga-jaga dipanggil manual/race lain).
+ if(state.placingOrder)return;
+ if(!cart.length){toast('Keranjang kosong');return}
+ state.placingOrder=true;
+ const btnBuatPesanan=document.querySelector('#coWrap .btn-accent.btn-block');
+ if(btnBuatPesanan){btnBuatPesanan.disabled=true;btnBuatPesanan.style.opacity='0.6';btnBuatPesanan.textContent='⏳ Memproses...'}
+ try{
  for(const c of cart){const p=P(c.pid);if(!p)continue;const avail=stokFor(p,c.color,c.size);if(avail<c.qty){toast('⚠️ Stok '+p.name+' ('+c.color+', '+c.size+') tidak mencukupi lagi');return}}
  const code=state.draftCode||('TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0'));
  const items=cart.map(c=>({pid:c.pid,brand:P(c.pid)?.brand||'',name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
@@ -2145,6 +2159,13 @@ async function placeOrder(){
  }
  try{showOrderModal(code)}
  catch(e){console.error('Gagal menampilkan popup konfirmasi:',e);toast('✅ Pesanan '+code+' berhasil dibuat');navStack=[];go('home')}
+ }finally{
+  state.placingOrder=false;
+  // Tombol lama sudah tidak relevan lagi kalau checkout berhasil (view sudah pindah/cart kosong),
+  // tapi kalau gagal di tengah jalan (mis. validasi stok di atas) tombolnya perlu aktif lagi.
+  const btn=document.querySelector('#coWrap .btn-accent.btn-block');
+  if(btn && document.body.contains(btn)){btn.disabled=false;btn.style.opacity='';btn.textContent='✅ Buat Pesanan'}
+ }
 }
 function showOrderModal(code){
  $('omBox').className='om-box';
