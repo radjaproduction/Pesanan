@@ -1080,6 +1080,27 @@ function buildProducts(){
   };
  });
 }
+// Preload foto produk di background setelah katalog tersedia, supaya saat user menekan
+// "Pesan Sekarang" gambar dasar sudah ada di cache browser dan tidak menahan navigasi.
+const _preloadedProductImages=new Set();
+function preloadProductImages(){
+ const urls=new Set();
+ PRODUCTS.forEach(p=>{
+  [p.baseImg,p.img,p.overlay&&p.overlay.url,...Object.values(p.imgByColor||{})].forEach(url=>{
+   if(url&&url!==PLACEHOLDER_IMG&&!_preloadedProductImages.has(url))urls.add(url);
+  });
+ });
+ const loadNext=()=>{
+  const url=urls.values().next().value;
+  if(!url)return;
+  urls.delete(url);_preloadedProductImages.add(url);
+  const img=new Image();
+  img.onload=img.onerror=()=>setTimeout(loadNext,0);
+  img.src=url;
+ };
+ // Mulai setelah UI selesai dirender; preload berjalan bertahap agar tidak mengganggu klik user.
+ let n=0;while(n++<4)loadNext();
+}
 // ============ AUTO-TINT: mewarnai foto putih/polos secara otomatis sesuai kode warna Inventory ============
 // Dipakai HANYA kalau admin mengaktifkan toggle "Auto-Warna" untuk model tsb, dan warna itu belum
 // punya foto manual sendiri di "Gambar per Warna". Teknik: canvas blend-mode 'color' (mengambil hue/saturasi
@@ -1248,6 +1269,7 @@ async function loadInventoryData(){
   stokRows = s.data||[];
   produkMeta = {};(pm.data||[]).forEach(x=>produkMeta[x.model_id]=x);
   buildProducts();
+  preloadProductImages();
   // FIX: Setelah PRODUCTS ter-load, isi ulang brand untuk semua order item yang masih kosong
   // (terjadi kalau orders di-load lebih cepat dari inventory saat startup)
   let _brandFilled=0;
@@ -3236,16 +3258,32 @@ function compressImage(file,maxDim,quality){
 const _blobCache={};
 async function _fetchBlob(url){
  if(_blobCache[url])return _blobCache[url];
- // Coba dengan mode:'cors' dulu; kalau gagal (network error/CORS), coba no-cors sebagai fallback
- let res;
+ // Untuk URL Supabase Storage, gunakan Storage API agar tidak bergantung pada CORS URL public.
+ let blob;
  try{
-  res=await fetch(url,{mode:'cors',cache:'no-store'});
+  const parsed=new URL(url);
+  const marker='/storage/v1/object/public/';
+  const markerIndex=parsed.pathname.indexOf(marker);
+  if(sb&&markerIndex>=0){
+   const objectPath=decodeURIComponent(parsed.pathname.slice(markerIndex+marker.length));
+   const slash=objectPath.indexOf('/');
+   if(slash>0){
+    const bucket=objectPath.slice(0,slash);
+    const filePath=objectPath.slice(slash+1);
+    const result=await sb.storage.from(bucket).download(filePath);
+    if(result.error)throw new Error(result.error.message);
+    blob=result.data;
+   }
+  }
+  if(!blob){
+   const res=await fetch(url,{mode:'cors',cache:'no-store'});
+   if(!res.ok)throw new Error('fetch gambar gagal (HTTP '+res.status+')');
+   blob=await res.blob();
+  }
  }catch(e){
-  // Fallback: no-cors (blob opaque — ukuran/type bisa 0, tapi aman untuk Image src)
-  res=await fetch(url,{mode:'no-cors',cache:'no-store'});
+  throw new Error('gagal download gambar: '+(e.message||e));
  }
- if(res.ok===false&&res.type!=='opaque')throw new Error('fetch gambar gagal (HTTP '+res.status+')');
- const blob=await res.blob();
+ if(!blob||!blob.size)throw new Error('file gambar kosong atau tidak dapat dibaca');
  _blobCache[url]=blob;
  return blob;
 }
@@ -3293,17 +3331,23 @@ async function batchRecompressImages(){
  const appendLog=(msg)=>{if(log){log.textContent+=msg+'\n';log.scrollTop=log.scrollHeight}};
 
  const targets=[];
+ let nIgnoredExternal=0;
+ const addTarget=(target)=>{
+  if(_isCurrentStorageUrl(target.url)) targets.push(target);
+  else nIgnoredExternal++;
+ };
  Object.keys(produkMeta).forEach(modelId=>{
   const meta=produkMeta[modelId];if(!meta)return;
-  if(meta.gambar_url)targets.push({modelId:+modelId,field:'gambar_url',url:meta.gambar_url,maxDim:591});
+  if(meta.gambar_url)addTarget({modelId:+modelId,field:'gambar_url',url:meta.gambar_url,maxDim:591});
   if(meta.gambar_warna)Object.keys(meta.gambar_warna).forEach(colorKey=>{
    const url=meta.gambar_warna[colorKey];
-   if(url)targets.push({modelId:+modelId,field:'gambar_warna',colorKey,url,maxDim:591});
+   if(url)addTarget({modelId:+modelId,field:'gambar_warna',colorKey,url,maxDim:591});
   });
-  if(meta.overlay_url)targets.push({modelId:+modelId,field:'overlay_url',url:meta.overlay_url,maxDim:900});
+  if(meta.overlay_url)addTarget({modelId:+modelId,field:'overlay_url',url:meta.overlay_url,maxDim:900});
  });
 
- appendLog('🔎 Ditemukan '+targets.length+' foto tersimpan, memeriksa satu-satu...');
+ appendLog('🔎 Ditemukan '+targets.length+' foto di project aktif, memeriksa satu-satu...');
+ if(nIgnoredExternal)appendLog('↪️ Dilewati '+nIgnoredExternal+' foto karena URL bukan dari project Supabase aktif.');
  let nChecked=0,nCompressed=0,nSkipped=0,nError=0;
  const updatesByModel={};
 
@@ -3347,6 +3391,12 @@ async function batchRecompressImages(){
  if(btn){btn.disabled=false;btn.textContent='🗜️ Kompres Ulang Gambar Lama'}
 }
 function meta_gambar_warna(modelId){return (produkMeta[modelId]&&produkMeta[modelId].gambar_warna)||{}}
+function _isCurrentStorageUrl(url){
+ try{
+  const parsed=new URL(url);
+  return parsed.origin===new URL(SUPABASE_URL).origin&&parsed.pathname.includes('/storage/v1/object/');
+ }catch(e){return false}
+}
 function updateOverlayInvertVisibility(modelId){
  const wrap=$('pm-ovinvwrap-'+modelId);if(!wrap)return;
  wrap.style.display=$('pm-ovinvert-'+modelId)?.checked?'block':'none';
