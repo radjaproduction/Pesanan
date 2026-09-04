@@ -3173,7 +3173,7 @@ async function handleImgUpload(modelId,inputEl){
  if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
  toast('⏳ Memproses & mengupload gambar...');
  try{
-  const dataUrl=await compressImage(file,900,0.82);
+  const dataUrl=await compressImage(file,591,0.82);
   // Upload ke Storage, simpan URL (bukan base64)
   const uploadFile=_dataUrlToFile(dataUrl,'gambar_'+modelId);
   const url=await _uploadGambarPesanan(uploadFile,'produk_'+modelId);
@@ -3191,7 +3191,7 @@ async function handleColorImgUpload(inputEl){
  if(file.size>15*1024*1024){toast('⚠️ Ukuran file terlalu besar (maks 15MB)');inputEl.value='';return}
  toast('⏳ Memproses & mengupload foto warna...');
  try{
-  const dataUrl=await compressImage(file,900,0.82);
+  const dataUrl=await compressImage(file,591,0.82);
   // Upload ke Storage, simpan URL (bukan base64)
   const uploadFile=_dataUrlToFile(dataUrl,'warna_'+modelId+'_'+colorKey);
   const url=await _uploadGambarPesanan(uploadFile,'warna_'+modelId+'_'+colorKey.replace(/\s+/g,'_'));
@@ -3230,6 +3230,99 @@ function compressImage(file,maxDim,quality){
   reader.readAsDataURL(file);
  });
 }
+// Ambil dimensi gambar dari URL tanpa perlu download penuh dulu (pakai Image object).
+function _getImageDimensions(url){
+ return new Promise((resolve,reject)=>{
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});
+  img.onerror=()=>reject(new Error('gagal memuat gambar (cek koneksi/CORS)'));
+  img.src=url+(url.includes('?')?'&':'?')+'_cb='+Date.now(); // cache-bust biar dimensi yang dibaca akurat
+ });
+}
+// Download gambar dari URL publik Supabase Storage jadi File object (utk diproses ulang lewat compressImage).
+async function _urlToFile(url,name){
+ const res=await fetch(url,{mode:'cors',cache:'no-store'});
+ if(!res.ok)throw new Error('fetch gambar gagal (HTTP '+res.status+')');
+ const blob=await res.blob();
+ const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg');
+ return new File([blob],name+'.'+ext,{type:blob.type||'image/jpeg'});
+}
+// Hapus file lama di bucket gambar-pesanan berdasarkan public URL-nya (best-effort, dipanggil setelah upload pengganti berhasil).
+async function _deleteOldGambarPesanan(url){
+ if(!sb)return;
+ const marker='/gambar-pesanan/';
+ const idx=url.indexOf(marker);
+ if(idx===-1)return;
+ const path=decodeURIComponent(url.slice(idx+marker.length).split('?')[0]);
+ try{await sb.storage.from('gambar-pesanan').remove([path])}catch(e){console.warn('[BatchCompress] gagal hapus file lama',path,e)}
+}
+// Tool admin: periksa semua foto produk (Gambar Utama, Gambar per Warna, Gambar Tambahan/overlay) yang
+// sudah tersimpan di Supabase. Yang dimensinya melebihi batas (591px utk foto produk, 900px utk overlay)
+// dikompres ulang & diupload sbg file baru, URL-nya diganti di database. Yang sudah sesuai batas dilewati.
+async function batchRecompressImages(){
+ if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
+ if(!confirm('Proses ini memeriksa semua foto produk yang sudah tersimpan, lalu memperkecil & mengganti otomatis foto yang ukurannya melebihi batas (591px foto produk / 900px overlay). Berjalan dari browser ini & bisa makan waktu tergantung jumlah foto. Lanjutkan?'))return;
+ const btn=$('btnBatchCompress'),log=$('batchCompressLog');
+ if(btn){btn.disabled=true;btn.textContent='⏳ Memproses...'}
+ if(log){log.style.display='block';log.textContent=''}
+ const appendLog=(msg)=>{if(log){log.textContent+=msg+'\n';log.scrollTop=log.scrollHeight}};
+
+ const targets=[];
+ Object.keys(produkMeta).forEach(modelId=>{
+  const meta=produkMeta[modelId];if(!meta)return;
+  if(meta.gambar_url)targets.push({modelId:+modelId,field:'gambar_url',url:meta.gambar_url,maxDim:591});
+  if(meta.gambar_warna)Object.keys(meta.gambar_warna).forEach(colorKey=>{
+   const url=meta.gambar_warna[colorKey];
+   if(url)targets.push({modelId:+modelId,field:'gambar_warna',colorKey,url,maxDim:591});
+  });
+  if(meta.overlay_url)targets.push({modelId:+modelId,field:'overlay_url',url:meta.overlay_url,maxDim:900});
+ });
+
+ appendLog('🔎 Ditemukan '+targets.length+' foto tersimpan, memeriksa satu-satu...');
+ let nChecked=0,nCompressed=0,nSkipped=0,nError=0;
+ const updatesByModel={};
+
+ for(const t of targets){
+  nChecked++;
+  const label='model #'+t.modelId+' — '+t.field+(t.colorKey?(' ('+t.colorKey+')'):'');
+  try{
+   const dim=await _getImageDimensions(t.url);
+   if(dim.width<=t.maxDim&&dim.height<=t.maxDim){nSkipped++;continue}
+   appendLog('🗜️ '+label+': '+dim.width+'×'+dim.height+' → dikompres ke maks '+t.maxDim+'px...');
+   const file=await _urlToFile(t.url,'recompress_'+t.modelId);
+   const dataUrl=await compressImage(file,t.maxDim,0.82);
+   const uploadFile=_dataUrlToFile(dataUrl,'recompress_'+t.modelId);
+   const prefix=t.field==='overlay_url'?('overlay_'+t.modelId):(t.field==='gambar_warna'?('warna_'+t.modelId+'_'+(t.colorKey||'').replace(/\s+/g,'_')):('produk_'+t.modelId));
+   const newUrl=await _uploadGambarPesanan(uploadFile,prefix);
+   if(!updatesByModel[t.modelId])updatesByModel[t.modelId]={};
+   if(t.field==='gambar_warna'){
+    if(!updatesByModel[t.modelId].gambar_warna)updatesByModel[t.modelId].gambar_warna={...(meta_gambar_warna(t.modelId))};
+    updatesByModel[t.modelId].gambar_warna[t.colorKey]=newUrl;
+   }else{
+    updatesByModel[t.modelId][t.field]=newUrl;
+   }
+   _deleteOldGambarPesanan(t.url);
+   nCompressed++;
+  }catch(e){
+   nError++;
+   appendLog('❌ Gagal — '+label+': '+(e.message||e));
+  }
+ }
+
+ for(const modelId of Object.keys(updatesByModel)){
+  const row={model_id:+modelId,...updatesByModel[modelId]};
+  const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
+  if(error){nError++;appendLog('❌ Gagal simpan ke database utk model #'+modelId+': '+error.message);continue}
+  produkMeta[modelId]={...produkMeta[modelId],...updatesByModel[modelId]};
+ }
+ buildProducts();renderAdmin();
+
+ appendLog('✅ Selesai. Diperiksa: '+nChecked+' • Dikompres: '+nCompressed+' • Sudah sesuai (dilewati): '+nSkipped+' • Gagal: '+nError);
+ toast(nError?('⚠️ Selesai dengan '+nError+' gagal — cek log'):('✅ Kompres ulang selesai — '+nCompressed+' foto diperkecil'));
+ if(btn){btn.disabled=false;btn.textContent='🗜️ Kompres Ulang Gambar Lama'}
+}
+function meta_gambar_warna(modelId){return (produkMeta[modelId]&&produkMeta[modelId].gambar_warna)||{}}
 function updateOverlayInvertVisibility(modelId){
  const wrap=$('pm-ovinvwrap-'+modelId);if(!wrap)return;
  wrap.style.display=$('pm-ovinvert-'+modelId)?.checked?'block':'none';
@@ -3366,6 +3459,10 @@ function adminSettings(){
  '<div class="panel"><h2>🔧 Tools Maintenance</h2>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Jika BRAND/MODEL column masih kosong di order history, gunakan tool ini:</p>'+
  '<button class="btn btn-outline btn-sm" onclick="batchMigrateBrandToOrders()">🔄 Auto-Fill Brand ke Semua Order</button></div>'+
+ '<div class="panel"><h2>🗜️ Kompres Ulang Gambar Produk Lama</h2>'+
+ '<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Foto produk yang diupload sebelum batas ukuran diperkecil ke 591×591px tidak otomatis ikut terkompres. Tool ini memeriksa semua foto produk (Gambar Utama &amp; Gambar per Warna, maks 591px) dan Gambar Tambahan/overlay (maks 900px) yang sudah tersimpan, lalu memperkecil &amp; mengganti otomatis foto yang ukurannya melebihi batas — hanya yang kelebihan yang diproses, sisanya dilewati begitu saja. Proses berjalan dari browser ini, bisa makan waktu tergantung jumlah &amp; ukuran foto, dan jangan tutup halaman selama berjalan.</p>'+
+ '<button class="btn btn-outline btn-sm" id="btnBatchCompress" onclick="batchRecompressImages()">🗜️ Kompres Ulang Gambar Lama</button>'+
+ '<pre id="batchCompressLog" style="display:none;margin-top:12px;max-height:220px;overflow:auto;background:var(--navy-950);color:#DCE4F7;font-size:11px;line-height:1.6;padding:10px 12px;border-radius:8px;white-space:pre-wrap"></pre></div>'+
  '<div class="panel"><h2>🔐 Ganti PIN Admin</h2><div class="form-grid" style="max-width:340px">'+
  '<div><label>PIN Baru</label><input id="sPin" maxlength="6" placeholder="4–6 digit"></div></div>'+
  '<button class="btn btn-accent btn-sm" style="margin-top:12px" onclick="changePin()">Ganti PIN</button></div>'+
