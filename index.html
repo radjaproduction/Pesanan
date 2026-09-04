@@ -872,8 +872,8 @@ const LS={
 let cart=LS.get('rj_cart',[]);
 let orders=LS.get('rj_orders',null);
 if(!orders){orders=seedOrders();LS.set('rj_orders',orders)}
-const SUPABASE_URL='https://wyalxprcrrisowsqftgt.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5YWx4cHJjcnJpc293c3FmdGd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDg2MDcsImV4cCI6MjA5NjkyNDYwN30.yA3g5bydgYbcrp1KOvYf0G7JXJHmbjhoCw928A0TzKc';
+const SUPABASE_URL='https://hasagbezyuznziwrgbet.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhhc2FnYmV6eXV6bnppd3JnYmV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NzYyNzIsImV4cCI6MjEwNDA1MjI3Mn0.i6WzGsh42GhbpSxvCqPLkBcvFxPT1vvfkCW1TQMQCGg';
 let settings=LS.get('rj_settings',{table:'inventory',pin:'1234'});
 settings.url=SUPABASE_URL;settings.key=SUPABASE_KEY;
 let state={q:'',sel:null,adminTab:'pesanan',unlocked:false,lastOrder:null,brand:'',sort:'sold',model:'',note:'',editItem:null,addItemFor:null,addSel:null,priorityItems:[]};
