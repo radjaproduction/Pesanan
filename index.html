@@ -2109,8 +2109,9 @@ const VENDOR_APP='BANG FARID';
 async function syncStokKeluarPesanan(code,cartSnapshot){
  if(!sb)return false;
  const groups={};
+ let buildError=null;
  cartSnapshot.forEach(c=>{
-  const p=P(c.pid);if(!p)return;
+  const p=P(c.pid);if(!p){buildError=new Error('Produk '+(c.name||c.pid||'-')+' tidak ditemukan di katalog');return;}
   const gKey=p.brand+'||'+p.name;
   if(!groups[gKey])groups[gKey]={brand:p.brand,model:p.name,harga:(p.est&&p.est[0])||0,items:[]};
   const itemKey=(c.color||'')+'||'+(c.size||'');
@@ -2121,32 +2122,58 @@ async function syncStokKeluarPesanan(code,cartSnapshot){
  const now=new Date();
  const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
  const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
- let allOk=true;
+ let allOk=!buildError;
+ if(buildError){console.error('Gagal menyusun sinkron stok '+code+':',buildError);toast('⚠️ Sinkron stok gagal: '+buildError.message);}
+ // Sinkronisasi bisa gagal sebagian (mis. jaringan putus setelah header dibuat).
+ // Retry harus idempoten: selalu cari header/item yang sudah ada, lalu update atau
+ // insert hanya bagian yang belum sesuai. Dengan begitu retry tidak membuat stok dobel.
+ async function withRetry(fn,label){
+  let lastError=null;
+  for(let attempt=1;attempt<=3;attempt++){
+   try{return await fn();}
+   }catch(e){
+    lastError=e;
+    if(attempt<3)await new Promise(resolve=>setTimeout(resolve,350*attempt));
+   }
+  }
+  throw new Error(label+': '+(lastError?.message||lastError||'gagal setelah 3 percobaan'));
+ }
  for(const key in groups){
   const g=groups[key];
   try{
-   let {data:existingTrx,error:findErr}=await sb.from('transaksi').select('id').eq('order_code',code).eq('brand',g.brand).eq('model',g.model).limit(1);
-   if(findErr)throw findErr;
-   let trxId=existingTrx&&existingTrx[0]?existingTrx[0].id:null;
-   if(!trxId){
-    const {data:trx,error:trxErr}=await sb.from('transaksi').insert({
-     vendor:VENDOR_APP,brand:g.brand,model:g.model,
-     harga:g.harga,harga_modal:0,status:'credit',order_code:code,tanggal,jam
-    }).select().single();
-    if(trxErr)throw trxErr;
-    trxId=trx.id;
-   }
-   for(const item of g.items){
-    const {data:found,error:findItemErr}=await sb.from('transaksi_item').select('id').eq('transaksi_id',trxId).eq('warna',item.warna).eq('ukuran',item.ukuran).limit(1);
-    if(findItemErr)throw findItemErr;
-    if(found&&found[0]){
-     const {error:updateErr}=await sb.from('transaksi_item').update({qty:item.qty,ssk:'-'}).eq('id',found[0].id);
-     if(updateErr)throw updateErr;
-    }else{
-     const {error:itemErr}=await sb.from('transaksi_item').insert({transaksi_id:trxId,warna:item.warna,ukuran:item.ukuran,qty:item.qty,ssk:'-'});
-     if(itemErr)throw itemErr;
+   await withRetry(async()=>{
+    let {data:existingTrx,error:findErr}=await sb.from('transaksi').select('id').eq('order_code',code).eq('brand',g.brand).eq('model',g.model).limit(1);
+    if(findErr)throw findErr;
+    let trxId=existingTrx&&existingTrx[0]?existingTrx[0].id:null;
+    if(!trxId){
+     const {data:trx,error:trxErr}=await sb.from('transaksi').insert({
+      vendor:VENDOR_APP,brand:g.brand,model:g.model,
+      harga:g.harga,harga_modal:0,status:'credit',order_code:code,tanggal,jam
+     }).select().single();
+     if(trxErr)throw trxErr;
+     trxId=trx.id;
     }
-   }
+    for(const item of g.items){
+     const {data:found,error:findItemErr}=await sb.from('transaksi_item').select('id').eq('transaksi_id',trxId).eq('warna',item.warna).eq('ukuran',item.ukuran).limit(1);
+     if(findItemErr)throw findItemErr;
+     if(found&&found[0]){
+      const {error:updateErr}=await sb.from('transaksi_item').update({qty:item.qty,ssk:'-'}).eq('id',found[0].id);
+      if(updateErr)throw updateErr;
+     }else{
+      const {error:itemErr}=await sb.from('transaksi_item').insert({transaksi_id:trxId,warna:item.warna,ukuran:item.ukuran,qty:item.qty,ssk:'-'});
+      if(itemErr)throw itemErr;
+     }
+    }
+    // Verifikasi setelah tulis. Jika respons insert hilang atau hanya sebagian item
+    // tersimpan, retry berikutnya akan memperbaiki bagian yang belum cocok.
+    const {data:check,error:checkErr}=await sb.from('transaksi_item').select('warna,ukuran,qty').eq('transaksi_id',trxId);
+    if(checkErr)throw checkErr;
+    const actual=new Map((check||[]).map(i=>[String(i.warna)+'||'+String(i.ukuran),Number(i.qty)||0]));
+    for(const item of g.items){
+     const itemKey=String(item.warna)+'||'+String(item.ukuran);
+     if(actual.get(itemKey)!==Number(item.qty))throw new Error('verifikasi item '+itemKey+' tidak cocok');
+    }
+   },'sinkron '+g.brand+'/'+g.model);
   }catch(e){allOk=false;console.error('Gagal sinkron stok Inventory untuk order '+code+' ('+g.model+'):',e);toast('⚠️ Order tersimpan, tapi sinkron stok Inventory gagal untuk '+g.model+'. Coba Sinkron Ulang.')}
  }
  return allOk;
