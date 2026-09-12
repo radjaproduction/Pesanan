@@ -1,6 +1,6 @@
 /* RADJA Production — Service Worker (Robust Multi-Tab Update Handler) */
-const CACHE_VERSION = 'radja-pwa-v9.4';
-const RUNTIME_CACHE = 'radja-runtime-v9.4'; // Cache untuk dynamic content
+const CACHE_VERSION = 'radja-pwa-v9.5';
+const RUNTIME_CACHE = 'radja-runtime-v9.5'; // Cache untuk dynamic content
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -37,20 +37,9 @@ self.addEventListener('activate', (event) => {
         return Promise.all(toDelete.map((k) => caches.delete(k)));
       })
       .then(() => {
-        // Beritahu ALL client ada update available
-        return self.clients.matchAll({ type: 'window' })
-          .then((clients) => {
-            if (clients.length > 0) {
-              console.log('[SW] Broadcasting UPDATE_AVAILABLE to', clients.length, 'clients');
-              clients.forEach((client) => {
-                client.postMessage({ 
-                  type: 'UPDATE_AVAILABLE',
-                  timestamp: Date.now(),
-                  version: CACHE_VERSION
-                });
-              });
-            }
-          });
+        // Jangan mengirim notifikasi update dari event activate.
+        // activate juga terjadi saat instalasi pertama dan saat SW mengambil alih
+        // tab, bukan hanya ketika ada versi aplikasi baru.
       })
   );
   self.clients.claim(); // Langsung kontrol semua client existing

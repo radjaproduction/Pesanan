@@ -3695,20 +3695,6 @@ if('serviceWorker' in navigator){
       .catch(err => console.warn('[PWA] SW registration failed:', err));
   });
   
-  // Listen untuk notifikasi update dari Service Worker (multi-tab signal)
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if(event.data.type === 'UPDATE_AVAILABLE'){
-      _notifyAppUpdate('message');
-    }
-  });
-  
-  // Detect controller change (bisa indikasi SW update)
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    // Kalau user belum di-notify, notify sekarang
-    if (!updateNotified) {
-      _notifyAppUpdate('controller');
-    }
-  });
 }
 
 // State tracking untuk prevent duplicate notifikasi
