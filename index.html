@@ -2106,6 +2106,12 @@ function toggleCheckoutPriority(idx,btn){
 // Semua transaksi yang masuk dari aplikasi Pesanan Online ini dicatat sebagai
 // vendor tetap "BANG FARID" (bukan label generik "PESANAN ONLINE — ...").
 const VENDOR_APP='BANG FARID';
+const LOCKED_PERIOD_START=Date.UTC(2026,8,12);
+const LOCKED_PERIOD_END=Date.UTC(2026,8,19);
+function isLockedHistoricalOrder(order){
+ const ts=typeof order==='number'?order:order?.ts;
+ return Number.isFinite(ts)&&ts>=LOCKED_PERIOD_START&&ts<LOCKED_PERIOD_END;
+}
 function formatInventoryTimestamp(timestamp){
  const date=timestamp?new Date(timestamp):new Date();
  const validDate=Number.isNaN(date.getTime())?new Date():date;
@@ -2116,6 +2122,10 @@ function formatInventoryTimestamp(timestamp){
 }
 async function syncStokKeluarPesanan(code,cartSnapshot,orderCreatedAt){
  if(!sb)return false;
+ if(isLockedHistoricalOrder(new Date(orderCreatedAt).getTime())){
+  console.warn('[Sync] Periode historis terkunci, sinkronisasi dilewati:',code);
+  return true;
+ }
  const groups={};
  let buildError=null;
  cartSnapshot.forEach(c=>{
@@ -2891,12 +2901,14 @@ function orderItemsHtml(o,oi){
 }
 function toggleEditItem(oi,ii){
  const o=orders[oi];if(o&&o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ if(o&&isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  state.editItem=(state.editItem&&state.editItem.oi===oi&&state.editItem.ii===ii)?null:{oi,ii};
  renderAdmin();
 }
 function itemQtyStep(oi,ii,d){
  const o=orders[oi];if(!o)return;const it=o.items[ii];if(!it)return;
  if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  const newQty=Math.max(1,(+it.qty||1)+d);
  if(!checkStokCukup(it,newQty))return;
  it.qty=newQty;
@@ -2906,6 +2918,7 @@ function itemQtyStep(oi,ii,d){
 function itemQtySet(oi,ii,val){
  const o=orders[oi];if(!o)return;const it=o.items[ii];if(!it)return;
  if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');renderAdmin();return}
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');renderAdmin();return}
  const v=Math.max(1,parseInt(val)||1);
  if(!checkStokCukup(it,v)){renderAdmin();return}
  it.qty=v;
@@ -2927,6 +2940,7 @@ function checkStokCukup(it,newQty){
 function removeOrderItem(oi,ii){
  const o=orders[oi];if(!o)return;
  if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  if(o.items.length<=1){toast('⚠️ Tidak bisa menghapus item terakhir — hapus pesanan ini saja kalau memang batal');return}
  if(!confirm('Hapus item "'+o.items[ii].name+'" dari pesanan '+o.code+'?'))return;
  const removed=o.items[ii];
@@ -2937,6 +2951,7 @@ function removeOrderItem(oi,ii){
 }
 function toggleAddItem(oi){
  const o=orders[oi];if(o&&o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ if(o&&isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  state.addItemFor=state.addItemFor===oi?null:oi;
  state.addSel={pid:'',color:'',size:'',qty:1};
  renderAdmin();
@@ -2962,6 +2977,7 @@ function confirmAddItem(oi){
  const s=state.addSel;const o=orders[oi];
  if(!o||!s||!s.pid){toast('⚠️ Pilih produk dulu');return}
  if(o.statusBayar==='lunas'){toast('🔒 Pesanan sudah LUNAS — item tidak bisa diubah');return}
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  const p=P(s.pid);if(!p){toast('⚠️ Produk tidak ditemukan');return}
  if(!s.color||!s.size){toast('⚠️ Pilih warna & ukuran dulu');return}
  const qty=Math.max(1,parseInt(s.qty)||1);
@@ -2976,6 +2992,7 @@ function confirmAddItem(oi){
 }
 // Simpan perubahan `items` ke localStorage + coba sinkron ke produksi_orders.items di Supabase.
 function saveOrderItems(o){
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  LS.set('rj_orders',orders);renderAdmin();
  if(!sb)return;
  sb.from(ORDERS_TABLE).update({items:o.items}).eq('order_code',o.code).then(({error})=>{
@@ -2989,6 +3006,7 @@ function saveOrderItems(o){
 // dipakai syncStokKeluarPesanan() waktu pesanan pertama kali dibuat).
 async function syncItemChangeToInventory(o,item,mode){
  if(!sb)return;
+ if(isLockedHistoricalOrder(o)){console.warn('[Sync] Periode historis terkunci, perubahan item dilewati:',o.code);return}
  if(o.synced===false)return; // pesanan ini belum pernah sinkron stok — nanti ikut kebawa saat "Sinkron Ulang"
  const p=P(item.pid);
  if(!p){toast('⚠️ Produk tidak dikenali — stok Inventory tidak ikut disesuaikan, cek manual');return}
@@ -3082,6 +3100,7 @@ function retryStageSync(i){
 }
 async function delOrder(i){
  const o=orders[i];
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  if(!confirm('Hapus pesanan '+o.code+'?'))return;
  const code=o.code;
  if(!sb){orders.splice(i,1);LS.set('rj_orders',orders);renderAdmin();return}
@@ -3105,6 +3124,7 @@ async function delOrder(i){
 // tepat setelah insert produksi_orders sukses).
 async function retryOrderSync(i){
  const o=orders[i];if(!o||o.synced)return;
+ if(isLockedHistoricalOrder(o)){toast('🔒 Periode 12–18 September 2026 sudah dikunci');return}
  if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
  toast('⏳ Mencoba sinkron ulang...');
  try{
