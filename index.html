@@ -2144,11 +2144,14 @@ async function syncStokKeluarPesanan(code,cartSnapshot,orderCreatedAt){
   }
   throw new Error(label+': '+(lastError?.message||lastError||'gagal setelah 3 percobaan'));
  }
+ const {data:orderTrx,error:orderTrxErr}=await sb.from('transaksi').select('id,brand,model').eq('order_code',code);
+ if(orderTrxErr){console.error('Gagal membaca transaksi online '+code,orderTrxErr);return false}
+ const expectedKeys=new Set(Object.keys(groups));
  for(const key in groups){
   const g=groups[key];
   try{
    await withRetry(async()=>{
-    let {data:existingTrx,error:findErr}=await sb.from('transaksi').select('id').eq('order_code',code).eq('brand',g.brand).eq('model',g.model).limit(1);
+    let {data:existingTrx,error:findErr}=await sb.from('transaksi').select('id').eq('order_code',code).eq('brand',g.brand).eq('model',g.model).order('id',{ascending:true});
     if(findErr)throw findErr;
     let trxId=existingTrx&&existingTrx[0]?existingTrx[0].id:null;
     if(!trxId){
@@ -2184,8 +2187,36 @@ async function syncStokKeluarPesanan(code,cartSnapshot,orderCreatedAt){
      const itemKey=String(item.warna)+'||'+String(item.ukuran);
      if(actual.get(itemKey)!==Number(item.qty))throw new Error('verifikasi item '+itemKey+' tidak cocok');
     }
+    const expectedItems=new Set(g.items.map(item=>String(item.warna)+'||'+String(item.ukuran)));
+    for(const stale of (check||[])){
+     const staleKey=String(stale.warna)+'||'+String(stale.ukuran);
+     if(!expectedItems.has(staleKey)){
+      const {error:staleErr}=await sb.from('transaksi_item').delete().eq('transaksi_id',trxId).eq('warna',stale.warna).eq('ukuran',stale.ukuran);
+      if(staleErr)throw staleErr;
+     }
+    }
+    for(const duplicate of (existingTrx||[]).slice(1)){
+     const {error:duplicateItemsErr}=await sb.from('transaksi_item').delete().eq('transaksi_id',duplicate.id);
+     if(duplicateItemsErr)throw duplicateItemsErr;
+     const {error:duplicateErr}=await sb.from('transaksi').delete().eq('id',duplicate.id);
+     if(duplicateErr)throw duplicateErr;
+    }
    },'sinkron '+g.brand+'/'+g.model);
   }catch(e){allOk=false;console.error('Gagal sinkron stok Inventory untuk order '+code+' ('+g.model+'):',e);toast('⚠️ Order tersimpan, tapi sinkron stok Inventory gagal untuk '+g.model+'. Coba Sinkron Ulang.')}
+ }
+ for(const trx of (orderTrx||[])){
+  const key=String(trx.brand||'')+'||'+String(trx.model||'');
+  if(expectedKeys.has(key))continue;
+  try{
+   const {error:itemErr}=await sb.from('transaksi_item').delete().eq('transaksi_id',trx.id);
+   if(itemErr)throw itemErr;
+   const {error}=await sb.from('transaksi').delete().eq('id',trx.id);
+   if(error)throw error;
+  }catch(e){
+   allOk=false;
+   console.error('Gagal menghapus transaksi stale '+code+' ('+key+'):',e);
+   toast('⚠️ Ada transaksi stale yang gagal dibersihkan untuk '+code);
+  }
  }
  return allOk;
 }
