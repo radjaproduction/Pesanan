@@ -2106,22 +2106,28 @@ function toggleCheckoutPriority(idx,btn){
 // Semua transaksi yang masuk dari aplikasi Pesanan Online ini dicatat sebagai
 // vendor tetap "BANG FARID" (bukan label generik "PESANAN ONLINE — ...").
 const VENDOR_APP='BANG FARID';
-async function syncStokKeluarPesanan(code,cartSnapshot){
+function formatInventoryTimestamp(timestamp){
+ const date=timestamp?new Date(timestamp):new Date();
+ const validDate=Number.isNaN(date.getTime())?new Date():date;
+ return {
+  tanggal:validDate.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}),
+  jam:validDate.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})
+ };
+}
+async function syncStokKeluarPesanan(code,cartSnapshot,orderCreatedAt){
  if(!sb)return false;
  const groups={};
  let buildError=null;
  cartSnapshot.forEach(c=>{
   const p=P(c.pid);if(!p){buildError=new Error('Produk '+(c.name||c.pid||'-')+' tidak ditemukan di katalog');return;}
   const gKey=p.brand+'||'+p.name;
-  if(!groups[gKey])groups[gKey]={brand:p.brand,model:p.name,harga:(p.est&&p.est[0])||0,items:[]};
+  if(!groups[gKey])groups[gKey]={brand:p.brand,model:p.name,harga:(c.est&&c.est[0])||0,items:[]};
   const itemKey=(c.color||'')+'||'+(c.size||'');
   const existing=groups[gKey].items.find(i=>i._key===itemKey);
   if(existing)existing.qty+=(+c.qty||0);
   else groups[gKey].items.push({warna:c.color,ukuran:c.size,qty:c.qty,ssk:'-',_key:itemKey});
  });
- const now=new Date();
- const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
- const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+ const {tanggal,jam}=formatInventoryTimestamp(orderCreatedAt);
  let allOk=!buildError;
  if(buildError){console.error('Gagal menyusun sinkron stok '+code+':',buildError);toast('⚠️ Sinkron stok gagal: '+buildError.message);}
  // Sinkronisasi bisa gagal sebagian (mis. jaringan putus setelah header dibuat).
@@ -2152,6 +2158,11 @@ async function syncStokKeluarPesanan(code,cartSnapshot){
      }).select().single();
      if(trxErr)throw trxErr;
      trxId=trx.id;
+    }else{
+    const {error:updateErr}=await sb.from('transaksi').update({
+     harga:g.harga,tanggal,jam
+    }).eq('id',trxId);
+    if(updateErr)throw updateErr;
     }
     for(const item of g.items){
      const {data:found,error:findItemErr}=await sb.from('transaksi_item').select('id').eq('transaksi_id',trxId).eq('warna',item.warna).eq('ukuran',item.ukuran).limit(1);
@@ -2197,10 +2208,11 @@ async function placeOrder(){
  const code=state.draftCode||('TRX-'+String(Math.floor(Math.random()*90000)+10000).padStart(5,'0'));
  const items=cart.map(c=>({pid:c.pid,brand:P(c.pid)?.brand||'',name:P(c.pid)?.name||'',color:c.color,size:c.size,qty:c.qty,est:P(c.pid)?.est||[0,0]}));
  const cartSnapshot=cart.slice();
+ const orderCreatedAt=Date.now();
  const note=(state.note||'').trim();
  // Konversi index prioritas → key berbasis "code__idx" supaya tahan terhadap perubahan urutan item di masa depan
  const priorityItems=(state.priorityItems||[]).map(idx=>code+'__'+idx);
- orders.unshift({code,ts:Date.now(),stage:0,statusBayar:'belum_lunas',mine:true,synced:false,items,note,priorityItems});
+ orders.unshift({code,ts:orderCreatedAt,stage:0,statusBayar:'belum_lunas',mine:true,synced:false,items,note,priorityItems});
  LS.set('rj_orders',orders);state.lastOrder=code;state.draftCode=null;state.note='';state.priorityItems=[];cart=[];saveCart();
  // Sinkron ke server (produksi_orders + potong stok Inventory) DIDULUKAN dan
  // dipisah dari urusan tampilan (popup), supaya kalau nanti ada error di UI
@@ -2217,7 +2229,7 @@ async function placeOrder(){
   // pesanannya sendiri tidak pernah tercatat di server (data jadi tidak konsisten/tidak terlacak).
   if(orderSynced){
    const o=orders.find(x=>x.code===code);
-   if(o)o.synced=await syncStokKeluarPesanan(code,cartSnapshot);
+   if(o)o.synced=await syncStokKeluarPesanan(code,cartSnapshot,orderCreatedAt);
    LS.set('rj_orders',orders);
   }
  }
@@ -2976,11 +2988,9 @@ async function syncItemChangeToInventory(o,item,mode){
   // mode 'add' (atau fallback dari 'update' yang belum punya baris transaksi_item)
   let tId=trxId;
   if(!tId){
-   const now=new Date();
-   const tanggal=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-   const jam=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+   const {tanggal,jam}=formatInventoryTimestamp(o.ts);
    const {data:trx,error:insErr}=await sb.from('transaksi').insert({
-    vendor:VENDOR_APP,brand:p.brand,model:p.name,harga:(p.est&&p.est[0])||0,harga_modal:0,status:'credit',order_code:o.code,tanggal,jam
+    vendor:VENDOR_APP,brand:p.brand,model:p.name,harga:(item.est&&item.est[0])||0,harga_modal:0,status:'credit',order_code:o.code,tanggal,jam
    }).select().single();
    if(insErr)throw insErr;
    tId=trx.id;
@@ -3070,7 +3080,7 @@ async function retryOrderSync(i){
    const {error}=await sb.from(ORDERS_TABLE).insert({order_code:o.code,items:o.items,stage:o.stage||0,note:o.note||'',priority_items:o.priorityItems||[]});
    if(error)throw error;
   }
-  const ok=await syncStokKeluarPesanan(o.code,o.items);
+  const ok=await syncStokKeluarPesanan(o.code,o.items,o.ts);
   if(!ok)throw new Error('Sinkron stok belum selesai untuk semua item');
   // PERBAIKAN: o.synced baru ditandai true SETELAH sinkron stok Inventory selesai (bukan
   // sebelumnya) — supaya kalau admin sempat menekan Hapus tepat di tengah proses ini,
@@ -3563,6 +3573,7 @@ function adminSettings(){
  '<div class="panel"><h2>🗜️ Kompres Ulang Gambar Produk Lama</h2>'+
  '<p style="font-size:12px;color:var(--muted);margin-bottom:12px">Foto produk yang diupload sebelum batas ukuran diperkecil ke 591×591px tidak otomatis ikut terkompres. Tool ini memeriksa semua foto produk (Gambar Utama &amp; Gambar per Warna, maks 591px) dan Gambar Tambahan/overlay (maks 900px) yang sudah tersimpan, lalu memperkecil &amp; mengganti otomatis foto yang ukurannya melebihi batas — hanya yang kelebihan yang diproses, sisanya dilewati begitu saja. Proses berjalan dari browser ini, bisa makan waktu tergantung jumlah &amp; ukuran foto, dan jangan tutup halaman selama berjalan.</p>'+
  '<button class="btn btn-outline btn-sm" id="btnBatchCompress" onclick="batchRecompressImages()">🗜️ Kompres Ulang Gambar Lama</button>'+
+ '<button class="btn btn-outline btn-sm" onclick="syncOrderPeriod(\'2026-09-12\',\'2026-09-19\')">🔄 Sinkronkan Order 12–18 Sep 2026</button>'+
  '<pre id="batchCompressLog" style="display:none;margin-top:12px;max-height:220px;overflow:auto;background:var(--navy-950);color:#DCE4F7;font-size:11px;line-height:1.6;padding:10px 12px;border-radius:8px;white-space:pre-wrap"></pre></div>'+
  '<div class="panel"><h2>🔐 Ganti PIN Admin</h2><div class="form-grid" style="max-width:340px">'+
  '<div><label>PIN Baru</label><input id="sPin" maxlength="6" placeholder="4–6 digit"></div></div>'+
@@ -3570,6 +3581,29 @@ function adminSettings(){
  '<textarea id="sqlBox" style="position:fixed;left:-9999px">'+SQL+'</textarea>';
 }
 function changePin(){const v=$('sPin').value.trim();if(v.length<4){toast('⚠️ PIN minimal 4 digit');return}settings.pin=v;LS.set('rj_settings',settings);toast('🔐 PIN berhasil diganti')}
+async function syncOrderPeriod(fromDate,toDateExclusive){
+ if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
+ if(!confirm('Sinkronkan ulang seluruh order 12–18 September 2026 ke Inventory?'))return;
+ const from=new Date(fromDate+'T00:00:00+07:00').toISOString();
+ const to=new Date(toDateExclusive+'T00:00:00+07:00').toISOString();
+ toast('⏳ Memuat order periode...');
+ try{
+  const {data,error}=await sb.from(ORDERS_TABLE).select('*')
+   .gte('created_at',from).lt('created_at',to).order('created_at',{ascending:true});
+  if(error)throw error;
+  if(!data?.length){toast('ℹ️ Tidak ada order pada periode tersebut');return}
+  let berhasil=0,gagal=0;
+  for(const row of data){
+   const order=rowToOrder(row);
+   const ok=await syncStokKeluarPesanan(order.code,order.items,row.created_at);
+   if(ok)berhasil++;else gagal++;
+  }
+  toast('✅ Sinkron periode selesai: '+berhasil+' order berhasil'+(gagal?' • '+gagal+' gagal':''));
+ }catch(e){
+  console.error('Gagal sinkron periode order:',e);
+  toast('❌ Sinkron periode gagal: '+(e.message||e.code||'unknown error'));
+ }
+}
 // Dipanggil otomatis setelah inventory load mengisi brand yang kosong di memory —
 // sync perubahan itu ke Supabase supaya permanent (silent, tanpa toast).
 async function _autoSyncBrandToCloud(){
