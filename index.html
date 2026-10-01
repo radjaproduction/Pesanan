@@ -2131,7 +2131,7 @@ async function syncStokKeluarPesanan(code,cartSnapshot,orderCreatedAt){
  cartSnapshot.forEach(c=>{
   const p=P(c.pid);if(!p){buildError=new Error('Produk '+(c.name||c.pid||'-')+' tidak ditemukan di katalog');return;}
   const gKey=p.brand+'||'+p.name;
-  if(!groups[gKey])groups[gKey]={brand:p.brand,model:p.name,harga:(c.est&&c.est[0])||0,items:[]};
+  if(!groups[gKey])groups[gKey]={brand:p.brand,model:p.name,harga:(c.est&&c.est[0])||(p.est&&p.est[0])||0,items:[]};
   const itemKey=(c.color||'')+'||'+(c.size||'');
   const existing=groups[gKey].items.find(i=>i._key===itemKey);
   if(existing)existing.qty+=(+c.qty||0);
