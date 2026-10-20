@@ -12,9 +12,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RADJA">
+<link rel="preload" as="image" href="radja-kids-bg.png" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://hasagbezyuznziwrgbet.supabase.co" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   --navy-950:#080F26; --navy-900:#0B1633; --navy-800:#101F45; --navy-700:#16295C;
@@ -717,7 +721,7 @@ body.boot-lock{overflow:hidden}
 <!-- ================= HOME ================= -->
 <section class="view on" id="view-home">
   <div class="hero">
-    <img class="bg" src="radja-kids-bg.png" alt="">
+    <img class="bg" src="radja-kids-bg.png" alt="" width="661" height="992" fetchpriority="high">
     <div class="overlay"></div>
     <div class="container">
       <h1>RADJA Production,<br>Spesialis <em>Kaos Anak.</em></h1>
@@ -835,6 +839,8 @@ body.boot-lock{overflow:hidden}
 </div>
 <div id="pdBuyModal"><div class="pbm-box" id="pbmBox"></div></div>
 
+<!-- Diletakkan setelah markup agar library data tidak menghambat paint hero. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   let startY = 0;
@@ -1422,7 +1428,7 @@ function cardHTML(p,dispColor){const habis=p.totalStok<=0;
  }
  const colorArg=(dispColor && !isBest)?",'"+(dispColor.n||'').replace(/'/g,"\\'")+"'":'';
  return '<div class="p-card" onclick="openProduct(\''+p.id+'\''+colorArg+')">'+
- '<div class="ph'+(habis?' stok-off':'')+'"><img id="catimg-'+p.id+'" src="'+img+'" alt="'+esc(p.name)+'" loading="lazy">'+(habis?'<span class="stok-off-mark">Habis</span>':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
+ '<div class="ph'+(habis?' stok-off':'')+'"><img id="catimg-'+p.id+'" src="'+img+'" alt="'+esc(p.name)+'" loading="lazy" decoding="async">'+(habis?'<span class="stok-off-mark">Habis</span>':'')+(p.badge?'<span class="p-badge">'+esc(p.badge)+'</span>':'')+'</div>'+
  '<div class="p-body"><div class="p-brand">'+esc(p.brand)+'</div><div class="p-name">'+esc(p.name)+'</div>'+
  '<div class="p-rate">'+(p.totalStok>0?p.totalStok+' pcs':'stok habis')+'</div>'+
  '<div class="p-price">'+priceLabel(p)+'<small>harga / pcs</small></div></div></div>'}

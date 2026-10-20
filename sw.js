@@ -1,9 +1,11 @@
 /* RADJA Production — Service Worker (Robust Multi-Tab Update Handler) */
-const CACHE_VERSION = 'radja-pwa-v9.5';
-const RUNTIME_CACHE = 'radja-runtime-v9.5'; // Cache untuk dynamic content
+const CACHE_VERSION = 'radja-pwa-v9.6';
+const RUNTIME_CACHE = 'radja-runtime-v9.6'; // Cache untuk dynamic content
 const APP_SHELL = [
   './index.html',
   './manifest.json',
+  './radja-kids-bg.png',
+  './bg-pattern.webp',
   './icon-72.png',
   './icon-96.png',
   './icon-128.png',
