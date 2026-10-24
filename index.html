@@ -1082,7 +1082,7 @@ function buildProducts(){
    min:meta.min_order||1, sold:totalTerjual, days:meta.estimasi_hari||'7–14 hari',
    badge:meta.badge||'', desc:meta.deskripsi||'',
    specs:[['Brand',m.brandNama||'—'],['Model',m.nama],['Stok Tersedia',totalStok+' pcs']],
-   colors, sizes, stokIndex, totalStok, aktifAdmin: meta.aktif!==false, aktif: meta.aktif!==false && totalStok>0
+   colors, sizes, stokIndex, totalStok, aktifAdmin: meta.aktif===true, aktif: meta.aktif===true && totalStok>0
   };
  });
 }
@@ -3171,8 +3171,8 @@ function adminProduk(){
   return '<div class="a-order">'+
    '<div class="top" style="align-items:center">'+
    '<span style="display:flex;gap:10px;align-items:center"><img id="pm-preview-'+m.id+'" src="'+esc(meta.gambar_url||PLACEHOLDER_IMG)+'" style="width:46px;height:46px;border-radius:9px;object-fit:cover;background:#EEF1F7"><b style="font-size:13px">'+esc(m.nama)+' <span style="color:var(--muted);font-weight:600">— '+esc(m.brandNama||'—')+'</span></b></span>'+
-   '<div class="switch '+(meta.aktif!==false?'on':'')+'" onclick="toggleProdukAktif('+m.id+')"></div></div>'+
-   '<div class="meta">📦 Stok saat ini: '+totalStok+' pcs • 💰 Harga: '+fmt(m.harga||0)+(meta.aktif!==false&&totalStok<=0?' • <span style="color:var(--danger);font-weight:700">🙈 Tersembunyi otomatis (stok habis)</span>':'')+'</div>'+
+   '<div class="switch '+(meta.aktif===true?'on':'')+'" onclick="toggleProdukAktif('+m.id+')"></div></div>'+
+   '<div class="meta">📦 Stok saat ini: '+totalStok+' pcs • 💰 Harga: '+fmt(m.harga||0)+(meta.aktif!==true?' • Belum diterbitkan ke katalog':totalStok<=0?' • <span style="color:var(--danger);font-weight:700">🙈 Tersembunyi otomatis (stok habis)</span>':'')+'</div>'+
    '<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:var(--navy-50);border-radius:9px">'+
    '<div class="switch '+(meta.auto_tint===true?'on':'')+'" onclick="toggleAutoTint('+m.id+')"></div>'+
    '<div style="font-size:11.5px;color:var(--navy-800)"><b>Auto-Warna dari Gambar Utama</b><br><span style="color:var(--muted);font-weight:500">Kalau aktif, warna yang belum punya foto manual di bawah otomatis diwarnai dari Gambar Utama sesuai kode warna di Inventory. Paling akurat untuk foto kaos polos background putih — kalau ada sablon/print, sebaiknya nonaktifkan &amp; upload foto manual per warna.</span></div>'+
@@ -3596,7 +3596,7 @@ async function saveProdukMeta(modelId){
  const overlay_invert_warna=[...document.querySelectorAll('#pm-ovinvwrap-'+modelId+' input[type=checkbox]:checked')].map(cb=>cb.dataset.color);
  const row={model_id:modelId,gambar_url:$('pm-img-'+modelId).value.trim(),gambar_warna,auto_tint:cur.auto_tint===true,
   overlay_url,overlay_mode:$('pm-ovmode-'+modelId)?.value||'over',overlay_size:+($('pm-ovsize-'+modelId)?.value||40),overlay_x:+($('pm-ovx-'+modelId)?.value||50),overlay_y:+($('pm-ovy-'+modelId)?.value||50),overlay_invert:$('pm-ovinvert-'+modelId)?.checked!==false,overlay_invert_warna,
-  kategori:cur.kategori||'',min_order:cur.min_order||1,estimasi_hari:cur.estimasi_hari||'',badge:cur.badge||'',deskripsi:cur.deskripsi||'',aktif:cur.aktif!==false};
+  kategori:cur.kategori||'',min_order:cur.min_order||1,estimasi_hari:cur.estimasi_hari||'',badge:cur.badge||'',deskripsi:cur.deskripsi||'',aktif:cur.aktif===true};
  const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
  if(error){console.error(error);toast('❌ Gagal simpan: cek apakah kolom gambar_warna/overlay_* sudah ada di tabel pesanan_produk_meta (lihat SQL di tab Pengaturan)');return}
  delete pendingColorImg[modelId];
@@ -3604,7 +3604,7 @@ async function saveProdukMeta(modelId){
 }
 async function toggleProdukAktif(modelId){
  if(!sb){toast('⚠️ Belum tersambung ke Supabase');return}
- const cur=produkMeta[modelId]?.aktif!==false;
+ const cur=produkMeta[modelId]?.aktif===true;
  const row={model_id:modelId,aktif:!cur};
  const {error}=await sb.from('pesanan_produk_meta').upsert(row,{onConflict:'model_id'});
  if(error){console.error(error);toast('❌ Gagal update');return}
